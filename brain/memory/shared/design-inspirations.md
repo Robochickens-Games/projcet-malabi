@@ -9,23 +9,24 @@ tags: [design, inspiration, reference, games, art-direction]
 
 # Design inspirations the team likes
 
-Reference points the team is drawn to (Dor, 2026-06-09):
+Reference points the team is drawn to (Dor, 2026-06-09). **What we like is the
+mechanics — specifically the _exploration_** — not the humor, art style, or mature
+content of these particular titles.
 
-- **Loom** (LucasArts, 1990) — atmospheric, music-driven point-and-click; elegant,
-  minimal verb interface; dreamy art and mood over busy UI.
-- **The Secret of Monkey Island** (LucasArts, 1990) — story-first adventure, sharp
-  comedic writing, memorable characters, expressive pixel art.
-- **Leisure Suit Larry** (Sierra) — comedic, character-driven adventure with a
-  strong voice and personality.
+- **Loom** (LucasArts, 1990) — point-and-click adventure.
+- **The Secret of Monkey Island** (LucasArts, 1990) — point-and-click adventure.
+- **Leisure Suit Larry** (Sierra) — point-and-click adventure.
 
-**The throughline:** classic **point-and-click adventure** sensibility — story,
-character, humor, and a distinctive hand-crafted art direction over mechanical
-complexity. Atmosphere and charm carry the experience.
+**The throughline = exploration-driven gameplay.** The classic point-and-click
+adventure loop: poke at the world, examine objects, discover what's hidden, and
+make progress *by exploring and experimenting* rather than by reflexes, scores, or
+levels. Curiosity is the engine.
 
-**How to apply:** taste/north-for-craft when we shape the product's look, tone, and
-interaction feel. Note the tension to resolve: these are mostly *adult* titles
-(Larry especially) — what we'd borrow is the **craft, wit, and art direction**, not
-the mature content, since the product lean is [[science-games-for-kids]]. Feeds the
+**How to apply:** this is a **mechanics** reference, not an art/tone one. When we
+shape the product, the core loop should reward exploration and discovery. Maps well
+onto [[science-games-for-kids]] — science *is* exploration (poke, observe, find
+out), so the genre and the subject reinforce each other. We are **not** borrowing
+the art direction, the humor, or the adult content of these titles. Feeds the
 [[design-for-app-of-the-year]] quality bar.
 
 See [[science-games-for-kids]], [[design-for-app-of-the-year]], [[north-star]].
