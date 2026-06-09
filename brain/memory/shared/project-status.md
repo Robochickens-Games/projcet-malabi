@@ -41,6 +41,13 @@ but **not deployed**.
 ## In progress / open ⏳
 - **Product direction:** theme, tech stack, and what we're building are still being
   explored — no decision yet. This is the big open question.
+- **Proposals awaiting team review (from Dor, 2026-06-09):** a linked product thesis
+  — none acted on until the team agrees:
+  - [[science-games-for-kids]] — aim the first product at science games for kids.
+  - [[aso-keyword-research-to-pick-topic]] — use App Store keyword research to pick
+    the exact topic.
+  - [[design-for-app-of-the-year]] — design bar = Apple feature (App of the Year/Month).
+  - **Next:** Gidi (product) + Ohad (tech) review → if agreed, promote to ADR 0003.
 
 ## Parked 🅿️
 - **Dudu:** Dor flagged it isn't going as hoped (phone-number + hosting friction) —
