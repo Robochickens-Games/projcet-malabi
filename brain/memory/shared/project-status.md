@@ -46,6 +46,10 @@ product thesis (below) for team review.
     the exact topic.
   - [[design-for-app-of-the-year]] — design bar = Apple feature (App of the Year/Month).
   - **Next:** Gidi (product) + Ohad (tech) review → if agreed, promote to ADR 0003.
+- **Proactive sync push (proposal, under review — reviewers: Gidi + Ohad):**
+  [[proactive-sync-push-telegram]] — GitHub Action posts brain changes to a Telegram
+  group on every commit, plus a daily backup digest. Closes the pull-only sync gap.
+  Needs team to join a Telegram group + add bot token as a repo secret.
 
 ## Parked 🅿️
 - _(nothing parked.)_ **Dudu was dropped** — code removed; only the decision trail
