@@ -10,6 +10,8 @@ future member would reasonably ask "why did we do it this way?". Small,
 reversible choices are just memory, not ADRs.
 
 ## Steps
+0. **Check it against the [[north-star]].** Does the decision serve "make us money"
+   and "make it fun"? If it trades one off, say so in the ADR's Consequences.
 1. Next number: `NNNN` = highest existing in `brain/decisions/` + 1, zero-padded.
 2. Create `brain/decisions/NNNN-<kebab-title>.md` from the template below.
 3. Add a memory pointer in `memory/shared/` (or the relevant project) linking to it.

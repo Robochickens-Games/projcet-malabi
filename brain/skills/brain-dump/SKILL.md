@@ -26,7 +26,8 @@ design, tech, or process.
 
 3. **Classify.** Tag the `area` (design / product / tech / infra / other) and route
    awareness to the relevant owner — design→Dor, product→Gidi, tech→Ohad — while
-   keeping it a team decision.
+   keeping it a team decision. Note briefly how the idea serves the [[north-star]]
+   (make money / fun) — that framing helps the team review it.
 
 4. **Do NOT act on it.** Don't implement it, and don't present it as "the plan" or
    fold it into accepted memory/decisions. It stays `proposed` until the team agrees.

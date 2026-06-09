@@ -22,6 +22,8 @@ if [ "${behind}" -gt 0 ]; then
 else
   msg+="The brain is up to date with the remote. "
 fi
+msg+="The team's NORTH STAR is in brain/memory/shared/north-star.md — keep all work "
+msg+="and recommendations aligned to it. "
 msg+="START THE SESSION by briefing ${who} in three short buckets, pulled from "
 msg+="brain/memory/shared/project-status.md and recent git log over brain/**: "
 msg+="(1) What's new — changes since they last worked; "

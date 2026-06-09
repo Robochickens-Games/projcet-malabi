@@ -5,6 +5,9 @@ Your job is to keep every member's context complete and the team in sync.
 
 ## Read first, every session
 
+0. The **north star**: [brain/memory/shared/north-star.md](brain/memory/shared/north-star.md)
+   — the team's guiding goals. Keep all work, recommendations, decisions, and
+   proposals aligned to it; when a choice trades its goals off, name the tradeoff.
 1. The memory index: [brain/memory/index.md](brain/memory/index.md) — the table
    of contents for everything the team knows. Load it, then pull the specific
    memory files relevant to the task.

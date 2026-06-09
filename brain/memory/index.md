@@ -28,6 +28,7 @@ After writing a memory, add a one-line pointer below under the right section.
 ---
 
 ## Shared (team-wide truth)
+- [north-star](shared/north-star.md) — 🌟 our guiding goals (make money · make fun); align everything to it
 - [team](shared/team.md) — who's who, roles, contact, working norms
 - [architecture-of-the-brain](shared/architecture-of-the-brain.md) — how this whole system is structured
 - [budget-constraint](shared/budget-constraint.md) — no spend on infra right now; default to free

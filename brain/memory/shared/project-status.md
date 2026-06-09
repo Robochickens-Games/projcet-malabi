@@ -11,6 +11,9 @@ tags: [status, project, onboarding]
 
 _Living snapshot. **Last updated: 2026-06-09.** Refresh it any time with `/status`._
 
+> 🌟 **North star:** make us money · make it fun. ([[north-star]]) — everything below
+> should serve it.
+
 ## TL;DR
 The shared AI brain is **built and usable**. What we're actually building — theme,
 product direction, tech stack — is **still open**. Dudu (the WhatsApp bot) is built
