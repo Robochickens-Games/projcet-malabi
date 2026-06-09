@@ -2,10 +2,10 @@
 name: proactive-sync-push-telegram
 description: Proactive push — Telegram digest on every brain commit + a daily backup digest
 owner: dor
-status: under-review
+status: agreed
 area: infra
 created: 2026-06-09
-reviewers: [gidi, ohad]
+reviewers: [dor]
 ---
 
 # Proactive sync: push brain changes to the team (Telegram + daily backup)
@@ -54,3 +54,14 @@ GitHub-side review routing, independent of this push channel.
 **Notes / discussion:** Decided channel = Telegram, with a daily backup digest
 (Dor, 2026-06-09). Keeps the brain tool-agnostic — this is an adapter/notification
 layer, not brain logic.
+
+**Status — built & live (2026-06-09):** Dor approved and provisioned it.
+- Bot **@Project_malabi_bot** ("Malabo brain") created; added to Telegram group
+  **"Todo"** (chat id stored as a repo secret, not here).
+- Repo secrets `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` set.
+- Workflows: `.github/workflows/notify-telegram.yml` (per-commit on `brain/**`) and
+  `.github/workflows/daily-digest-telegram.yml` (07:00 UTC daily + manual dispatch).
+- Test message confirmed delivered to the group end-to-end.
+- **Follow-ups:** Gidi + Ohad to confirm they're in the group; consider renaming the
+  group from "Todo" to a dedicated Malabi channel; rotate the bot token via BotFather
+  since it passed through a chat session.

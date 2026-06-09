@@ -35,6 +35,9 @@ product thesis (below) for team review.
   (SessionStart hook + `/sync`).
 - **Proposals gate:** `brain/proposals/` — ideas are logged and surfaced but not
   acted on until the team reviews and agrees.
+- **Proactive sync push (live):** GitHub Action posts every `brain/**` change to the
+  team's Telegram group, plus a daily backup digest — members stay synced without
+  opening a session. See [[proactive-sync-push-telegram]].
 
 ## In progress / open ⏳
 - **Product direction:** theme, tech stack, and what we're building are still being
@@ -46,10 +49,6 @@ product thesis (below) for team review.
     the exact topic.
   - [[design-for-app-of-the-year]] — design bar = Apple feature (App of the Year/Month).
   - **Next:** Gidi (product) + Ohad (tech) review → if agreed, promote to ADR 0003.
-- **Proactive sync push (proposal, under review — reviewers: Gidi + Ohad):**
-  [[proactive-sync-push-telegram]] — GitHub Action posts brain changes to a Telegram
-  group on every commit, plus a daily backup digest. Closes the pull-only sync gap.
-  Needs team to join a Telegram group + add bot token as a repo secret.
 
 ## Parked 🅿️
 - _(nothing parked.)_ **Dudu was dropped** — code removed; only the decision trail

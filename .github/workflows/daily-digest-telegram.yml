@@ -1,0 +1,53 @@
+name: daily-digest-telegram
+
+# Backup sync layer: once a day, posts a digest of the last 24h of brain changes
+# to the team's Telegram group — catches anyone who missed the per-commit pings.
+# See brain/proposals/proactive-sync-push-telegram.md.
+# Requires repo secrets: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
+
+on:
+  schedule:
+    # 07:00 UTC ≈ 09:00–10:00 Israel time. Adjust as the team prefers.
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}   # allow manual runs
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build and send daily digest
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not set — skipping."
+            exit 0
+          fi
+
+          LINES="$(git log --since='24 hours ago' --pretty='• %s  (%an)' -- brain/ 2>/dev/null)"
+          if [ -z "$LINES" ]; then
+            echo "No brain changes in the last 24h — skipping digest."
+            exit 0
+          fi
+          COUNT="$(printf '%s\n' "$LINES" | grep -c . || true)"
+
+          MSG="$(
+            printf '📅 Malabi daily digest — %s brain change(s) in the last 24h\n\n' "$COUNT"
+            printf '%s\n' "$LINES" | head -15
+            if [ "$COUNT" -gt 15 ]; then printf '… +%s more\n' "$((COUNT - 15))"; fi
+            printf '\nRun /catchup to see where things stand.\n'
+          )"
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "disable_web_page_preview=true" \
+            --data-urlencode "text=${MSG}" \
+            | grep -q '"ok":true' && echo "Daily digest sent." || { echo "Telegram send failed."; exit 1; }
