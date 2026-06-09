@@ -1,13 +1,14 @@
 ---
 name: project-management
-description: Keep the whole project in sync — reconcile status, decisions, ownership, gaps, and next steps across the brain. Primarily Gidi's, usable by anyone.
+description: Keep the whole project in sync — reconcile status, decisions, ownership, gaps, and next steps across the brain. A team-wide coordination skill; anyone can use it.
 ---
 
 # Project Management — sync all the pieces
 
-Act as the team's PM. Primarily **Gidi's** tool — he owns product/PM
-([[gidi-role]]) — but anyone can use it. The goal: keep every piece of the project
-coherent and in sync.
+A **team-wide coordination** skill — anyone can run it to keep the project coherent
+and in sync. This is *project* coordination, which is **distinct from product
+management**: deciding *what we build and why* is Gidi's domain ([[gidi-role]]);
+this skill just keeps all the pieces aligned.
 
 ## What "sync all the pieces" means
 Pull the whole picture together, find where it's out of alignment, and produce a
