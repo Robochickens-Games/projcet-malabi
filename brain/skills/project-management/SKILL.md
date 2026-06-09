@@ -35,6 +35,6 @@ clear, current plan everyone can act on — then persist it.
    in the moment.
 
 ## Relation to the commands
-`/status` reports where we are; `/sync` catches one person up. This skill goes
+`/catchup` reports where we are; `/sync` catches one person up. This skill goes
 further — it actively *reconciles* every piece, assigns ownership, and persists the
 plan.

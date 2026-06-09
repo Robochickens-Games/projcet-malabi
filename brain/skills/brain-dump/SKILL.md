@@ -34,7 +34,7 @@ design, tech, or process.
 
 5. **Surface it.** Commit the proposal (clear message, e.g.
    `proposal: <title> (from <member>, via session)`) so the team is notified, and
-   flag it for review. Proposals awaiting review should show up in `/sync` and `/status`.
+   flag it for review. Proposals awaiting review should show up in `/sync` and `/catchup`.
 
 6. **Manage the lifecycle.**
    - When the team is weighing in → set `status: under-review`, record `reviewers`.

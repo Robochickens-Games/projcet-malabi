@@ -29,7 +29,7 @@ brain dump (in your session)  →  AI structures it into memory  →  commit / P
 
 ## First time here?
 
-Just cloned this? Run **`/status`** in Claude Code to see exactly where the project
+Just cloned this? Run **`/catchup`** in Claude Code to see exactly where the project
 stands, or read [brain/memory/shared/project-status.md](brain/memory/shared/project-status.md).
 Then run `/sync` (or read [brain/processes/onboarding.md](brain/processes/onboarding.md)).
 That's it — the AI takes over from there.
@@ -38,7 +38,7 @@ That's it — the AI takes over from there.
 
 | You want to…                        | Do this                          |
 |-------------------------------------|----------------------------------|
-| See where the project stands       | `/status`                        |
+| See where the project stands       | `/catchup`                        |
 | Catch up before working            | `/sync`                          |
 | Dump a thought / decision / note    | `/braindump` (or just talk)      |
 | Record a real decision              | `/decide`                        |

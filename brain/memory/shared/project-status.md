@@ -9,7 +9,7 @@ tags: [status, project, onboarding]
 
 # Project status — where we are
 
-_Living snapshot. **Last updated: 2026-06-09.** Refresh it any time with `/status`._
+_Living snapshot. **Last updated: 2026-06-09.** Refresh it any time with `/catchup`._
 
 > 🌟 **North star:** make us money · make it fun. ([[north-star]]) — everything below
 > should serve it.
@@ -22,9 +22,9 @@ but **not deployed**.
 ## Done ✅
 - **Shared brain infra:** three-layer architecture (brain / adapters / git-sync),
   memory model, processes, decisions, slash commands (`/sync` `/braindump` `/decide`
-  `/standup` `/status`), SessionStart hook, GitHub brain-sync workflow + CODEOWNERS.
+  `/standup` `/catchup`), SessionStart hook, GitHub brain-sync workflow + CODEOWNERS.
   See [[architecture-of-the-brain]].
-- **Live on GitHub:** `Robochickens-Games/projcet-malabi` — clone → `/status` → caught up.
+- **Live on GitHub:** `Robochickens-Games/projcet-malabi` — clone → `/catchup` → caught up.
 - **Team & roles:** Dor — design [[dor-role]], Gidi — product [[gidi-role]],
   Ohad — tech [[ohad-role]].
 - **Decisions recorded:** ADR 0001 (architecture), ADR 0002 (Dudu).
@@ -55,5 +55,5 @@ but **not deployed**.
   one that actually moves the project.*
 - **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub
   usernames in `.github/CODEOWNERS`.
-- Each member: run `/status` then `/braindump` your context.
+- Each member: run `/catchup` then `/braindump` your context.
 - (Optional) Revisit Dudu only if a free host or budget appears.

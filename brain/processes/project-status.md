@@ -1,10 +1,10 @@
 # Process: Project status ("where are we")
 
 How the AI tells anyone — especially someone who just cloned the repo — where the
-project stands, and keeps the status snapshot fresh. Backs the `/status` command.
+project stands, and keeps the status snapshot fresh. Backs the `/catchup` command.
 
 ## When to trigger
-- A member (or newcomer) runs `/status`.
+- A member (or newcomer) runs `/catchup`.
 - Someone asks "where are we", "what's the status", "what's left", "catch me up".
 
 ## Steps

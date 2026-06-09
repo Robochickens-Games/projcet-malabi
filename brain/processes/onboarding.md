@@ -10,12 +10,12 @@ For a member sitting down with the brain for the first time (or on a new machine
    `.claude/settings.local.json` for personal, un-shared settings.
 
 ## First session
-1. Run `/status` — see where the project stands (done / in progress / parked / next).
+1. Run `/catchup` — see where the project stands (done / in progress / parked / next).
 2. Run `/sync` — the AI pulls, identifies you, and briefs you on the full team
    context and recent changes.
-2. Skim `brain/memory/index.md` and `brain/decisions/` to absorb the "why".
-3. Add yourself: fill in your row in `memory/shared/team.md` and drop a few
-   `brain/braindump`-style notes about your role, strengths, and current focus.
+3. Skim `brain/memory/index.md` and `brain/decisions/` to absorb the "why".
+4. Add yourself: fill in your row in `memory/shared/team.md` and drop a few
+   `/braindump`-style notes about your role, strengths, and current focus.
 
 ## Ongoing
 - `/sync` at the start of each session.
