@@ -1,7 +1,8 @@
 name: daily-digest-telegram
 
-# Backup sync layer: once a day, posts a digest of the last 24h of brain changes
-# to the team's Telegram group — catches anyone who missed the per-commit pings.
+# Backup sync layer: once a day, summarize the last 24h of brain changes in plain
+# English (via GitHub Models, free) and post to the team's Telegram group — catches
+# anyone who missed the per-commit pings.
 # See brain/proposals/proactive-sync-push-telegram.md.
 # Requires repo secrets: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
 
@@ -13,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  models: read
 
 jobs:
   digest:
@@ -22,32 +24,43 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build and send daily digest
+      - name: Summarize last 24h and send daily digest
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GH_MODELS_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "Telegram secrets not set — skipping."
             exit 0
           fi
 
-          LINES="$(git log --since='24 hours ago' --pretty='• %s  (%an)' -- brain/ 2>/dev/null)"
-          if [ -z "$LINES" ]; then
+          COMMITS="$(git log --since='24 hours ago' --pretty='- %s (by %an)' -- brain/ 2>/dev/null)"
+          if [ -z "$COMMITS" ]; then
             echo "No brain changes in the last 24h — skipping digest."
             exit 0
           fi
-          COUNT="$(printf '%s\n' "$LINES" | grep -c . || true)"
 
-          MSG="$(
-            printf '📅 Malabi daily digest — %s brain change(s) in the last 24h\n\n' "$COUNT"
-            printf '%s\n' "$LINES" | head -15
-            if [ "$COUNT" -gt 15 ]; then printf '… +%s more\n' "$((COUNT - 15))"; fi
-            printf '\nRun /catchup to see where things stand.\n'
-          )"
+          SYS="You are the friendly voice of a small game studio's shared team brain. Given the list of changes the team made to their shared notes in the last day, write a short, warm daily recap (2-4 sentences, under ~70 words) of what the team got done and what it means. Plain English only. No file paths, no git jargon, no markdown, no hashtags. Output only the message text."
+          USER="$(printf 'Changes in the last 24 hours:\n%s' "$COMMITS")"
 
-          # Capture the response (no pipe) — piping into `grep -q` trips pipefail
-          # via SIGPIPE when grep exits early, failing the step even on success.
+          REQ="$(jq -n --arg m "openai/gpt-4o-mini" --arg s "$SYS" --arg u "$USER" \
+            '{model:$m, temperature:0.5, max_tokens:250,
+              messages:[{role:"system",content:$s},{role:"user",content:$u}]}')"
+          MODEL_RESP="$(curl -s https://models.github.ai/inference/chat/completions \
+            -H "Authorization: Bearer ${GH_MODELS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$REQ")"
+          SUMMARY="$(printf '%s' "$MODEL_RESP" | jq -r '.choices[0].message.content // empty' 2>/dev/null)"
+
+          if [ -z "$SUMMARY" ]; then
+            echo "Model summary unavailable — falling back to raw list. Response was:"
+            echo "$MODEL_RESP"
+            SUMMARY="$COMMITS"
+          fi
+
+          MSG="$(printf '📅 Daily brain recap\n\n%s\n\nRun /catchup to see where things stand.' "$SUMMARY")"
+
           RESP="$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "disable_web_page_preview=true" \

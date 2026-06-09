@@ -68,6 +68,11 @@ layer, not brain logic.
   confirmed arriving in the group on `brain/**` pushes. Note: the notifier fires
   **only on `brain/**` changes** by design — infra/`.github/` commits don't notify,
   to keep the team channel signal-not-noise.
+- **Natural-language digests (2026-06-09):** the digest no longer relays raw git
+  commit text. Each change is summarized in warm plain English by a free model
+  (GitHub Models, called with the Action's built-in token — no new key, no cost),
+  with a safe fallback to the commit subject if the model is unavailable. Same for
+  the daily recap.
 - **Follow-ups:** Gidi + Ohad to confirm they're in the group; consider renaming the
   group from "Todo" to a dedicated Malabi channel; rotate the bot token via BotFather
   since it passed through a chat session.
