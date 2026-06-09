@@ -32,6 +32,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [architecture-of-the-brain](shared/architecture-of-the-brain.md) — how this whole system is structured
 - [budget-constraint](shared/budget-constraint.md) — no spend on infra right now; default to free
 - [project-status](shared/project-status.md) — where we are: done / in progress / parked / next
+- [dudu-direction-note](shared/dudu-direction-note.md) — Dudu isn't going as Dor hoped; accepted, parked
 
 ## Members
 ### Dor
