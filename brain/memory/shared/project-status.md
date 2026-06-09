@@ -16,8 +16,8 @@ _Living snapshot. **Last updated: 2026-06-09.** Refresh it any time with `/catch
 
 ## TL;DR
 The shared AI brain is **built and usable**. What we're actually building — theme,
-product direction, tech stack — is **still open**. Dudu (the WhatsApp bot) is built
-but **not deployed**.
+product direction, tech stack — is **still open**, but Dor has put up the first
+product thesis (below) for team review.
 
 ## Done ✅
 - **Shared brain infra:** three-layer architecture (brain / adapters / git-sync),
@@ -27,9 +27,7 @@ but **not deployed**.
 - **Live on GitHub:** `Robochickens-Games/projcet-malabi` — clone → `/catchup` → caught up.
 - **Team & roles:** Dor — design [[dor-role]], Gidi — product [[gidi-role]],
   Ohad — tech [[ohad-role]].
-- **Decisions recorded:** ADR 0001 (architecture), ADR 0002 (Dudu).
-- **Dudu (WhatsApp bridge):** code built and compiling; POC self-mode + member
-  allowlist guard.
+- **Decisions recorded:** ADR 0001 (architecture), ADR 0002 (Dudu — abandoned).
 - **Skills:** `product-designer` (Dor's domain), `project-management` (team-wide
   coordination — *not* product, which is Gidi's), `brain-dump` (ideas →
   team-reviewed proposals) — all usable by anyone.
@@ -50,9 +48,8 @@ but **not deployed**.
   - **Next:** Gidi (product) + Ohad (tech) review → if agreed, promote to ADR 0003.
 
 ## Parked 🅿️
-- **Dudu:** Dor flagged it isn't going as hoped (phone-number + hosting friction) —
-  accepted and parked, not a problem to fix. See [[dudu-direction-note]],
-  [[0002-dudu-whatsapp-bridge]], [[budget-constraint]].
+- _(nothing parked.)_ **Dudu was dropped** — code removed; only the decision trail
+  remains. See [[dudu-direction-note]], [[0002-dudu-whatsapp-bridge]].
 
 ## Constraints
 - **No spend on infra** right now — free tools/hosting only. [[budget-constraint]]
@@ -63,4 +60,3 @@ but **not deployed**.
 - **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub
   usernames in `.github/CODEOWNERS`.
 - Each member: run `/catchup` then `/braindump` your context.
-- (Optional) Revisit Dudu only if a free host or budget appears.

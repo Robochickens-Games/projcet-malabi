@@ -51,6 +51,3 @@ That's it — the AI takes over from there.
 - `brain/decisions/` — Architecture/Product Decision Records (ADRs)
 - `brain/skills/`, `brain/agents/` — canonical, tool-agnostic definitions
 - `product/` — eventual product code (lives here for now; split out later)
-- `dudu/` — the **WhatsApp adapter**: a bot that bridges a group chat to the brain
-  (read/write). Persona in [brain/agents/dudu.md](brain/agents/dudu.md), runtime in
-  [dudu/](dudu/), rationale in [brain/decisions/0002-dudu-whatsapp-bridge.md](brain/decisions/0002-dudu-whatsapp-bridge.md).

@@ -2,7 +2,7 @@
 name: 0002-dudu-whatsapp-bridge
 description: Build Dudu, a WhatsApp-facing agent on the Claude Agent SDK, as a read/write bridge to the brain
 owner: dor
-status: accepted
+status: abandoned
 created: 2026-06-09
 supersedes: -
 tags: [decision, dudu, whatsapp, agent, infra]
@@ -11,7 +11,11 @@ tags: [decision, dudu, whatsapp, agent, infra]
 # 0002. Dudu — the WhatsApp bridge
 
 ## Status
-Accepted — 2026-06-09
+**Abandoned — 2026-06-09.** Built but never deployed; phone-number + hosting
+friction outweighed its value (see [[dudu-direction-note]]). The `dudu/` code and
+`brain/agents/dudu.md` persona were **removed** on 2026-06-09 to cut noise — this
+ADR is kept as the decision trail. Revisit from scratch only if a free host and
+real appetite appear together. The rationale below is preserved as written.
 
 ## Context
 The team wants an assistant ("Dudu") they can add to a WhatsApp group so the chat

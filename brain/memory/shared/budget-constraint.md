@@ -15,7 +15,6 @@ prefer zero-cost tools and hosting.
 **Why:** early exploration, no budget committed yet.
 
 **How to apply:** default to free options; flag any paid dependency *before*
-adopting it. Notably, Dudu's always-on hosting (see [[0002-dudu-whatsapp-bridge]])
-is **parked** until either a free host (a spare device, or a genuinely-free VM
-like Oracle Always Free) or an actual budget exists. The brain itself costs
-nothing and is fully usable via Claude Code / Cursor today.
+adopting it. The brain itself costs nothing and is fully usable via Claude Code /
+Cursor today. (Dudu's always-on hosting was the one looming cost; Dudu has since
+been dropped — see [[0002-dudu-whatsapp-bridge]].)
