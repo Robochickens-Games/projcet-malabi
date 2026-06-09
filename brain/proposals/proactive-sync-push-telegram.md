@@ -62,6 +62,12 @@ layer, not brain logic.
 - Workflows: `.github/workflows/notify-telegram.yml` (per-commit on `brain/**`) and
   `.github/workflows/daily-digest-telegram.yml` (07:00 UTC daily + manual dispatch).
 - Test message confirmed delivered to the group end-to-end.
+- **Verified working (2026-06-09 evening):** fixed a CI false-failure (the
+  `curl | grep -q` send check tripped `pipefail` and reported red even when the
+  message sent) — now captures + logs the Telegram API response. Auto-digests
+  confirmed arriving in the group on `brain/**` pushes. Note: the notifier fires
+  **only on `brain/**` changes** by design — infra/`.github/` commits don't notify,
+  to keep the team channel signal-not-noise.
 - **Follow-ups:** Gidi + Ohad to confirm they're in the group; consider renaming the
   group from "Todo" to a dedicated Malabi channel; rotate the bot token via BotFather
   since it passed through a chat session.
