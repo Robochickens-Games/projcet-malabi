@@ -1,0 +1,8 @@
+# Gidi — working space
+
+Personal context for **Gidi**: preferences, focus areas, working style, and
+in-progress threads. One fact per file (same frontmatter format as the rest of
+memory — see `brain/memory/index.md`), `owner: gidi`, `scope: member`.
+
+The AI reads this when working with Gidi so the session starts with full personal
+context. Keep team-wide truth in `memory/shared/` instead.

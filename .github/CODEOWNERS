@@ -1,0 +1,19 @@
+# CODEOWNERS routes review requests — this is a primary team notification channel.
+# Replace the @placeholders with real GitHub usernames for Dor, Gidi, Ohad.
+
+# Anything touching the shared brain notifies the whole team.
+/brain/                 @dor-gh @gidi-gh @ohad-gh
+
+# Decisions are team-wide — everyone is asked to review.
+/brain/decisions/       @dor-gh @gidi-gh @ohad-gh
+
+# Each member owns their own working space.
+/brain/memory/members/dor/    @dor-gh
+/brain/memory/members/gidi/   @gidi-gh
+/brain/memory/members/ohad/   @ohad-gh
+
+# Infra / config changes notify everyone.
+/.github/               @dor-gh @gidi-gh @ohad-gh
+/.claude/               @dor-gh @gidi-gh @ohad-gh
+/.cursor/               @dor-gh @gidi-gh @ohad-gh
+/dudu/                  @dor-gh @gidi-gh @ohad-gh

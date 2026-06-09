@@ -1,0 +1,57 @@
+name: brain-sync
+
+# Validates brain integrity on every change and posts a digest of what changed
+# so the team is notified. Runs on pushes and PRs that touch the brain.
+
+on:
+  push:
+    branches: [main]
+    paths: ["brain/**"]
+  pull_request:
+    paths: ["brain/**"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate memory frontmatter
+        run: |
+          python3 - <<'PY'
+          import glob, sys, re
+          required = {"name", "description"}
+          bad = []
+          for path in glob.glob("brain/memory/**/*.md", recursive=True) + glob.glob("brain/decisions/*.md"):
+              if path.endswith("README.md") or path.endswith("index.md"):
+                  continue
+              text = open(path, encoding="utf-8").read()
+              m = re.match(r"^---\n(.*?)\n---", text, re.S)
+              if not m:
+                  bad.append(f"{path}: missing frontmatter")
+                  continue
+              keys = set(re.findall(r"^(\w+):", m.group(1), re.M))
+              missing = required - keys
+              if missing:
+                  bad.append(f"{path}: missing keys {sorted(missing)}")
+          if bad:
+              print("Brain validation failed:")
+              print("\n".join(bad))
+              sys.exit(1)
+          print("Brain validation passed.")
+          PY
+
+      - name: Summarize changes
+        if: github.event_name == 'push'
+        run: |
+          echo "### Brain changes in this push" >> "$GITHUB_STEP_SUMMARY"
+          git log -1 --pretty="by %an: %s" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          git diff --stat HEAD~1 HEAD -- brain/ >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "(initial commit)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

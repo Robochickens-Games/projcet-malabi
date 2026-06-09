@@ -1,0 +1,27 @@
+# Personal / machine-local — never shared
+.claude/settings.local.json
+.cursor/local/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies / build (for when product/ fills in)
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# NOTE: brain/inbox/ is intentionally tracked — raw brain dumps are archived
+# there for traceability until processed.

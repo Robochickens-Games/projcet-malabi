@@ -1,0 +1,26 @@
+---
+description: Malabi shared brain — always-on context for Cursor
+alwaysApply: true
+---
+
+# Malabi — shared AI brain (Cursor adapter)
+
+This repo is a shared AI brain for a three-person team: **Dor**, **Gidi**, **Ohad**.
+The canonical instructions live in [CLAUDE.md](../../CLAUDE.md) and the brain lives
+in [brain/](../../brain/). This file is a thin adapter — the brain is the truth.
+
+## Before working
+- Read `brain/memory/index.md`, then the memory files relevant to the task.
+- Read the current member's notes under `brain/memory/members/<name>/`.
+- New session: follow `brain/processes/sync-protocol.md` (pull + catch up first).
+
+## While working
+- Capture decisions, facts, preferences, and project context into `brain/memory/`
+  as you go — one fact per file, with frontmatter. Update `brain/memory/index.md`.
+- Scope: team-wide → `memory/shared/`; personal → `memory/members/<name>/`;
+  initiative → `memory/projects/<slug>/`.
+- Real/directional decisions → `brain/decisions/` (see `brain/processes/decision-record.md`).
+- Keep `brain/` tool-agnostic. Cursor-specific quirks stay in `.cursor/` only.
+
+## Sync
+- A commit touching `brain/**` notifies the team via GitHub. Write clear messages.
