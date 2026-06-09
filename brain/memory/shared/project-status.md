@@ -21,6 +21,7 @@ but **not deployed**.
   memory model, processes, decisions, slash commands (`/sync` `/braindump` `/decide`
   `/standup` `/status`), SessionStart hook, GitHub brain-sync workflow + CODEOWNERS.
   See [[architecture-of-the-brain]].
+- **Live on GitHub:** `Robochickens-Games/projcet-malabi` — clone → `/status` → caught up.
 - **Team & roles:** Dor — design [[dor-role]], Gidi — product [[gidi-role]],
   Ohad — tech [[ohad-role]].
 - **Decisions recorded:** ADR 0001 (architecture), ADR 0002 (Dudu).
@@ -32,13 +33,17 @@ but **not deployed**.
   explored — no decision yet. This is the big open question.
 
 ## Parked 🅿️
-- **Dudu deployment:** needs a free always-on host or a dedicated number; not
-  currently running. See [[0002-dudu-whatsapp-bridge]] and [[budget-constraint]].
+- **Dudu:** Dor flagged it isn't going as hoped (phone-number + hosting friction) —
+  accepted and parked, not a problem to fix. See [[dudu-direction-note]],
+  [[0002-dudu-whatsapp-bridge]], [[budget-constraint]].
 
 ## Constraints
 - **No spend on infra** right now — free tools/hosting only. [[budget-constraint]]
 
 ## Next steps
-- Decide a first **product direction** → `/decide` (becomes ADR 0003).
-- Each member: run `/sync`, then `/braindump` your context.
-- Revisit Dudu hosting if a free option or a budget appears.
+- Decide a first **product direction** → `/decide` (becomes ADR 0003). *This is the
+  one that actually moves the project.*
+- **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub
+  usernames in `.github/CODEOWNERS`.
+- Each member: run `/status` then `/braindump` your context.
+- (Optional) Revisit Dudu only if a free host or budget appears.
