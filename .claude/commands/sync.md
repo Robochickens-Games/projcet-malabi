@@ -8,6 +8,9 @@ Run the team sync protocol defined in `brain/processes/sync-protocol.md`:
 2. Identify who I am from git config and read my member memory under
    `brain/memory/members/<slug>/`.
 3. Read `brain/memory/index.md`.
-4. Summarize what changed in `brain/**` since my last commit — lead with new
-   decisions (ADRs), then shared memories, then updates to projects I'm in.
-5. Give me a short, prioritized catch-up digest and flag any conflicts or open loops.
+4. Brief me in three short buckets (the standard post-clone/sync catch-up), pulled
+   from `brain/memory/shared/project-status.md` and recent `git log` over `brain/**`:
+   - **What's new** — changes since I last worked (new decisions, memory, updates).
+   - **Built / created** — what's done and ready now.
+   - **Waiting** — what's open, parked, or needs me next.
+5. Flag any conflicts or open loops (pending PRs, proposals awaiting review).

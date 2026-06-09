@@ -7,6 +7,11 @@ Ingest my brain dump following `brain/processes/braindump-ingestion.md`.
 
 The dump (if provided): $ARGUMENTS
 
+If any of this is an **idea / suggestion** (not a settled fact), use the
+[brain-dump skill](../../brain/skills/brain-dump/SKILL.md): log it in
+`brain/proposals/` as `proposed`, surface it for team review, and do **not** act on
+it until the team agrees. Settled facts/context follow the memory steps below.
+
 Steps:
 1. If this is a substantial dump, archive the verbatim text to
    `brain/inbox/<today>-<my-slug>-<topic>.md`.

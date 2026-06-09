@@ -18,8 +18,13 @@ How a member catches up and stays in sync. Runs at the **start of a work session
    - Updates to **projects** the member is involved in.
    - Anything explicitly addressed to or relevant to this member.
 
-4. **Brief the member.** A short, prioritized digest: "Since you last worked,
-   Gidi recorded 2 decisions and updated project X. Here's what matters for you…"
+4. **Brief the member in three buckets.** This is the standard catch-up shown
+   after any clone or sync — keep it tight and scannable:
+   - **What's new** — changes since they last worked (new decisions, memory,
+     project updates), who did them.
+   - **Built / created** — what's done and ready now (from `project-status.md`).
+   - **Waiting** — what's open, parked, or needs them next (open questions, their
+     todos, decisions pending).
 
 5. **Flag conflicts / open loops.** Pending PRs touching `brain/**`, contradictory
    decisions, or stale project state that needs a call.

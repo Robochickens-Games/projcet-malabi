@@ -27,6 +27,12 @@ but **not deployed**.
 - **Decisions recorded:** ADR 0001 (architecture), ADR 0002 (Dudu).
 - **Dudu (WhatsApp bridge):** code built and compiling; POC self-mode + member
   allowlist guard.
+- **Skills:** `product-designer` (Dor), `project-management` (Gidi), `brain-dump`
+  (ideas → team-reviewed proposals) — all usable by anyone.
+- **Auto-briefing:** every session / clone opens with **What's new / Built / Waiting**
+  (SessionStart hook + `/sync`).
+- **Proposals gate:** `brain/proposals/` — ideas are logged and surfaced but not
+  acted on until the team reviews and agrees.
 
 ## In progress / open ⏳
 - **Product direction:** theme, tech stack, and what we're building are still being

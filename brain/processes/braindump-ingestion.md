@@ -4,6 +4,13 @@ How the AI turns a member's raw thoughts into structured, shared memory. This
 runs **in-session** — triggered by `/braindump`, or proactively whenever a member
 states something worth keeping.
 
+> **Ideas vs. settled facts — important.** If the dump is an **idea / suggestion /
+> "what if"**, it must NOT be acted on or treated as decided. Route it through the
+> [brain-dump skill](../skills/brain-dump/SKILL.md): log it in `brain/proposals/`
+> as `proposed` and surface it for team review. Only the team's agreement promotes
+> it. Use the memory path below only for **settled facts** and context (who's who,
+> constraints, things already true/agreed).
+
 ## When to trigger
 - Member runs `/braindump` (explicit dump).
 - Member states a decision, fact, preference, plan, or project update mid-session
