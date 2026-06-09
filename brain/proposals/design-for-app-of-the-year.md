@@ -2,10 +2,10 @@
 name: design-for-app-of-the-year
 description: Design quality bar — aim to be featured as App Store App of the Year/Month
 owner: dor
-status: proposed
+status: under-review
 area: design
 created: 2026-06-09
-reviewers: []
+reviewers: [gidi, ohad]
 ---
 
 # Design bar: aim for App Store featuring (App of the Year/Month)

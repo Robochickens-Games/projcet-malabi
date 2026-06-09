@@ -39,8 +39,8 @@ product thesis (below) for team review.
 ## In progress / open ⏳
 - **Product direction:** theme, tech stack, and what we're building are still being
   explored — no decision yet. This is the big open question.
-- **Proposals awaiting team review (from Dor, 2026-06-09):** a linked product thesis
-  — none acted on until the team agrees:
+- **Proposals under review (from Dor, 2026-06-09) — reviewers: Gidi + Ohad:** a
+  linked product thesis — none acted on until the team agrees:
   - [[science-games-for-kids]] — aim the first product at science games for kids.
   - [[aso-keyword-research-to-pick-topic]] — use App Store keyword research to pick
     the exact topic.

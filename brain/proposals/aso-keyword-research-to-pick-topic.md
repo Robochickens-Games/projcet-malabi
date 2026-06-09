@@ -2,10 +2,10 @@
 name: aso-keyword-research-to-pick-topic
 description: Method — use App Store keyword research to pick the specific topic
 owner: dor
-status: proposed
+status: under-review
 area: product
 created: 2026-06-09
-reviewers: []
+reviewers: [gidi, ohad]
 ---
 
 # Method: App Store keyword research to find the topic

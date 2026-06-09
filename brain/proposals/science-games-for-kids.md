@@ -2,10 +2,10 @@
 name: science-games-for-kids
 description: Product direction lean — build science games for kids
 owner: dor
-status: proposed
+status: under-review
 area: product
 created: 2026-06-09
-reviewers: []
+reviewers: [gidi, ohad]
 ---
 
 # Product direction: science games for kids
