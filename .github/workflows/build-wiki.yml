@@ -1,0 +1,54 @@
+name: build-wiki
+
+# Typesets the project Gazette (site/index.html) from brain/** + git history and
+# publishes it to GitHub Pages. New edition prints on every commit to the brain.
+#
+# One-time setup: repo Settings → Pages → Build and deployment → Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "brain/**"
+      - "scripts/build-wiki.mjs"
+      - ".github/workflows/build-wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let an in-progress run finish; only the newest queued edition deploys.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history — the front-page feed reads git log
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Typeset the Gazette
+        run: node scripts/build-wiki.mjs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

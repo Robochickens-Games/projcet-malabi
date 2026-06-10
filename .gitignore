@@ -25,3 +25,6 @@ venv/
 
 # NOTE: brain/inbox/ is intentionally tracked — raw brain dumps are archived
 # there for traceability until processed.
+
+# Generated project wiki (published to Pages by the build-wiki Action)
+site/
