@@ -10,7 +10,7 @@
 // Run: node scripts/build-wiki.mjs   (output: site/index.html)
 // The build-wiki GitHub Action runs this on every push to main touching brain/**.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, copyFileSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
@@ -127,12 +127,20 @@ try {
 } catch {}
 for (const slug of memberSlugs) {
   const role = memories.find((m) => m.name === `${slug}-role`);
+  // A member photo lives beside their memories as avatar.jpg; the build copies
+  // it into site/people/<slug>.jpg and the masthead renders it.
+  let avatar = null;
+  try {
+    statSync(join(memberDir, slug, "avatar.jpg"));
+    avatar = `people/${slug}.jpg`;
+  } catch {}
   members.push({
     slug,
     name: slug.charAt(0).toUpperCase() + slug.slice(1),
     role: role ? role.description.replace(/^.*role[^—-]*[—-]\s*/i, "").trim() : "",
     description: role ? role.description : "",
     memoryName: role ? role.name : null,
+    avatar,
   });
 }
 
@@ -432,6 +440,14 @@ const html = renderHtml(json);
 mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(join(OUT_DIR, "index.html"), html);
 writeFileSync(join(OUT_DIR, ".nojekyll"), "");
+
+// Copy member photos into the published site (site/ is gitignored and rebuilt
+// fresh by the Action, so the source of truth lives in each member's brain dir).
+mkdirSync(join(OUT_DIR, "people"), { recursive: true });
+for (const m of members) {
+  if (!m.avatar) continue;
+  copyFileSync(join(memberDir, m.slug, "avatar.jpg"), join(OUT_DIR, "people", `${m.slug}.jpg`));
+}
 console.log(
   `Built site/index.html — ${payload.stats.memories} memories, ` +
     `${payload.stats.decisions} decisions, ${payload.stats.members} members, ` +
@@ -444,8 +460,9 @@ function renderHtml(dataJson) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The Malabi Brain — Project Gazette</title>
+<title>The Malabi Daily</title>
 <meta name="description" content="A newspaper-style, always-current record of the Malabi team's shared knowledge: what changed, when, and why." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%AE%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -490,6 +507,7 @@ function renderHtml(dataJson) {
     border-bottom: 1px solid var(--line); padding-bottom: 8px; }
   .mast-title { font-family: var(--display); font-weight: 900; letter-spacing: -1px;
     font-size: clamp(40px, 7vw, 72px); line-height: 1; margin: 16px 0 8px; }
+  .mast-icon { font-size: .62em; vertical-align: 6%; margin-right: .22em; -webkit-text-stroke: 0; }
   .mast-rule { border: 0; border-top: 2px solid var(--rule); border-bottom: 1px solid var(--rule); height: 4px; margin: 10px 0 0; }
   .mast-sub { font-family: var(--sans); font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
     color: var(--muted); display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; padding: 9px 0; border-bottom: 1px solid var(--rule); }
@@ -651,7 +669,9 @@ function renderHtml(dataJson) {
   .members { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 22px; }
   .member { text-align: center; padding: 24px 18px; border: 1px solid var(--line); background: var(--card); }
   .avatar { width: 66px; height: 66px; border-radius: 50%; margin: 0 auto 12px; display: grid; place-items: center;
-    font-family: var(--display); font-size: 28px; font-weight: 700; color: var(--paper); }
+    font-family: var(--display); font-size: 28px; font-weight: 700; color: var(--paper); overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .member h3 { font-family: var(--display); margin: 0 0 2px; font-size: 22px; }
   .member .role { font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
   .member .bio { color: var(--muted); font-size: 14px; margin-top: 10px; }
@@ -694,7 +714,7 @@ function renderHtml(dataJson) {
       <span>Vol. I</span>
       <span id="mt-date"></span>
     </div>
-    <div class="mast-title">The Malabi Brain</div>
+    <div class="mast-title"><span class="mast-icon">🍮</span>The Malabi Daily</div>
     <hr class="mast-rule" />
     <div class="mast-sub">
       <span>“<b>Make us money. Make it fun.</b>” 🌟</span>
@@ -759,7 +779,7 @@ function renderHtml(dataJson) {
   </section>
 
   <footer>
-    The Malabi Brain · auto-typeset by <code>scripts/build-wiki.mjs</code> from <code>brain/**</code> ·
+    The Malabi Daily · auto-typeset by <code>scripts/build-wiki.mjs</code> from <code>brain/**</code> ·
     new editions print on every commit.
   </footer>
 </div>
@@ -964,7 +984,9 @@ document.querySelectorAll('#adr-list .adr').forEach(el=>
 const swatch = [getCss('--s-shared'), getCss('--s-member'), getCss('--s-project'), getCss('--s-decision')];
 document.getElementById('member-list').innerHTML = DATA.members.map((m,i)=>
   '<div class="member">'+
-  '<div class="avatar" style="background:'+swatch[i%swatch.length]+'">'+m.name.charAt(0)+'</div>'+
+  (m.avatar
+    ? '<div class="avatar"><img src="'+m.avatar+'" alt="'+escapeHtml(m.name)+'" loading="lazy"></div>'
+    : '<div class="avatar" style="background:'+swatch[i%swatch.length]+'">'+m.name.charAt(0)+'</div>')+
   '<h3>'+m.name+'</h3><div class="role">'+escapeHtml(m.role||'')+'</div>'+
   '<div class="bio">'+escapeHtml(m.description||'')+'</div>'+
   (m.memoryName?'<div class="open" data-open="'+m.memoryName+'">read dossier →</div>':'')+
