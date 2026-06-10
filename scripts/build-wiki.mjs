@@ -433,15 +433,21 @@ function renderHtml(dataJson) {
   .tldr :is(p):first-child { margin-top: 0; }
   .tldr strong, .tldr b { color: var(--ink); }
 
-  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(228px, 1fr)); gap: 16px; }
-  .scard { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--sc, var(--line2)); border-radius: 12px; padding: 15px 18px 16px; }
-  .scard h4 { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin: 0 0 9px; display: flex; align-items: center; gap: 8px; color: var(--ink); }
-  .scard .sc-emoji { font-size: 16px; }
-  .scard-body { font-size: 14px; color: var(--muted); max-height: 260px; overflow: auto; }
-  .scard-body ul { margin: 0; padding-left: 18px; }
-  .scard-body li { margin: 6px 0; }
-  .scard-body p { margin: 5px 0; }
-  .scard-body strong { color: var(--ink2); }
+  /* kanban "where things stand" board */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: start; }
+  @media (max-width: 860px) { .kanban { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+    .kcol { flex: 0 0 76%; scroll-snap-align: start; } }
+  .kcol { background: var(--tint); border: 1px solid var(--line); border-radius: 12px; padding: 10px 10px 12px; }
+  .kcol-head { display: flex; align-items: center; gap: 8px; font-family: var(--sans); font-size: 12px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink); padding: 4px 6px 9px; margin-bottom: 10px; border-bottom: 2px solid var(--kc); }
+  .kcol-head .kc-emoji { font-size: 16px; }
+  .kcol-head .count { margin-left: auto; background: var(--kc); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 9px; }
+  .kcard { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--kc); border-radius: 9px; padding: 10px 12px; margin-bottom: 9px;
+    font-size: 13.5px; line-height: 1.5; color: var(--muted); box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+  .kcard:last-child { margin-bottom: 0; }
+  .kcard strong { color: var(--ink); font-weight: 700; }
+  .kcard code { background: var(--paper); font-size: 12px; padding: 0 5px; }
+  .kcard.empty { color: var(--faint); text-align: center; border-left-color: var(--line2); }
 
   /* hero = latest dispatch */
   .hero { display: flex; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px 22px; position: relative; overflow: hidden; box-shadow: 0 2px 14px rgba(28,25,23,.05); }
@@ -590,7 +596,7 @@ function renderHtml(dataJson) {
 
     <div class="band"><span class="band-emoji">🧭</span><h2 class="band-title">Where things stand</h2><span class="band-rule"></span></div>
     <p class="tldr" id="tldr"></p>
-    <div class="board" id="board"></div>
+    <div class="kanban" id="board"></div>
 
     <div class="band"><span class="band-emoji">📰</span><h2 class="band-title">What's been happening</h2><span class="band-rule"></span></div>
     <div id="hero"></div>
@@ -709,20 +715,44 @@ const tldrEl = document.getElementById('tldr');
 tldrEl.innerHTML = tldr ? renderMd(tldr.body) : '';
 wireWikilinks(tldrEl);
 
+// Split a status section's markdown into its top-level bullets (one kanban card each).
+function bulletItems(md){
+  const items=[]; let cur=null;
+  for(const raw of (md||'').split('\\n')){
+    const m = raw.match(/^[-*]\\s+(.+)$/); // top-level bullet only (no indent)
+    if(m){ if(cur!==null) items.push(cur); cur = m[1]; }
+    else if(cur!==null && raw.trim()){ cur += ' ' + raw.trim(); } // fold wrapped/nested lines in
+  }
+  if(cur!==null) items.push(cur);
+  return items.map(t=> t.trim()).filter(Boolean);
+}
+// Inline markdown (bold/links/code) + wikilinks, no surrounding <p>.
+function renderInline(text){
+  const withLinks = (text||'').replace(/\\[\\[([a-z0-9-]+)\\]\\]/g, (m,slug)=>
+    byName[slug] ? '<a class="wikilink" data-open="'+slug+'">'+slug+'</a>' : '<code>'+slug+'</code>');
+  return marked.parseInline(withLinks);
+}
+
+// Kanban columns, left→right as work flows.
 const boardDefs = [
-  { re:/done/i,         emoji:'✅', color:'#4d7c2f', label:'Done' },
-  { re:/progress|open/i,emoji:'⏳', color:'#b07219', label:'In progress' },
-  { re:/parked/i,       emoji:'🅿️', color:'#8a8076', label:'Parked' },
   { re:/next/i,         emoji:'👉', color:'#9d4664', label:'Next up' },
+  { re:/progress|open/i,emoji:'⏳', color:'#b07219', label:'In progress' },
+  { re:/done/i,         emoji:'✅', color:'#4d7c2f', label:'Done' },
+  { re:/parked/i,       emoji:'🅿️', color:'#8a8076', label:'Parked' },
 ];
 const boardEl = document.getElementById('board');
 boardEl.innerHTML = boardDefs.map(d=>{
   const sec = findSec(d.re); if(!sec) return '';
-  return '<div class="scard" style="--sc:'+d.color+'">'+
-    '<h4><span class="sc-emoji">'+d.emoji+'</span>'+d.label+'</h4>'+
-    '<div class="scard-body">'+renderMd(sec.body)+'</div></div>';
+  const items = bulletItems(sec.body);
+  const cards = items.length
+    ? items.map(t=> '<div class="kcard">'+renderInline(t)+'</div>').join('')
+    : '<div class="kcard empty">—</div>';
+  return '<div class="kcol" style="--kc:'+d.color+'">'+
+    '<div class="kcol-head"><span class="kc-emoji">'+d.emoji+'</span>'+d.label+
+    '<span class="count">'+items.length+'</span></div>'+
+    '<div class="kcol-body">'+cards+'</div></div>';
 }).join('');
-boardEl.querySelectorAll('.scard-body').forEach(wireWikilinks);
+wireWikilinks(boardEl);
 
 // ---- what happened: hero + narrated timeline ----
 function relDay(d){
