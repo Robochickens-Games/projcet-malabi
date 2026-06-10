@@ -34,5 +34,35 @@
     "title": "Monkey Island",
     "page": "https://en.wikipedia.org/wiki/Monkey_Island",
     "query": "Monkey Island"
+  },
+  "cf5cc1af04c89252": {
+    "file": "cf5cc1af04c89252.jpg",
+    "title": "Rocket",
+    "page": "https://en.wikipedia.org/wiki/Rocket",
+    "query": "Rocket launch"
+  },
+  "677f3bd372b97b71": {
+    "file": "677f3bd372b97b71.jpg",
+    "title": "Graphic design",
+    "page": "https://en.wikipedia.org/wiki/Graphic_design",
+    "query": "Graphic design"
+  },
+  "b336fc558722224b": {
+    "file": "b336fc558722224b.png",
+    "title": "WhatsApp",
+    "page": "https://en.wikipedia.org/wiki/WhatsApp",
+    "query": "WhatsApp"
+  },
+  "692107c06c0977c1": {
+    "file": "692107c06c0977c1.jpg",
+    "title": "Toolbox",
+    "page": "https://en.wikipedia.org/wiki/Toolbox",
+    "query": "Toolbox"
+  },
+  "a9749253c369d0c8": {
+    "file": "a9749253c369d0c8.jpg",
+    "title": "Coin",
+    "page": "https://en.wikipedia.org/wiki/Coin",
+    "query": "Coin"
   }
 }

@@ -369,18 +369,18 @@ function imageQueriesFor(c) {
   const q = [];
   const add = (...xs) => xs.forEach((x) => { if (!q.includes(x)) q.push(x); });
   const has = (...ks) => ks.some((k) => hay.includes(k));
-  if (has("dinosaur")) add("Dinosaur");
+  if (has("dinosaur", "science game", "product direction")) add("Dinosaur");
+  if (has("science")) add("Science");
   if (has("malabi", "pudding", "dessert")) add("Muhallebi");
   if (has("telegram")) add("Telegram (software)");
   if (has("monkey island", "loom", "leisure suit larry", "adventure", "inspiration")) add("Monkey Island", "Point-and-click adventure game");
-  if (has("aso", "keyword research", "app store", "discoverab")) add("App Store (Apple)", "Search engine optimization");
-  if (has("science")) add("Science", "Laboratory");
+  if (has("design", "ux", "visual")) add("Graphic design");
   if (has("dudu", "whatsapp")) add("WhatsApp");
   if (has("gazette", "wiki", "newspaper", "digest", "daily", "publish")) add("Newspaper");
-  if (has("design", "ux", "visual")) add("Graphic design");
+  if (has("brain", "architecture", "sync", "memory", "knowledge")) add("Neural network");
+  if (has("aso", "keyword research", "app store", "discoverab")) add("Mobile app");
   if (has("north star", "vision", "goal")) add("Compass");
   if (has("budget", "money", "cost", "free")) add("Coin");
-  if (has("brain", "architecture", "sync", "memory", "knowledge")) add("Neural network");
   const deskQ = {
     Research: ["Laboratory", "Microscope"], Decisions: ["Chess", "Crossroads"],
     Features: ["Rocket launch", "Printing press"], Brain: ["Neural network"],
