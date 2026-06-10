@@ -35,6 +35,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [project-status](shared/project-status.md) — where we are: done / in progress / parked / next
 - [dudu-direction-note](shared/dudu-direction-note.md) — Dudu isn't going as Dor hoped; accepted, parked
 - [design-inspirations](shared/design-inspirations.md) — games the team likes: Loom, Monkey Island, Larry
+- [aso-research-findings](shared/aso-research-findings.md) — ASO keyword research results: dinosaurs are the strongest launch theme; full report in brain/research/
 
 ## Members
 ### Dor

@@ -45,12 +45,13 @@ product thesis (below) for team review.
   See [[design-inspirations]].
 
 ## In progress / open ⏳
-- **ADR 0003 (proposed — Ohad review pending):** first product direction locked as
-  proposed by Dor + Gidi: kids' science games niche, ASO keyword research to pick
-  the specific topic, Apple feature-worthy design bar. See [[0003-first-product-direction-science-games-for-kids]].
-- **Gidi — keyword research (2026-06-10):** running OpenAI deep-research on App Store
-  keywords in the kids science games space to find a high-demand, low-competition topic.
-  Results will drive the specific game/topic choice and move ADR 0003 to accepted.
+- **ADR 0003 (proposed — Ohad review pending):** first product direction = kids'
+  science games, **launch theme = dinosaurs** (strongest ASO demand), franchise brand
+  = Science Quest, design bar = Apple feature-worthy. See [[0003-first-product-direction-science-games-for-kids]].
+- **ASO keyword research: done (2026-06-10).** Gidi ran ChatGPT deep research.
+  Verdict: dinosaurs win on demand + science overlap; "Science Mystery with dinosaurs
+  in the front window" is the launch structure. Full report in
+  `brain/research/aso-keyword-research-2026-06-10.md`. See [[aso-research-findings]].
 
 ## Parked 🅿️
 - _(nothing parked.)_ **Dudu was dropped** — code removed; only the decision trail
@@ -60,8 +61,8 @@ product thesis (below) for team review.
 - **No spend on infra** right now — free tools/hosting only. [[budget-constraint]]
 
 ## Next steps
-- **Gidi:** finish OpenAI deep-research on keywords → pick a topic → update ADR 0003.
-- **Ohad:** review ADR 0003 → agree or push back → move status to accepted.
+- **Ohad:** review ADR 0003 (dinosaur-led science quest franchise) → agree or push back
+  → move status to accepted.
+- **Team:** once ADR 0003 accepted, start first initiative — create `brain/memory/projects/dino-time-lab/`.
 - **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub
   usernames in `.github/CODEOWNERS`.
-- Once ADR 0003 is accepted: start first initiative, create `brain/memory/projects/<slug>/`.

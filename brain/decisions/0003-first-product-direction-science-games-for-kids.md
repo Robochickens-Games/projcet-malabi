@@ -21,11 +21,16 @@ agrees; Ohad (tech feasibility) review is pending.
 
 ## Decision
 1. **Niche:** build in the **kids' science games** space on the App Store.
-2. **Topic selection:** before committing to a specific game, run **App Store keyword
-   (ASO) research** — find a term with real search demand and beatable competition,
-   let data pick the winner. Free-tier tools only ([[budget-constraint]]).
-3. **Design bar:** aim for **Apple feature-worthy** (App of the Year / Month). Design
+2. **Launch theme (data-driven):** **dinosaurs** — the strongest child-interest +
+   science overlap found in ASO research (search proxy 42–55; 5M+ downloads on
+   comparable titles). First app = a science mystery with dinosaurs in the front window.
+   Franchise expands: space (chapter 2) → Leonardo's workshop (prestige chapter).
+3. **Franchise structure:** series brand = *Science Quest*; launch app title =
+   *Dino Time Lab* or *Dinosaur Mystery Quest* (demand hook carries discoverability).
+4. **Design bar:** aim for **Apple feature-worthy** (App of the Year / Month). Design
    is a first-class pillar, not a layer added at the end.
+5. **Compliance:** build for Apple Kids Category + Google Families Policy + Teacher
+   Approved eligibility from day one — required for store trust with parents.
 
 ## Consequences
 - **Makes it easier:** clear niche to research and build toward; data-driven topic
@@ -40,7 +45,11 @@ agrees; Ohad (tech feasibility) review is pending.
 - **Ship-fast, polish later** — rejected; an Apple feature requires polish from the start,
   and we're not time-constrained in the same way we're money-constrained.
 
-## In progress
-- **Gidi — 2026-06-10:** running OpenAI deep-research on App Store keywords (kids
-  science games space) to identify high-demand, low-competition topics. Results will
-  inform the specific game/topic choice.
+## Research
+- **Gidi — 2026-06-10:** ASO keyword research completed via ChatGPT deep research.
+  Full report: `brain/research/aso-keyword-research-2026-06-10.md`.
+  Summary: [[aso-research-findings]].
+  Result: dinosaurs confirmed as strongest launch theme; decision updated above.
+
+## Pending
+- **Ohad:** review and sign off → move status to accepted.
