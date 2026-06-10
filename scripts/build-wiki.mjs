@@ -104,6 +104,7 @@ for (const file of walk(join(BRAIN, "decisions"))) {
     slug,
     num: numMatch ? parseInt(numMatch[1], 10) : 999,
     title: titleMatch ? titleMatch[1].trim() : slug,
+    description: data.description || "",
     status: (data.status || "unknown").toLowerCase(),
     created: data.created || "",
     tags: data.tags || [],
@@ -148,6 +149,22 @@ function readDoc(relPath) {
 const northStarBody = readDoc("brain/memory/shared/north-star.md");
 const statusBody = readDoc("brain/memory/shared/project-status.md");
 
+// Split the status doc into ## sections so the front page can show a
+// "where things stand" board (TL;DR, Done, In progress, Parked, Next…).
+function splitSections(md) {
+  const out = [];
+  const parts = md.split(/^##\s+/m);
+  for (let i = 1; i < parts.length; i++) {
+    const seg = parts[i];
+    const nl = seg.indexOf("\n");
+    const heading = (nl === -1 ? seg : seg.slice(0, nl)).trim();
+    const body = (nl === -1 ? "" : seg.slice(nl + 1)).trim();
+    out.push({ heading, body });
+  }
+  return out;
+}
+const statusSections = splitSections(statusBody);
+
 // ---- git history (the "news feed": what changed, when, by whom) ------------
 
 const repoUrl = "https://github.com/Robochickens-Games/projcet-malabi";
@@ -170,6 +187,57 @@ function headline(subject) {
   return (i > -1 && i < 16 ? subject.slice(i + 1) : subject).trim();
 }
 
+// Map each changed file to a human one-liner, so dispatches can describe themselves.
+const fileDesc = {};
+for (const m of memories) if (m.description) fileDesc[m.path] = m.description;
+for (const d of decisions) if (d.description) fileDesc[d.path] = d.description;
+
+// Strip a trailing "(... 2026 ...)" parenthetical and dangling dashes from a headline.
+function cleanHead(h) {
+  return h
+    .replace(/\s*\([^)]*\d{4}[^)]*\)\s*$/, "")
+    .replace(/\s*[—–-]\s*$/, "")
+    .trim();
+}
+
+// Turn a commit into a natural-language sentence: who did what, and the gist.
+const DESK_VERB = {
+  Decisions: "recorded a decision",
+  Research: "ran a round of research",
+  Status: "refreshed where the project stands",
+  Features: "shipped a change",
+  Brain: "updated the brain",
+  Fixes: "fixed an issue",
+  Docs: "updated the docs",
+  Updates: "pushed an update",
+};
+// Git author → the team's first-name slug.
+function displayAuthor(name) {
+  const n = (name || "").toLowerCase();
+  if (n.includes("dor")) return "Dor";
+  if (n.includes("gid")) return "Gidi";
+  if (n.includes("ohad")) return "Ohad";
+  return (name || "Someone").split(/\s+/)[0];
+}
+
+function narrate(c) {
+  const lead = `${c.author} ${DESK_VERB[c.desk] || "pushed an update"}`;
+  if (c.desk === "Status") return lead + ".";
+  // Prefer the description of a substantive memory/decision the commit touched.
+  let candidates = c.files.filter((f) => fileDesc[f] && !f.endsWith("project-status.md"));
+  // For non-decision dispatches, favour a memory file over the decision file.
+  if (c.desk !== "Decisions") {
+    const mem = candidates.filter((f) => f.includes("/memory/"));
+    if (mem.length) candidates = mem;
+  }
+  let detail = candidates.length ? fileDesc[candidates[0]] : "";
+  if (!detail) detail = cleanHead(c.headline);
+  detail = detail.trim();
+  detail = detail.charAt(0).toUpperCase() + detail.slice(1);
+  if (!/[.!?]$/.test(detail)) detail += ".";
+  return `${lead}. ${detail}`;
+}
+
 const history = [];
 try {
   const SEP = "\x1f";
@@ -187,16 +255,18 @@ try {
       .map((l) => l.trim())
       .filter((l) => l && l.startsWith("brain/"));
     if (!subject) continue;
-    history.push({
+    const item = {
       hash: hash.slice(0, 7),
-      author,
+      author: displayAuthor(author),
       date,
       subject,
       headline: headline(subject),
       desk: deskFor(subject),
       files,
       url: `${repoUrl}/commit/${hash}`,
-    });
+    };
+    item.summary = narrate(item);
+    history.push(item);
   }
 } catch (e) {
   console.warn("git history unavailable:", e.message);
@@ -241,6 +311,7 @@ const payload = {
   buildDate,
   northStarBody,
   statusBody,
+  statusSections,
   memories,
   decisions,
   members,
@@ -342,31 +413,66 @@ function renderHtml(dataJson) {
     border-bottom: 2px solid var(--rule); padding-bottom: 6px; margin: 0 0 18px; }
 
   /* ---- front page ---- */
-  .lede { display: grid; grid-template-columns: 1fr; gap: 0; }
-  .standfirst { text-align: center; font-style: italic; color: var(--muted); font-size: 18px; max-width: 720px; margin: 0 auto 26px; }
-  .standfirst b { color: var(--ink); font-style: normal; }
+  .standfirst { text-align: center; font-family: var(--sans); font-size: 13px; letter-spacing: .04em; color: var(--muted); margin: 0 auto 18px; }
+  .standfirst b { color: var(--ink); }
 
-  .index-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+  .index-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 6px; }
   .index-bar .box { text-align: center; padding: 12px 6px; border-right: 1px solid var(--line); }
   .index-bar .box:last-child { border-right: 0; }
   .index-bar .n { font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1; }
   .index-bar .l { font-family: var(--sans); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-top: 5px; }
+  @media (max-width: 720px) { .index-bar { grid-template-columns: repeat(2, 1fr); } .index-bar .box:nth-child(2){border-right:0;} }
 
-  .feed-day { margin-bottom: 30px; }
-  .feed-date { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
-    border-bottom: 1px solid var(--line2); padding-bottom: 5px; margin-bottom: 16px; }
-  .stories { columns: 2; column-gap: 34px; }
-  @media (max-width: 720px) { .stories { columns: 1; } .index-bar { grid-template-columns: repeat(2, 1fr); } .index-bar .box:nth-child(2){border-right:0;} }
-  .story { break-inside: avoid; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
-  .story:last-child { border-bottom: 0; }
-  .story .desk { color: var(--s-decision); }
-  .story h3 { font-family: var(--display); font-weight: 700; font-size: 21px; line-height: 1.18; margin: 4px 0 6px; letter-spacing: -.2px; }
-  .story h3 a:hover { text-decoration: underline; }
-  .story .byline { font-family: var(--sans); font-size: 12.5px; color: var(--muted); }
-  .story .files { font-family: var(--sans); font-size: 11.5px; color: var(--faint); margin-top: 7px; display: flex; flex-wrap: wrap; gap: 5px; }
-  .story .file { background: var(--tint); border: 1px solid var(--line); border-radius: 3px; padding: 1px 7px; cursor: pointer; }
-  .story .file:hover { border-color: var(--line2); color: var(--ink); }
-  .first .h-lead { font-size: 30px; }
+  /* section bands give clear hierarchy between "stands" and "happened" */
+  .band { display: flex; align-items: center; gap: 12px; margin: 38px 0 16px; }
+  .band-emoji { font-size: 22px; }
+  .band-title { font-family: var(--display); font-weight: 700; font-size: 25px; margin: 0; letter-spacing: -.3px; }
+  .band-rule { flex: 1; height: 0; border-top: 2px solid var(--rule); }
+
+  .tldr { font-size: 18px; line-height: 1.55; color: var(--ink2); max-width: 780px; margin: 0 0 22px; }
+  .tldr :is(p):first-child { margin-top: 0; }
+  .tldr strong, .tldr b { color: var(--ink); }
+
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(228px, 1fr)); gap: 16px; }
+  .scard { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--sc, var(--line2)); border-radius: 12px; padding: 15px 18px 16px; }
+  .scard h4 { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin: 0 0 9px; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+  .scard .sc-emoji { font-size: 16px; }
+  .scard-body { font-size: 14px; color: var(--muted); max-height: 260px; overflow: auto; }
+  .scard-body ul { margin: 0; padding-left: 18px; }
+  .scard-body li { margin: 6px 0; }
+  .scard-body p { margin: 5px 0; }
+  .scard-body strong { color: var(--ink2); }
+
+  /* hero = latest dispatch */
+  .hero { display: flex; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px 22px; position: relative; overflow: hidden; box-shadow: 0 2px 14px rgba(28,25,23,.05); }
+  .hero::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--hero); }
+  .hero-emoji { font-size: 30px; line-height: 1.2; }
+  .hero-main { flex: 1; min-width: 0; }
+  .hero h3 { font-family: var(--display); font-weight: 700; font-size: 27px; line-height: 1.16; margin: 9px 0 6px; letter-spacing: -.3px; }
+  .hero h3 a:hover { text-decoration: underline; }
+
+  .deskpill { display: inline-flex; align-items: center; gap: 5px; font-family: var(--sans); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; color: #fff; }
+  .summary { font-family: var(--serif); font-size: 16px; line-height: 1.5; color: var(--ink2); margin: 7px 0 9px; }
+  .byline { font-family: var(--sans); font-size: 12px; color: var(--faint); }
+  .byline code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+  .files { font-family: var(--sans); font-size: 11.5px; margin-top: 9px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .file { background: var(--tint); border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; color: var(--muted); cursor: pointer; }
+  .file:hover { border-color: var(--line2); color: var(--ink); }
+  .file.nolink { cursor: default; opacity: .65; }
+
+  /* timeline = the rest, grouped by day */
+  .tl-day { margin-top: 22px; }
+  .tl-daterow { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  .tl-rel { font-family: var(--sans); font-weight: 700; font-size: 13px; letter-spacing: .03em; color: var(--ink); }
+  .tl-abs { font-family: var(--sans); font-size: 12px; color: var(--faint); }
+  .tl-items { position: relative; padding-left: 26px; margin-left: 6px; border-left: 2px solid var(--line2); }
+  .tl-item { position: relative; padding-bottom: 22px; }
+  .tl-item:last-child { padding-bottom: 4px; }
+  .tl-item::before { content: ""; position: absolute; left: -33px; top: 4px; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--ti); box-shadow: 0 0 0 4px var(--paper); }
+  .tl-item h3 { font-family: var(--display); font-weight: 700; font-size: 19px; line-height: 1.2; margin: 7px 0 4px; }
+  .tl-item h3 a:hover { text-decoration: underline; }
 
   /* ---- markdown ---- */
   .markdown { font-size: 17px; }
@@ -479,10 +585,16 @@ function renderHtml(dataJson) {
   </nav>
 
   <section class="view active" id="front">
-    <p class="standfirst" id="standfirst"></p>
+    <div class="standfirst" id="standfirst"></div>
     <div class="index-bar" id="index-bar"></div>
-    <div class="kicker" style="margin-bottom:10px">📰 Latest dispatches — what changed across the brain</div>
-    <div id="feed"></div>
+
+    <div class="band"><span class="band-emoji">🧭</span><h2 class="band-title">Where things stand</h2><span class="band-rule"></span></div>
+    <p class="tldr" id="tldr"></p>
+    <div class="board" id="board"></div>
+
+    <div class="band"><span class="band-emoji">📰</span><h2 class="band-title">What's been happening</h2><span class="band-rule"></span></div>
+    <div id="hero"></div>
+    <div class="timeline" id="feed"></div>
   </section>
 
   <section class="view" id="status">
@@ -566,42 +678,105 @@ document.getElementById('mt-date').textContent = longDate(DATA.buildDate);
 document.getElementById('mt-left').textContent = 'Malabi · Shared Brain';
 document.getElementById('repo-link').href = DATA.repoUrl;
 
-const lastChange = DATA.history[0];
-document.getElementById('standfirst').innerHTML =
-  'The complete, ever-current record of what the team knows — memories, decisions, and the people behind them. ' +
-  (lastChange ? 'Last dispatch <b>'+longDate(lastChange.date)+'</b> by <b>'+escapeHtml(lastChange.author)+'</b>.' : '');
+// desk → emoji + colour (warm, readable on the stone paper)
+const DESK = {
+  Decisions: { emoji: '⚖️', color: '#9d4664' },
+  Research:  { emoji: '🔬', color: '#3f5a8a' },
+  Status:    { emoji: '📊', color: '#b07219' },
+  Features:  { emoji: '✨', color: '#4d7c2f' },
+  Brain:     { emoji: '🧠', color: '#7a5a44' },
+  Fixes:     { emoji: '🔧', color: '#b4531f' },
+  Docs:      { emoji: '📄', color: '#6b6660' },
+  Updates:   { emoji: '📌', color: '#8a8076' },
+};
+const desk = (n)=> DESK[n] || DESK.Updates;
 
+// ---- index bar ----
 const idx = [
   ['changes','Dispatches'], ['memories','Memories'], ['decisions','Decisions'], ['members','Team'], ['links','Links']
 ];
 document.getElementById('index-bar').innerHTML = idx.map(([k,l])=>
   '<div class="box"><div class="n">'+DATA.stats[k]+'</div><div class="l">'+l+'</div></div>').join('');
 
-// ---- front-page feed, grouped by date ----
-(function(){
-  const groups = [];
-  let cur = null;
-  for (const c of DATA.history){
-    if(!cur || cur.date !== c.date){ cur = { date: c.date, items: [] }; groups.push(cur); }
-    cur.items.push(c);
-  }
-  document.getElementById('feed').innerHTML = groups.map(g=>
-    '<div class="feed-day"><div class="feed-date">'+longDate(g.date)+'</div><div class="stories">'+
-    g.items.map(c=> story(c)).join('')+'</div></div>').join('');
-  document.querySelectorAll('#feed .file').forEach(el=>
-    el.addEventListener('click', ()=>{ const id = fileToEntry[el.getAttribute('data-file')]; if(id) openEntry(id); }));
-})();
-function story(c){
-  const files = c.files.slice(0,5).map(f=>{
-    const id = fileToEntry[f]; const name = f.split('/').pop().replace(/\\.md$/,'');
+const lastChange = DATA.history[0];
+document.getElementById('standfirst').innerHTML =
+  (lastChange ? 'Latest dispatch <b>'+longDate(lastChange.date)+'</b> · by <b>'+escapeHtml(lastChange.author)+'</b> · '+DATA.stats.changes+' on record' : "The team's shared brain");
+
+// ---- where things stand: TL;DR + status board ----
+const findSec = (re)=> DATA.statusSections.find(s=> re.test(s.heading));
+const tldr = findSec(/tl;dr/i);
+const tldrEl = document.getElementById('tldr');
+tldrEl.innerHTML = tldr ? renderMd(tldr.body) : '';
+wireWikilinks(tldrEl);
+
+const boardDefs = [
+  { re:/done/i,         emoji:'✅', color:'#4d7c2f', label:'Done' },
+  { re:/progress|open/i,emoji:'⏳', color:'#b07219', label:'In progress' },
+  { re:/parked/i,       emoji:'🅿️', color:'#8a8076', label:'Parked' },
+  { re:/next/i,         emoji:'👉', color:'#9d4664', label:'Next up' },
+];
+const boardEl = document.getElementById('board');
+boardEl.innerHTML = boardDefs.map(d=>{
+  const sec = findSec(d.re); if(!sec) return '';
+  return '<div class="scard" style="--sc:'+d.color+'">'+
+    '<h4><span class="sc-emoji">'+d.emoji+'</span>'+d.label+'</h4>'+
+    '<div class="scard-body">'+renderMd(sec.body)+'</div></div>';
+}).join('');
+boardEl.querySelectorAll('.scard-body').forEach(wireWikilinks);
+
+// ---- what happened: hero + narrated timeline ----
+function relDay(d){
+  if(!d) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const [y,m,day] = d.split('-').map(Number);
+  const diff = Math.round((today - new Date(y,m-1,day)) / 86400000);
+  if(diff<=0) return 'Today'; if(diff===1) return 'Yesterday';
+  if(diff<7) return diff+' days ago'; if(diff<14) return 'Last week';
+  if(diff<31) return Math.round(diff/7)+' weeks ago'; return '';
+}
+function pill(c){ const k=desk(c.desk); return '<span class="deskpill" style="background:'+k.color+'">'+k.emoji+' '+c.desk+'</span>'; }
+function filesHtml(c){
+  if(!c.files.length) return '';
+  const files = c.files.slice(0,4).map(f=>{
+    const id=fileToEntry[f]; const name=f.split('/').pop().replace(/\\.md$/,'');
     return '<span class="file'+(id?'':' nolink')+'" data-file="'+escapeHtml(f)+'">'+escapeHtml(name)+'</span>';
   }).join('');
-  const more = c.files.length>5 ? '<span class="file nolink">+'+(c.files.length-5)+' more</span>' : '';
-  return '<div class="story"><div class="kicker desk">'+c.desk+'</div>'+
-    '<h3><a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a></h3>'+
-    '<div class="byline">By '+escapeHtml(c.author)+' · <code>'+c.hash+'</code></div>'+
-    (files? '<div class="files">'+files+more+'</div>' : '')+'</div>';
+  const more = c.files.length>4 ? '<span class="file nolink">+'+(c.files.length-4)+'</span>' : '';
+  return '<div class="files">'+files+more+'</div>';
 }
+
+if(lastChange){
+  const k = desk(lastChange.desk);
+  document.getElementById('hero').innerHTML =
+    '<div class="hero" style="--hero:'+k.color+'"><div class="hero-emoji">'+k.emoji+'</div><div class="hero-main">'+
+    pill(lastChange)+
+    '<h3><a href="'+lastChange.url+'" target="_blank" rel="noopener">'+escapeHtml(lastChange.headline)+'</a></h3>'+
+    '<p class="summary">'+escapeHtml(lastChange.summary)+'</p>'+
+    '<div class="byline">'+relDay(lastChange.date)+' · '+longDate(lastChange.date)+' · <code>'+lastChange.hash+'</code></div>'+
+    filesHtml(lastChange)+'</div></div>';
+}
+
+const groups=[]; let cur=null;
+for(const c of DATA.history.slice(1)){
+  if(!cur || cur.date!==c.date){ cur={date:c.date, items:[]}; groups.push(cur); }
+  cur.items.push(c);
+}
+document.getElementById('feed').innerHTML = groups.map(g=>{
+  const rel = relDay(g.date);
+  return '<div class="tl-day"><div class="tl-daterow">'+
+    (rel?'<span class="tl-rel">'+rel+'</span>':'')+'<span class="tl-abs">'+longDate(g.date)+'</span></div>'+
+    '<div class="tl-items">'+ g.items.map(c=>{
+      const k=desk(c.desk);
+      return '<div class="tl-item" style="--ti:'+k.color+'">'+pill(c)+
+        '<h3><a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a></h3>'+
+        '<p class="summary">'+escapeHtml(c.summary)+'</p>'+
+        '<div class="byline">by '+escapeHtml(c.author)+' · <code>'+c.hash+'</code></div>'+
+        filesHtml(c)+'</div>';
+    }).join('') +'</div></div>';
+}).join('');
+
+document.querySelectorAll('#front .file').forEach(el=>
+  el.addEventListener('click', ()=>{ const id=fileToEntry[el.getAttribute('data-file')]; if(id) openEntry(id); }));
 
 // ---- status ----
 const statusEl = document.getElementById('status-md');
