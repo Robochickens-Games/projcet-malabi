@@ -195,12 +195,14 @@ for (const d of decisions) if (d.description) fileDesc[d.path] = d.description;
 // Map each changed file to a linkable "asset" (a memory or decision in the wiki).
 const pathMeta = {};
 for (const m of memories)
-  pathMeta[m.path] = { name: m.name, kind: "memory", label: m.name, scope: m.scope };
+  pathMeta[m.path] = { name: m.name, kind: "memory", label: m.name, scope: m.scope, desc: m.description, body: m.body };
 for (const d of decisions)
   pathMeta[d.path] = {
     name: d.slug,
     kind: "decision",
     label: `ADR ${String(d.num).padStart(2, "0")}`,
+    desc: d.description,
+    body: d.body,
   };
 
 // The main assets a commit touched — the memories/decisions worth linking to.
@@ -226,6 +228,60 @@ function boldPunchline(s) {
     if (tail) return `${head}**${tail}**.`;
   }
   return s;
+}
+
+// The substantive memory/decision a commit is "about" (mirrors narrate's pick).
+function primaryAsset(c) {
+  let cands = c.files.filter((f) => pathMeta[f] && !f.endsWith("project-status.md"));
+  if (c.desk !== "Decisions") {
+    const mem = cands.filter((f) => f.includes("/memory/"));
+    if (mem.length) cands = mem;
+  }
+  return cands.length ? pathMeta[cands[0]] : null;
+}
+
+// The most substantive prose paragraph near the top of a markdown body:
+// skips headings/quotes and the short "Status: proposed" style lines, so an
+// ADR yields its Context, not its one-word status.
+function bestParagraph(body) {
+  const paras = [];
+  for (const block of (body || "").split(/\n\s*\n/)) {
+    const text = block
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !/^#{1,6}\s/.test(l) && !/^>/.test(l))
+      .map((l) => l.replace(/^[-*]\s+/, ""))
+      .join(" ")
+      .trim();
+    if (text) paras.push(text);
+  }
+  return paras.find((p) => p.length >= 80) || paras[0] || "";
+}
+
+function clampSentences(s, maxSent, maxChars) {
+  s = (s || "").replace(/\s+/g, " ").trim();
+  // Cut after the Nth sentence terminator that's followed by a space/end —
+  // so "file-2026-06-10.md" and "v1.2" stay intact and no text is dropped.
+  let count = 0, end = s.length;
+  for (let i = 0; i < s.length; i++) {
+    if (/[.!?]/.test(s[i]) && (i + 1 >= s.length || s[i + 1] === " ")) {
+      if (++count >= maxSent) { end = i + 1; break; }
+    }
+  }
+  let out = s.slice(0, end).trim();
+  if (out.length > maxChars) out = out.slice(0, maxChars).replace(/\s+\S*$/, "") + "…";
+  return out;
+}
+
+// A short "article intro" excerpt from the asset the dispatch is about.
+function articleIntro(c) {
+  const a = primaryAsset(c);
+  if (!a || !a.body) return "";
+  const para = clampSentences(bestParagraph(a.body), 2, 300);
+  // Skip if it just restates the one-line description we already show.
+  if (!para || (a.desc && para.slice(0, 28).toLowerCase() === a.desc.slice(0, 28).toLowerCase()))
+    return "";
+  return para;
 }
 
 // Strip a trailing "(... 2026 ...)" parenthetical and dangling dashes from a headline.
@@ -298,13 +354,16 @@ try {
       author: displayAuthor(author),
       date,
       subject,
-      headline: headline(subject),
+      headline: cleanHead(headline(subject)),
       desk: deskFor(subject),
       files,
       url: `${repoUrl}/commit/${hash}`,
     };
     item.summary = narrate(item);
     item.assets = assetsFor(files);
+    item.intro = articleIntro(item);
+    const prim = primaryAsset(item);
+    item.introAsset = prim ? prim.name : null;
     history.push(item);
   }
 } catch (e) {
@@ -507,6 +566,11 @@ function renderHtml(dataJson) {
   .summary strong { color: var(--ink); font-weight: 700; }
   .summary a.wikilink { color: var(--s-decision); border-bottom: 1px dotted var(--s-decision); cursor: pointer; }
   .hero .summary { font-size: 16px; }
+
+  .intro { font-size: 14px; line-height: 1.62; color: var(--muted); margin: 0 0 9px; }
+  .intro .more { font-weight: 700; color: var(--s-decision); white-space: nowrap; cursor: pointer; }
+  .intro .more:hover { text-decoration: underline; }
+  .hero .intro { font-size: 14.5px; }
 
   .assets, .related { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .assets-label { font-family: var(--sans); font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 1px; }
@@ -847,12 +911,19 @@ function assetsHtml(c){
   }
   return html;
 }
+function introHtml(c){
+  if(!c.intro) return '';
+  const link = (c.introAsset && byName[c.introAsset])
+    ? ' <a class="more" data-open="'+c.introAsset+'">Read the note →</a>' : '';
+  return '<p class="intro">'+renderInline(c.intro)+link+'</p>';
+}
 function flashCard(c, cls, style){
   const k=desk(c.desk);
   return '<div class="'+cls+'" style="'+style+'">'+ (cls==='hero' ? '<div class="hero-emoji">'+k.emoji+'</div>' : '')+
     '<div class="'+(cls==='hero'?'hero-main':'')+'">'+ flashMeta(c)+
     '<h3><a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a></h3>'+
     '<div class="summary">'+renderInline(c.summary)+'</div>'+
+    introHtml(c)+
     assetsHtml(c)+'</div></div>';
 }
 
