@@ -10,14 +10,18 @@
 // Run: node scripts/build-wiki.mjs   (output: site/index.html)
 // The build-wiki GitHub Action runs this on every push to main touching brain/**.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, copyFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, copyFileSync, existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BRAIN = join(ROOT, "brain");
 const OUT_DIR = join(ROOT, "site");
+// Committed cache of news images pulled from Wikipedia (so the published page has
+// no runtime dependency, and we don't re-download on every build).
+const NEWS_CACHE = join(ROOT, "wiki-assets", "news");
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -69,6 +73,20 @@ function extractLinks(body) {
   return [...links];
 }
 
+// A project image that belongs to a memory/decision, if one exists: either a
+// frontmatter `image:` (repo- or file-relative) or a sibling file with the same
+// basename (foo.md → foo.jpg). Returns a repo-relative path or null.
+const IMG_EXT = ["jpg", "jpeg", "png", "webp", "gif", "avif"];
+function localImageFor(mdFile, data) {
+  if (data.image) {
+    for (const c of [join(ROOT, data.image), join(dirname(mdFile), data.image)])
+      if (existsSync(c)) return relative(ROOT, c);
+  }
+  const base = mdFile.replace(/\.md$/, "");
+  for (const ext of IMG_EXT) if (existsSync(`${base}.${ext}`)) return relative(ROOT, `${base}.${ext}`);
+  return null;
+}
+
 // ---- collect memories ------------------------------------------------------
 
 const memories = [];
@@ -88,6 +106,7 @@ for (const file of walk(join(BRAIN, "memory"))) {
     path: rel,
     body,
     links: extractLinks(body),
+    image: localImageFor(file, data),
   });
 }
 
@@ -111,6 +130,7 @@ for (const file of walk(join(BRAIN, "decisions"))) {
     path: relative(ROOT, file),
     body,
     links: extractLinks(body),
+    image: localImageFor(file, data),
   });
 }
 decisions.sort((a, b) => a.num - b.num);
@@ -203,7 +223,7 @@ for (const d of decisions) if (d.description) fileDesc[d.path] = d.description;
 // Map each changed file to a linkable "asset" (a memory or decision in the wiki).
 const pathMeta = {};
 for (const m of memories)
-  pathMeta[m.path] = { name: m.name, kind: "memory", label: m.name, scope: m.scope, desc: m.description, body: m.body };
+  pathMeta[m.path] = { name: m.name, kind: "memory", label: m.name, scope: m.scope, desc: m.description, body: m.body, image: m.image };
 for (const d of decisions)
   pathMeta[d.path] = {
     name: d.slug,
@@ -211,6 +231,7 @@ for (const d of decisions)
     label: `ADR ${String(d.num).padStart(2, "0")}`,
     desc: d.description,
     body: d.body,
+    image: d.image,
   };
 
 // The main assets a commit touched — the memories/decisions worth linking to.
@@ -340,6 +361,77 @@ function narrate(c) {
   return `${lead}. ${boldPunchline(detail)}`;
 }
 
+// ---- news images: project-local first, else relevant photo from Wikipedia ----
+
+// Candidate search topics for a dispatch, most specific first, desk as fallback.
+function imageQueriesFor(c) {
+  const hay = `${c.headline} ${c.summary || ""} ${(c.assets || []).map((a) => a.name).join(" ")} ${c.intro || ""}`.toLowerCase();
+  const q = [];
+  const add = (...xs) => xs.forEach((x) => { if (!q.includes(x)) q.push(x); });
+  const has = (...ks) => ks.some((k) => hay.includes(k));
+  if (has("dinosaur")) add("Dinosaur");
+  if (has("malabi", "pudding", "dessert")) add("Muhallebi");
+  if (has("telegram")) add("Telegram (software)");
+  if (has("monkey island", "loom", "leisure suit larry", "adventure", "inspiration")) add("Monkey Island", "Point-and-click adventure game");
+  if (has("aso", "keyword research", "app store", "discoverab")) add("App Store (Apple)", "Search engine optimization");
+  if (has("science")) add("Science", "Laboratory");
+  if (has("dudu", "whatsapp")) add("WhatsApp");
+  if (has("gazette", "wiki", "newspaper", "digest", "daily", "publish")) add("Newspaper");
+  if (has("design", "ux", "visual")) add("Graphic design");
+  if (has("north star", "vision", "goal")) add("Compass");
+  if (has("budget", "money", "cost", "free")) add("Coin");
+  if (has("brain", "architecture", "sync", "memory", "knowledge")) add("Neural network");
+  const deskQ = {
+    Research: ["Laboratory", "Microscope"], Decisions: ["Chess", "Crossroads"],
+    Features: ["Rocket launch", "Printing press"], Brain: ["Neural network"],
+    Status: ["Dashboard"], Fixes: ["Toolbox"], Docs: ["Newspaper"], Updates: ["Newspaper"],
+  };
+  add(...(deskQ[c.desk] || ["Newspaper"]));
+  add("Newspaper");
+  return q;
+}
+
+// Top Wikipedia search hit that has an image; returns thumb URL + page + title.
+async function wikiSearchImage(query) {
+  const url =
+    "https://en.wikipedia.org/w/api.php?" +
+    new URLSearchParams({
+      action: "query", format: "json", generator: "search", gsrsearch: query,
+      gsrlimit: "6", prop: "pageimages", piprop: "thumbnail|name", pithumbsize: "900", origin: "*",
+    });
+  const res = await fetch(url, { headers: { "User-Agent": "MalabiDaily/1.0 (gazette build; github.com/Robochickens-Games/projcet-malabi)" } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const pages = Object.values(data?.query?.pages || {}).sort((a, b) => (a.index || 99) - (b.index || 99));
+  const hit = pages.find((p) => p.thumbnail?.source);
+  if (!hit) return null;
+  return { thumb: hit.thumbnail.source, title: hit.title, page: "https://en.wikipedia.org/wiki/" + encodeURIComponent(hit.title.replace(/ /g, "_")) };
+}
+
+const manifestPath = join(NEWS_CACHE, "manifest.json");
+function loadManifest() {
+  try { return JSON.parse(readFileSync(manifestPath, "utf8")); } catch { return {}; }
+}
+// Resolve a query to a cached image file (downloading from Wikipedia if needed).
+async function ensureImage(query, manifest) {
+  const key = createHash("sha1").update(query).digest("hex").slice(0, 16);
+  if (manifest[key] && existsSync(join(NEWS_CACHE, manifest[key].file))) return manifest[key];
+  try {
+    const found = await wikiSearchImage(query);
+    if (!found) return null;
+    const ext = (found.thumb.match(/\.(jpe?g|png|gif|webp)(?:$|\?)/i)?.[1] || "jpg").toLowerCase().replace("jpeg", "jpg");
+    const file = `${key}.${ext}`;
+    const img = await fetch(found.thumb, { headers: { "User-Agent": "MalabiDaily/1.0 (gazette build)" } });
+    if (!img.ok) return null;
+    mkdirSync(NEWS_CACHE, { recursive: true });
+    writeFileSync(join(NEWS_CACHE, file), Buffer.from(await img.arrayBuffer()));
+    manifest[key] = { file, title: found.title, page: found.page, query };
+    return manifest[key];
+  } catch {
+    return null;
+  }
+}
+
 const history = [];
 try {
   const SEP = "\x1f";
@@ -378,6 +470,36 @@ try {
   console.warn("git history unavailable:", e.message);
 }
 const buildDate = history[0]?.date || "";
+
+// Resolve a news image for each dispatch: a project image if the asset has one,
+// otherwise a relevant photo from Wikipedia. siteImages = [absSource, destName].
+const siteImages = [];
+const seenLocal = new Map();
+mkdirSync(NEWS_CACHE, { recursive: true });
+const imgManifest = loadManifest();
+for (const item of history) {
+  const a = primaryAsset(item);
+  if (a && a.image) {
+    const ext = a.image.split(".").pop();
+    let dest = seenLocal.get(a.image);
+    if (!dest) {
+      dest = `local-${createHash("sha1").update(a.image).digest("hex").slice(0, 12)}.${ext}`;
+      seenLocal.set(a.image, dest);
+      siteImages.push([join(ROOT, a.image), dest]);
+    }
+    item.image = { src: `news/${dest}`, title: a.label, credit: "From the brain", local: true, asset: a.name };
+    continue;
+  }
+  for (const q of imageQueriesFor(item)) {
+    const img = await ensureImage(q, imgManifest);
+    if (img) {
+      siteImages.push([join(NEWS_CACHE, img.file), img.file]);
+      item.image = { src: `news/${img.file}`, title: img.title, credit: img.title, page: img.page };
+      break;
+    }
+  }
+}
+writeFileSync(manifestPath, JSON.stringify(imgManifest, null, 2));
 
 // ---- graph -----------------------------------------------------------------
 
@@ -448,10 +570,17 @@ for (const m of members) {
   if (!m.avatar) continue;
   copyFileSync(join(memberDir, m.slug, "avatar.jpg"), join(OUT_DIR, "people", `${m.slug}.jpg`));
 }
+
+// News images (project-local + cached Wikipedia photos) into site/news.
+mkdirSync(join(OUT_DIR, "news"), { recursive: true });
+let copiedImages = 0;
+for (const [src, dest] of siteImages) {
+  try { copyFileSync(src, join(OUT_DIR, "news", dest)); copiedImages++; } catch {}
+}
 console.log(
   `Built site/index.html — ${payload.stats.memories} memories, ` +
     `${payload.stats.decisions} decisions, ${payload.stats.members} members, ` +
-    `${payload.stats.changes} changes, ${payload.stats.links} links.`
+    `${payload.stats.changes} changes, ${payload.stats.links} links, ${copiedImages} images.`
 );
 
 function renderHtml(dataJson) {
@@ -589,6 +718,19 @@ function renderHtml(dataJson) {
   .intro .more { font-weight: 700; color: var(--s-decision); white-space: nowrap; cursor: pointer; }
   .intro .more:hover { text-decoration: underline; }
   .hero .intro { font-size: 14.5px; }
+
+  /* news images — gazette style */
+  figure { margin: 0; }
+  figure img { display: block; width: 100%; background: var(--tint); }
+  figcaption { font-family: var(--sans); font-size: 10px; letter-spacing: .02em; color: var(--faint); margin-top: 4px; }
+  figcaption a { color: var(--faint); }
+  figcaption a:hover { color: var(--ink); }
+  .hero-photo { margin: 4px 0 14px; }
+  .hero-photo img { height: 240px; object-fit: cover; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
+  .thumb { float: right; width: 140px; margin: 2px 0 10px 18px; }
+  .thumb img { height: 100px; object-fit: cover; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
+  .tl-item::after { content: ""; display: block; clear: both; }
+  @media (max-width: 560px) { .thumb { width: 104px; margin-left: 12px; } .thumb img { height: 78px; } }
 
   .assets, .related { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .assets-label { font-family: var(--sans); font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 1px; }
@@ -937,10 +1079,20 @@ function introHtml(c){
     ? ' <a class="more" data-open="'+c.introAsset+'">Read the note →</a>' : '';
   return '<p class="intro">'+renderInline(c.intro)+link+'</p>';
 }
+function figureHtml(c, cls){
+  if(!c.image) return '';
+  const cap = c.image.page
+    ? '<a href="'+c.image.page+'" target="_blank" rel="noopener">'+escapeHtml(c.image.credit||c.image.title||'Wikipedia')+'</a>'
+    : escapeHtml(c.image.credit||c.image.title||'');
+  return '<figure class="'+cls+'"><img loading="lazy" src="'+c.image.src+'" alt="'+escapeHtml(c.image.title||'')+'">'+
+    '<figcaption>'+(c.image.local?'🗂 ':'📷 ')+cap+'</figcaption></figure>';
+}
 function flashCard(c, cls, style){
-  const k=desk(c.desk);
-  return '<div class="'+cls+'" style="'+style+'">'+ (cls==='hero' ? '<div class="hero-emoji">'+k.emoji+'</div>' : '')+
-    '<div class="'+(cls==='hero'?'hero-main':'')+'">'+ flashMeta(c)+
+  const k=desk(c.desk), hero = cls==='hero';
+  return '<div class="'+cls+'" style="'+style+'">'+ (hero ? '<div class="hero-emoji">'+k.emoji+'</div>' : '')+
+    '<div class="'+(hero?'hero-main':'')+'">'+
+    (hero ? figureHtml(c,'hero-photo') : figureHtml(c,'thumb'))+
+    flashMeta(c)+
     '<h3><a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a></h3>'+
     '<div class="summary">'+renderInline(c.summary)+'</div>'+
     introHtml(c)+
