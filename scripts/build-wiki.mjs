@@ -192,6 +192,42 @@ const fileDesc = {};
 for (const m of memories) if (m.description) fileDesc[m.path] = m.description;
 for (const d of decisions) if (d.description) fileDesc[d.path] = d.description;
 
+// Map each changed file to a linkable "asset" (a memory or decision in the wiki).
+const pathMeta = {};
+for (const m of memories)
+  pathMeta[m.path] = { name: m.name, kind: "memory", label: m.name, scope: m.scope };
+for (const d of decisions)
+  pathMeta[d.path] = {
+    name: d.slug,
+    kind: "decision",
+    label: `ADR ${String(d.num).padStart(2, "0")}`,
+  };
+
+// The main assets a commit touched — the memories/decisions worth linking to.
+function assetsFor(files) {
+  const seen = new Set();
+  const out = [];
+  for (const f of files) {
+    const meta = pathMeta[f];
+    if (meta && !seen.has(meta.name)) {
+      seen.add(meta.name);
+      out.push(meta);
+    }
+  }
+  return out.slice(0, 4);
+}
+
+// Bold the "punchline" — the clause after the first colon / dash in a description.
+function boldPunchline(s) {
+  const idx = s.search(/[:—–]\s/);
+  if (idx > 0 && idx < 52) {
+    const head = s.slice(0, idx + 2);
+    const tail = s.slice(idx + 2).trim().replace(/[.]$/, "");
+    if (tail) return `${head}**${tail}**.`;
+  }
+  return s;
+}
+
 // Strip a trailing "(... 2026 ...)" parenthetical and dangling dashes from a headline.
 function cleanHead(h) {
   return h
@@ -220,9 +256,11 @@ function displayAuthor(name) {
   return (name || "Someone").split(/\s+/)[0];
 }
 
+// A news-flash sentence in markdown: bold byline + styled, punchy detail.
 function narrate(c) {
-  const lead = `${c.author} ${DESK_VERB[c.desk] || "pushed an update"}`;
-  if (c.desk === "Status") return lead + ".";
+  const lead = `**${c.author}** ${DESK_VERB[c.desk] || "pushed an update"}`;
+  if (c.desk === "Status")
+    return `${lead} — the latest snapshot of where the project stands.`;
   // Prefer the description of a substantive memory/decision the commit touched.
   let candidates = c.files.filter((f) => fileDesc[f] && !f.endsWith("project-status.md"));
   // For non-decision dispatches, favour a memory file over the decision file.
@@ -235,7 +273,7 @@ function narrate(c) {
   detail = detail.trim();
   detail = detail.charAt(0).toUpperCase() + detail.slice(1);
   if (!/[.!?]$/.test(detail)) detail += ".";
-  return `${lead}. ${detail}`;
+  return `${lead}. ${boldPunchline(detail)}`;
 }
 
 const history = [];
@@ -266,6 +304,7 @@ try {
       url: `${repoUrl}/commit/${hash}`,
     };
     item.summary = narrate(item);
+    item.assets = assetsFor(files);
     history.push(item);
   }
 } catch (e) {
@@ -376,8 +415,8 @@ function renderHtml(dataJson) {
   body {
     background: var(--paper);
     color: var(--ink);
-    font-family: var(--serif);
-    font-size: 17px; line-height: 1.6;
+    font-family: var(--sans);
+    font-size: 15.5px; line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
   a { color: var(--ink); text-decoration: none; }
@@ -442,8 +481,8 @@ function renderHtml(dataJson) {
     letter-spacing: .06em; text-transform: uppercase; color: var(--ink); padding: 4px 6px 9px; margin-bottom: 10px; border-bottom: 2px solid var(--kc); }
   .kcol-head .kc-emoji { font-size: 16px; }
   .kcol-head .count { margin-left: auto; background: var(--kc); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 9px; }
-  .kcard { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--kc); border-radius: 9px; padding: 10px 12px; margin-bottom: 9px;
-    font-size: 13.5px; line-height: 1.5; color: var(--muted); box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+  .kcard { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--kc); border-radius: 9px; padding: 12px 14px; margin-bottom: 10px;
+    font-size: 14px; line-height: 1.55; color: var(--muted); box-shadow: 0 1px 2px rgba(28,25,23,.04); }
   .kcard:last-child { margin-bottom: 0; }
   .kcard strong { color: var(--ink); font-weight: 700; }
   .kcard code { background: var(--paper); font-size: 12px; padding: 0 5px; }
@@ -459,13 +498,31 @@ function renderHtml(dataJson) {
 
   .deskpill { display: inline-flex; align-items: center; gap: 5px; font-family: var(--sans); font-size: 10.5px; font-weight: 700;
     letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; color: #fff; }
-  .summary { font-family: var(--serif); font-size: 16px; line-height: 1.5; color: var(--ink2); margin: 7px 0 9px; }
-  .byline { font-family: var(--sans); font-size: 12px; color: var(--faint); }
-  .byline code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
-  .files { font-family: var(--sans); font-size: 11.5px; margin-top: 9px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .file { background: var(--tint); border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; color: var(--muted); cursor: pointer; }
-  .file:hover { border-color: var(--line2); color: var(--ink); }
-  .file.nolink { cursor: default; opacity: .65; }
+  .flash-meta { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-family: var(--sans); font-size: 11.5px; color: var(--faint); }
+  .flash-meta .who { font-weight: 700; color: var(--muted); }
+  .flash-meta .commit { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--faint); margin-left: auto; }
+  .flash-meta .commit:hover { color: var(--ink); }
+
+  .summary { font-size: 15px; line-height: 1.55; color: var(--ink2); margin: 8px 0 9px; }
+  .summary strong { color: var(--ink); font-weight: 700; }
+  .summary a.wikilink { color: var(--s-decision); border-bottom: 1px dotted var(--s-decision); cursor: pointer; }
+  .hero .summary { font-size: 16px; }
+
+  .assets, .related { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .assets-label { font-family: var(--sans); font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 1px; }
+  .asset { font-family: var(--sans); font-size: 12px; padding: 2px 9px; border-radius: 7px; background: var(--tint); border: 1px solid var(--line2);
+    color: var(--ink2); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .asset:hover { background: #fff; border-color: var(--ink); text-decoration: none; }
+  .asset-decision { border-color: #d9a8bb; color: #7a3b53; }
+  .related a.wikilink { font-family: var(--sans); font-size: 12px; padding: 2px 8px; border-radius: 7px; background: transparent; border: 1px dotted var(--line2);
+    color: var(--muted); cursor: pointer; }
+  .related a.wikilink:hover { border-style: solid; border-color: var(--s-decision); color: var(--s-decision); text-decoration: none; }
+
+  .catchup { font-size: 16px; line-height: 1.6; color: var(--ink2); border-left: 3px solid var(--line2); padding: 2px 0 2px 16px; }
+  .status-full { margin-top: 28px; }
+  .status-full summary { font-family: var(--sans); font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; padding: 8px 0; }
+  .status-full summary:hover { color: var(--ink); }
+  .status-full .card { margin-top: 12px; }
 
   /* timeline = the rest, grouped by day */
   .tl-day { margin-top: 22px; }
@@ -481,7 +538,7 @@ function renderHtml(dataJson) {
   .tl-item h3 a:hover { text-decoration: underline; }
 
   /* ---- markdown ---- */
-  .markdown { font-size: 17px; }
+  .markdown { font-size: 15px; }
   .markdown h1 { font-family: var(--display); font-size: 28px; margin: 4px 0 14px; }
   .markdown h2 { font-family: var(--display); font-size: 20px; margin: 24px 0 8px; }
   .markdown h3 { font-family: var(--sans); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 18px 0 6px; }
@@ -593,18 +650,18 @@ function renderHtml(dataJson) {
   <section class="view active" id="front">
     <div class="standfirst" id="standfirst"></div>
     <div class="index-bar" id="index-bar"></div>
-
-    <div class="band"><span class="band-emoji">🧭</span><h2 class="band-title">Where things stand</h2><span class="band-rule"></span></div>
-    <p class="tldr" id="tldr"></p>
-    <div class="kanban" id="board"></div>
-
-    <div class="band"><span class="band-emoji">📰</span><h2 class="band-title">What's been happening</h2><span class="band-rule"></span></div>
+    <p class="tldr catchup" id="tldr"></p>
+    <div class="band"><span class="band-emoji">📰</span><h2 class="band-title">The latest</h2><span class="band-rule"></span></div>
     <div id="hero"></div>
     <div class="timeline" id="feed"></div>
   </section>
 
   <section class="view" id="status">
-    <div class="card columns-2 markdown" id="status-md"></div>
+    <h2 class="section-head">🧭 Where things stand</h2>
+    <div class="kanban" id="board"></div>
+    <details class="status-full"><summary>Full status notes &amp; constraints</summary>
+      <div class="card markdown" id="status-md"></div>
+    </details>
   </section>
 
   <section class="view" id="map">
@@ -765,26 +822,42 @@ function relDay(d){
   if(diff<31) return Math.round(diff/7)+' weeks ago'; return '';
 }
 function pill(c){ const k=desk(c.desk); return '<span class="deskpill" style="background:'+k.color+'">'+k.emoji+' '+c.desk+'</span>'; }
-function filesHtml(c){
-  if(!c.files.length) return '';
-  const files = c.files.slice(0,4).map(f=>{
-    const id=fileToEntry[f]; const name=f.split('/').pop().replace(/\\.md$/,'');
-    return '<span class="file'+(id?'':' nolink')+'" data-file="'+escapeHtml(f)+'">'+escapeHtml(name)+'</span>';
-  }).join('');
-  const more = c.files.length>4 ? '<span class="file nolink">+'+(c.files.length-4)+'</span>' : '';
-  return '<div class="files">'+files+more+'</div>';
+function flashMeta(c){
+  return '<div class="flash-meta">'+pill(c)+
+    '<span class="when">'+relDay(c.date)+' · '+longDate(c.date)+'</span>'+
+    '<span class="who">'+escapeHtml(c.author)+'</span>'+
+    '<a class="commit" href="'+c.url+'" target="_blank" rel="noopener">'+c.hash+'</a></div>';
+}
+function assetChip(a){
+  const emo = a.kind==='decision' ? '⚖️' : '📄';
+  return '<a class="asset asset-'+a.kind+'" data-open="'+a.name+'">'+emo+' '+escapeHtml(a.label)+'</a>';
+}
+function assetsHtml(c){
+  let html='';
+  if(c.assets && c.assets.length)
+    html += '<div class="assets"><span class="assets-label">📎 Assets</span>'+ c.assets.map(assetChip).join('') +'</div>';
+  // wiki-style cross-links: what the primary memory asset connects to
+  const prim = (c.assets||[]).find(a=> a.kind==='memory');
+  if(prim && byName[prim.name]){
+    const shown = new Set((c.assets||[]).map(a=> a.name));
+    const rel = (byName[prim.name].links||[]).filter(s=> byName[s] && !shown.has(s)).slice(0,3);
+    if(rel.length)
+      html += '<div class="related"><span class="assets-label">🔗 Related</span>'+
+        rel.map(s=> '<a class="wikilink" data-open="'+s+'">'+s+'</a>').join('') +'</div>';
+  }
+  return html;
+}
+function flashCard(c, cls, style){
+  const k=desk(c.desk);
+  return '<div class="'+cls+'" style="'+style+'">'+ (cls==='hero' ? '<div class="hero-emoji">'+k.emoji+'</div>' : '')+
+    '<div class="'+(cls==='hero'?'hero-main':'')+'">'+ flashMeta(c)+
+    '<h3><a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a></h3>'+
+    '<div class="summary">'+renderInline(c.summary)+'</div>'+
+    assetsHtml(c)+'</div></div>';
 }
 
-if(lastChange){
-  const k = desk(lastChange.desk);
-  document.getElementById('hero').innerHTML =
-    '<div class="hero" style="--hero:'+k.color+'"><div class="hero-emoji">'+k.emoji+'</div><div class="hero-main">'+
-    pill(lastChange)+
-    '<h3><a href="'+lastChange.url+'" target="_blank" rel="noopener">'+escapeHtml(lastChange.headline)+'</a></h3>'+
-    '<p class="summary">'+escapeHtml(lastChange.summary)+'</p>'+
-    '<div class="byline">'+relDay(lastChange.date)+' · '+longDate(lastChange.date)+' · <code>'+lastChange.hash+'</code></div>'+
-    filesHtml(lastChange)+'</div></div>';
-}
+if(lastChange)
+  document.getElementById('hero').innerHTML = flashCard(lastChange, 'hero', '--hero:'+desk(lastChange.desk).color);
 
 const groups=[]; let cur=null;
 for(const c of DATA.history.slice(1)){
@@ -795,18 +868,12 @@ document.getElementById('feed').innerHTML = groups.map(g=>{
   const rel = relDay(g.date);
   return '<div class="tl-day"><div class="tl-daterow">'+
     (rel?'<span class="tl-rel">'+rel+'</span>':'')+'<span class="tl-abs">'+longDate(g.date)+'</span></div>'+
-    '<div class="tl-items">'+ g.items.map(c=>{
-      const k=desk(c.desk);
-      return '<div class="tl-item" style="--ti:'+k.color+'">'+pill(c)+
-        '<h3><a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a></h3>'+
-        '<p class="summary">'+escapeHtml(c.summary)+'</p>'+
-        '<div class="byline">by '+escapeHtml(c.author)+' · <code>'+c.hash+'</code></div>'+
-        filesHtml(c)+'</div>';
-    }).join('') +'</div></div>';
+    '<div class="tl-items">'+ g.items.map(c=> flashCard(c, 'tl-item', '--ti:'+desk(c.desk).color)).join('') +
+    '</div></div>';
 }).join('');
 
-document.querySelectorAll('#front .file').forEach(el=>
-  el.addEventListener('click', ()=>{ const id=fileToEntry[el.getAttribute('data-file')]; if(id) openEntry(id); }));
+wireWikilinks(document.getElementById('hero'));
+wireWikilinks(document.getElementById('feed'));
 
 // ---- status ----
 const statusEl = document.getElementById('status-md');
