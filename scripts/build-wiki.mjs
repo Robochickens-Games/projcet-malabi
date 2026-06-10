@@ -65,6 +65,17 @@ function parseFrontmatter(raw) {
   return { data, body: m[2].trim() };
 }
 
+// Reconcile markers (`<!-- resolved-when: ... -->` and the explanatory block that
+// documents them) are build bookkeeping — strip them from any body before it is
+// rendered or serialized. They are only meaningful to reconcileStatus, which reads
+// the status doc separately and consumes them there.
+function stripReconcileMarkers(body) {
+  return (body || "")
+    .replace(/[ \t]*<!--\s*resolved-when:[\s\S]*?-->\n?/gi, "")
+    .replace(/[ \t]*<!--\s*Reconcile markers:[\s\S]*?-->\n?/i, "")
+    .trim();
+}
+
 const WIKILINK = /\[\[([a-z0-9-]+)\]\]/g;
 function extractLinks(body) {
   const links = new Set();
@@ -104,7 +115,7 @@ for (const file of walk(join(BRAIN, "memory"))) {
     tags: data.tags || [],
     created: data.created || "",
     path: rel,
-    body,
+    body: stripReconcileMarkers(body),
     links: extractLinks(body),
     image: localImageFor(file, data),
   });
@@ -175,7 +186,7 @@ function readDoc(relPath) {
   }
 }
 const northStarBody = readDoc("brain/memory/shared/north-star.md");
-const statusBody = readDoc("brain/memory/shared/project-status.md");
+let statusBody = readDoc("brain/memory/shared/project-status.md");
 
 // Split the status doc into ## sections so the front page can show a
 // "where things stand" board (TL;DR, Done, In progress, Parked, Next…).
@@ -191,7 +202,69 @@ function splitSections(md) {
   }
   return out;
 }
-const statusSections = splitSections(statusBody);
+// Drop the explanatory reconcile-markers block before sectioning so it can't fold
+// into a kanban card. Inline `resolved-when:` markers stay — reconcileStatus needs them.
+const statusForBoard = statusBody.replace(/[ \t]*<!--\s*Reconcile markers:[\s\S]*?-->\n?/i, "");
+let statusSections = splitSections(statusForBoard);
+
+// ---- status reconcile: keep the board honest against ground truth ----------
+// The "where things stand" board renders project-status.md verbatim, so finished
+// work lingers until a human deletes the bullet. To self-correct, any actionable
+// bullet may carry a marker `<!-- resolved-when: <check> -->`; at build time we
+// evaluate the check against the real repo and, when it passes, move that bullet
+// into Done with a "✓ auto-verified" badge. Done bullets whose check regressed get
+// flagged. No network needed — everything is checked against the working tree.
+const RECONCILE_CHECKS = {
+  // done once the file/dir exists in the repo
+  "path-exists": (arg) => { try { return !!arg && existsSync(join(ROOT, arg)); } catch { return false; } },
+  // done once CODEOWNERS has no @*-gh placeholder handles left
+  "codeowners-filled": () => {
+    try { return !/@\w+-gh\b/.test(readFileSync(join(ROOT, ".github/CODEOWNERS"), "utf8")); }
+    catch { return false; }
+  },
+};
+function evalCheck(spec) {
+  const [id, ...rest] = (spec || "").trim().split(":");
+  const fn = RECONCILE_CHECKS[id];
+  if (!fn) return { known: false, done: false };
+  return { known: true, done: !!fn(rest.join(":").trim()) };
+}
+function reconcileStatus(sections) {
+  const MARKER = /<!--\s*resolved-when:\s*([^>]*?)\s*-->/i;
+  const moved = []; // resolved bullets, hoisted into Done
+  const log = [];
+  const sectByHeading = (re) => sections.find((s) => re.test(s.heading));
+  const doneSec = sectByHeading(/done/i);
+  for (const sec of sections) {
+    const isActionable = /next|progress|open/i.test(sec.heading);
+    const isDone = /done/i.test(sec.heading);
+    if (!isActionable && !isDone) continue;
+    const kept = [];
+    for (const line of sec.body.split("\n")) {
+      const m = line.match(MARKER);
+      if (!m) { kept.push(line); continue; }
+      const { known, done } = evalCheck(m[1]);
+      const clean = line.replace(MARKER, "").replace(/\s+$/, "");
+      if (!known) { kept.push(clean); log.push(`? unknown check "${m[1].trim()}" — left in place`); continue; }
+      if (isActionable && done) {
+        moved.push(clean.replace(/^([-*]\s+)/, "$1**✓ auto-verified —** "));
+        log.push(`✓ resolved (${m[1].trim()}) → moved to Done`);
+      } else if (isDone && !done) {
+        kept.push(clean.replace(/^([-*]\s+)/, "$1**⚠ regressed —** "));
+        log.push(`⚠ regressed (${m[1].trim()}) — flagged in Done`);
+      } else {
+        kept.push(clean); // actionable & not done, or done & still true: leave as-is
+      }
+    }
+    sec.body = kept.join("\n").trim();
+  }
+  if (moved.length && doneSec) doneSec.body = (doneSec.body + "\n" + moved.join("\n")).trim();
+  if (log.length) console.log("[reconcile] status board:\n  " + log.join("\n  "));
+  return sections;
+}
+statusSections = reconcileStatus(statusSections);
+// Keep the verbatim "full status notes" render free of reconcile bookkeeping.
+statusBody = stripReconcileMarkers(statusBody);
 
 // ---- git history (the "news feed": what changed, when, by whom) ------------
 
@@ -369,21 +442,23 @@ function imageQueriesFor(c) {
   const q = [];
   const add = (...xs) => xs.forEach((x) => { if (!q.includes(x)) q.push(x); });
   const has = (...ks) => ks.some((k) => hay.includes(k));
-  if (has("dinosaur", "science game", "product direction")) add("Dinosaur");
-  if (has("science")) add("Science");
+  // Prefer concrete, photographic subjects (museum mounts, real objects) over
+  // logos/diagrams, which read flat in a newspaper. Most specific topic wins.
+  if (has("dinosaur", "science game", "product direction", "paleo")) add("Tyrannosaurus");
+  if (has("science", "experiment")) add("Microscope");
   if (has("malabi", "pudding", "dessert")) add("Muhallebi");
   if (has("telegram")) add("Telegram (software)");
   if (has("monkey island", "loom", "leisure suit larry", "adventure", "inspiration")) add("Monkey Island", "Point-and-click adventure game");
   if (has("design", "ux", "visual")) add("Graphic design");
   if (has("dudu", "whatsapp")) add("WhatsApp");
   if (has("gazette", "wiki", "newspaper", "digest", "daily", "publish")) add("Newspaper");
-  if (has("brain", "architecture", "sync", "memory", "knowledge")) add("Neural network");
-  if (has("aso", "keyword research", "app store", "discoverab")) add("Mobile app");
+  if (has("brain", "architecture", "sync", "memory", "knowledge")) add("Library");
+  if (has("aso", "keyword research", "app store", "discoverab")) add("Smartphone");
   if (has("north star", "vision", "goal")) add("Compass");
-  if (has("budget", "money", "cost", "free")) add("Coin");
+  if (has("budget", "money", "cost", "free")) add("Piggy bank");
   const deskQ = {
-    Research: ["Laboratory", "Microscope"], Decisions: ["Chess", "Crossroads"],
-    Features: ["Rocket launch", "Printing press"], Brain: ["Neural network"],
+    Research: ["Microscope", "Laboratory"], Decisions: ["Chess", "Crossroads"],
+    Features: ["Rocket launch", "Printing press"], Brain: ["Library"],
     Status: ["Dashboard"], Fixes: ["Toolbox"], Docs: ["Newspaper"], Updates: ["Newspaper"],
   };
   add(...(deskQ[c.desk] || ["Newspaper"]));

@@ -5,29 +5,11 @@
     "page": "https://en.wikipedia.org/wiki/Newspaper",
     "query": "Newspaper"
   },
-  "ede5ac98c1c275a0": {
-    "file": "ede5ac98c1c275a0.jpg",
-    "title": "Dinosaur",
-    "page": "https://en.wikipedia.org/wiki/Dinosaur",
-    "query": "Dinosaur"
-  },
-  "c0d552ae7fab411b": {
-    "file": "c0d552ae7fab411b.jpg",
-    "title": "Apple TV (device)",
-    "page": "https://en.wikipedia.org/wiki/Apple_TV_(device)",
-    "query": "App Store (Apple)"
-  },
   "792afa9764a8a378": {
     "file": "792afa9764a8a378.png",
     "title": "Telegram (software)",
     "page": "https://en.wikipedia.org/wiki/Telegram_(software)",
     "query": "Telegram (software)"
-  },
-  "9734bcbf01a283a1": {
-    "file": "9734bcbf01a283a1.png",
-    "title": "Neural network (machine learning)",
-    "page": "https://en.wikipedia.org/wiki/Neural_network_(machine_learning)",
-    "query": "Neural network"
   },
   "74f97206d070129a": {
     "file": "74f97206d070129a.png",
@@ -59,16 +41,22 @@
     "page": "https://en.wikipedia.org/wiki/Toolbox",
     "query": "Toolbox"
   },
-  "a9749253c369d0c8": {
-    "file": "a9749253c369d0c8.jpg",
-    "title": "Coin",
-    "page": "https://en.wikipedia.org/wiki/Coin",
-    "query": "Coin"
-  },
   "9d5c8e519d85d8c8": {
     "file": "9d5c8e519d85d8c8.jpg",
     "title": "Compass",
     "page": "https://en.wikipedia.org/wiki/Compass",
     "query": "Compass"
+  },
+  "4561920007ab524f": {
+    "file": "4561920007ab524f.jpg",
+    "title": "Tyrannosaurus",
+    "page": "https://en.wikipedia.org/wiki/Tyrannosaurus",
+    "query": "Tyrannosaurus"
+  },
+  "b8100f5ba8bd048a": {
+    "file": "b8100f5ba8bd048a.jpg",
+    "title": "Library",
+    "page": "https://en.wikipedia.org/wiki/Library",
+    "query": "Library"
   }
 }
