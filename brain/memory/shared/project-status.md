@@ -45,15 +45,12 @@ product thesis (below) for team review.
   See [[design-inspirations]].
 
 ## In progress / open ⏳
-- **Product direction:** theme, tech stack, and what we're building are still being
-  explored — no decision yet. This is the big open question.
-- **Proposals under review (from Dor, 2026-06-09) — reviewers: Gidi + Ohad:** a
-  linked product thesis — none acted on until the team agrees:
-  - [[science-games-for-kids]] — aim the first product at science games for kids.
-  - [[aso-keyword-research-to-pick-topic]] — use App Store keyword research to pick
-    the exact topic.
-  - [[design-for-app-of-the-year]] — design bar = Apple feature (App of the Year/Month).
-  - **Next:** Gidi (product) + Ohad (tech) review → if agreed, promote to ADR 0003.
+- **ADR 0003 (proposed — Ohad review pending):** first product direction locked as
+  proposed by Dor + Gidi: kids' science games niche, ASO keyword research to pick
+  the specific topic, Apple feature-worthy design bar. See [[0003-first-product-direction-science-games-for-kids]].
+- **Gidi — keyword research (2026-06-10):** running OpenAI deep-research on App Store
+  keywords in the kids science games space to find a high-demand, low-competition topic.
+  Results will drive the specific game/topic choice and move ADR 0003 to accepted.
 
 ## Parked 🅿️
 - _(nothing parked.)_ **Dudu was dropped** — code removed; only the decision trail
@@ -63,8 +60,8 @@ product thesis (below) for team review.
 - **No spend on infra** right now — free tools/hosting only. [[budget-constraint]]
 
 ## Next steps
-- Decide a first **product direction** → `/decide` (becomes ADR 0003). *This is the
-  one that actually moves the project.*
+- **Gidi:** finish OpenAI deep-research on keywords → pick a topic → update ADR 0003.
+- **Ohad:** review ADR 0003 → agree or push back → move status to accepted.
 - **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub
   usernames in `.github/CODEOWNERS`.
-- Each member: run `/catchup` then `/braindump` your context.
+- Once ADR 0003 is accepted: start first initiative, create `brain/memory/projects/<slug>/`.
