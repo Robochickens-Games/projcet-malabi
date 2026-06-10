@@ -475,21 +475,37 @@ const buildDate = history[0]?.date || "";
 // otherwise a relevant photo from Wikipedia. siteImages = [absSource, destName].
 const siteImages = [];
 const seenLocal = new Map();
+// Register a repo image for copying into site/news; returns its image descriptor.
+const useLocal = (relPath, title, asset) => {
+  const ext = relPath.split(".").pop();
+  let dest = seenLocal.get(relPath);
+  if (!dest) {
+    dest = `local-${createHash("sha1").update(relPath).digest("hex").slice(0, 12)}.${ext}`;
+    seenLocal.set(relPath, dest);
+    siteImages.push([join(ROOT, relPath), dest]);
+  }
+  return { src: `news/${dest}`, title, credit: "From the brain", local: true, asset };
+};
+const IMG_RE = /\.(jpe?g|png|webp|gif|avif)$/i;
 mkdirSync(NEWS_CACHE, { recursive: true });
 const imgManifest = loadManifest();
 for (const item of history) {
-  const a = primaryAsset(item);
-  if (a && a.image) {
-    const ext = a.image.split(".").pop();
-    let dest = seenLocal.get(a.image);
-    if (!dest) {
-      dest = `local-${createHash("sha1").update(a.image).digest("hex").slice(0, 12)}.${ext}`;
-      seenLocal.set(a.image, dest);
-      siteImages.push([join(ROOT, a.image), dest]);
-    }
-    item.image = { src: `news/${dest}`, title: a.label, credit: "From the brain", local: true, asset: a.name };
+  // Always prefer the project's own images, in order of relevance:
+  // 1) an image the commit itself added/changed (e.g. team avatars, a screenshot)
+  const touched = item.files.find((f) => IMG_RE.test(f) && existsSync(join(ROOT, f)));
+  if (touched) {
+    const mm = touched.match(/members\/([^/]+)\//);
+    const title = mm ? mm[1][0].toUpperCase() + mm[1].slice(1) : primaryAsset(item)?.label || "From the brain";
+    item.image = useLocal(touched, title);
     continue;
   }
+  // 2) an image attached to the memory/decision the dispatch is about
+  const a = primaryAsset(item);
+  if (a && a.image) {
+    item.image = useLocal(a.image, a.label, a.name);
+    continue;
+  }
+  // 3) otherwise, a relevant photo from Wikipedia
   for (const q of imageQueriesFor(item)) {
     const img = await ensureImage(q, imgManifest);
     if (img) {
@@ -726,9 +742,9 @@ function renderHtml(dataJson) {
   figcaption a { color: var(--faint); }
   figcaption a:hover { color: var(--ink); }
   .hero-photo { margin: 4px 0 14px; }
-  .hero-photo img { height: 240px; object-fit: cover; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
+  .hero-photo img { height: 240px; object-fit: cover; object-position: center 30%; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
   .thumb { float: right; width: 140px; margin: 2px 0 10px 18px; }
-  .thumb img { height: 100px; object-fit: cover; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
+  .thumb img { height: 100px; object-fit: cover; object-position: center 30%; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
   .tl-item::after { content: ""; display: block; clear: both; }
   @media (max-width: 560px) { .thumb { width: 104px; margin-left: 12px; } .thumb img { height: 78px; } }
 
