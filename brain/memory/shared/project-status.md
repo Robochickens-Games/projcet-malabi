@@ -9,7 +9,7 @@ tags: [status, project, onboarding]
 
 # Project status — where we are
 
-_Living snapshot. **Last updated: 2026-06-09.** Refresh it any time with `/catchup`._
+_Living snapshot. **Last updated: 2026-06-10.** Refresh it any time with `/catchup`._
 
 > 🌟 **North star:** make us money · make it fun. ([[north-star]]) — everything below
 > should serve it.
@@ -35,9 +35,14 @@ product thesis (below) for team review.
   (SessionStart hook + `/sync`).
 - **Proposals gate:** `brain/proposals/` — ideas are logged and surfaced but not
   acted on until the team reviews and agrees.
-- **Proactive sync push (live):** GitHub Action posts every `brain/**` change to the
-  team's Telegram group, plus a daily backup digest — members stay synced without
-  opening a session. See [[proactive-sync-push-telegram]].
+- **Proactive sync push (live + verified):** GitHub Action posts every `brain/**`
+  change to the team's Telegram group. CI false-fail fixed; confirmed working.
+  See [[proactive-sync-push-telegram]].
+- **Natural-language Telegram digests (live):** daily digest written in plain English
+  via GitHub Models (free tier) — not raw diffs. Members stay synced without a session.
+- **Design inspirations captured:** Loom, Monkey Island, Leisure Suit Larry —
+  specifically the **exploration mechanic**, not their art/humor style.
+  See [[design-inspirations]].
 
 ## In progress / open ⏳
 - **Product direction:** theme, tech stack, and what we're building are still being
