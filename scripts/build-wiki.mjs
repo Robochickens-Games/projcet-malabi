@@ -146,6 +146,52 @@ for (const file of walk(join(BRAIN, "decisions"))) {
 }
 decisions.sort((a, b) => a.num - b.num);
 
+// ---- collect proposals -----------------------------------------------------
+
+const proposals = [];
+for (const file of walk(join(BRAIN, "proposals"))) {
+  if (file.toLowerCase().endsWith("readme.md")) continue;
+  const raw = readFileSync(file, "utf8");
+  const { data, body } = parseFrontmatter(raw);
+  const name = data.name || file.split("/").pop().replace(/\.md$/, "");
+  proposals.push({
+    name,
+    description: data.description || "",
+    owner: data.owner || "team",
+    scope: "proposal",
+    status: (data.status || "under-review").toLowerCase(),
+    area: data.area || "",
+    tags: data.tags || [],
+    created: data.created || "",
+    path: relative(ROOT, file),
+    body,
+    links: extractLinks(body),
+    image: localImageFor(file, data),
+  });
+}
+
+// ---- collect research docs -------------------------------------------------
+
+const researchDocs = [];
+for (const file of walk(join(BRAIN, "research"))) {
+  if (file.toLowerCase().endsWith("readme.md")) continue;
+  const raw = readFileSync(file, "utf8");
+  const { data, body } = parseFrontmatter(raw);
+  const name = data.name || file.split("/").pop().replace(/\.md$/, "");
+  researchDocs.push({
+    name,
+    description: data.description || data.title || name,
+    owner: data.author || data.owner || "team",
+    scope: "research",
+    tags: data.tags || [],
+    created: data.date || data.created || "",
+    path: relative(ROOT, file),
+    body,
+    links: extractLinks(body),
+    image: localImageFor(file, data),
+  });
+}
+
 // ---- members ---------------------------------------------------------------
 
 const memberDir = join(BRAIN, "memory", "members");
@@ -275,9 +321,12 @@ function deskFor(subject) {
   const p = (subject.split(":")[0] || "").toLowerCase().trim();
   if (p.startsWith("decision") || p.startsWith("adr")) return "Decisions";
   if (p.startsWith("research")) return "Research";
+  if (p.startsWith("proposal")) return "Proposals";
+  if (p.startsWith("direction")) return "Direction";
   if (p.startsWith("status")) return "Status";
   if (p.startsWith("feat")) return "Features";
-  if (p.startsWith("brain")) return "Brain";
+  if (p.startsWith("asset")) return "Assets";
+  if (p.startsWith("brain") || p.startsWith("memory")) return "Brain";
   if (p.startsWith("fix")) return "Fixes";
   if (p.startsWith("docs")) return "Docs";
   return "Updates";
@@ -292,8 +341,10 @@ function headline(subject) {
 const fileDesc = {};
 for (const m of memories) if (m.description) fileDesc[m.path] = m.description;
 for (const d of decisions) if (d.description) fileDesc[d.path] = d.description;
+for (const p of proposals) if (p.description) fileDesc[p.path] = p.description;
+for (const r of researchDocs) if (r.description) fileDesc[r.path] = r.description;
 
-// Map each changed file to a linkable "asset" (a memory or decision in the wiki).
+// Map each changed file to a linkable "asset" (a memory, decision, proposal, or research doc).
 const pathMeta = {};
 for (const m of memories)
   pathMeta[m.path] = { name: m.name, kind: "memory", label: m.name, scope: m.scope, desc: m.description, body: m.body, image: m.image };
@@ -306,6 +357,10 @@ for (const d of decisions)
     body: d.body,
     image: d.image,
   };
+for (const p of proposals)
+  pathMeta[p.path] = { name: p.name, kind: "proposal", label: p.name, scope: "proposal", desc: p.description, body: p.body, image: p.image };
+for (const r of researchDocs)
+  pathMeta[r.path] = { name: r.name, kind: "research", label: r.name, scope: "research", desc: r.description, body: r.body, image: r.image };
 
 // The main assets a commit touched — the memories/decisions worth linking to.
 function assetsFor(files) {
@@ -396,14 +451,17 @@ function cleanHead(h) {
 
 // Turn a commit into a natural-language sentence: who did what, and the gist.
 const DESK_VERB = {
-  Decisions: "recorded a decision",
-  Research: "ran a round of research",
-  Status: "refreshed where the project stands",
-  Features: "shipped a change",
-  Brain: "updated the brain",
-  Fixes: "fixed an issue",
-  Docs: "updated the docs",
-  Updates: "pushed an update",
+  Decisions:  "recorded a decision",
+  Research:   "completed a research round",
+  Proposals:  "put up a proposal",
+  Direction:  "set a direction",
+  Status:     "updated where things stand",
+  Features:   "shipped something new",
+  Assets:     "added an asset",
+  Brain:      "updated the brain",
+  Fixes:      "fixed something",
+  Docs:       "updated the docs",
+  Updates:    "added to the brain",
 };
 // Git author → the team's first-name slug.
 function displayAuthor(name) {
@@ -633,12 +691,15 @@ const payload = {
   statusSections,
   memories,
   decisions,
+  proposals,
+  researchDocs,
   members,
   history,
   graph: { nodes: graphNodes, links: graphLinks },
   stats: {
     memories: memories.length,
     decisions: decisions.length,
+    proposals: proposals.length,
     members: members.length,
     links: graphLinks.length,
     changes: history.length,
@@ -791,6 +852,7 @@ function renderHtml(dataJson) {
   .hero-emoji { font-size: 30px; line-height: 1.2; }
   .hero-main { flex: 1; min-width: 0; }
   .hero h3 { font-family: var(--display); font-weight: 700; font-size: 27px; line-height: 1.16; margin: 9px 0 6px; letter-spacing: -.3px; }
+  .hero h3 a { cursor: pointer; }
   .hero h3 a:hover { text-decoration: underline; }
 
   .deskpill { display: inline-flex; align-items: center; gap: 5px; font-family: var(--sans); font-size: 10.5px; font-weight: 700;
@@ -829,6 +891,9 @@ function renderHtml(dataJson) {
     color: var(--ink2); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
   .asset:hover { background: #fff; border-color: var(--ink); text-decoration: none; }
   .asset-decision { border-color: #d9a8bb; color: #7a3b53; }
+  .asset-proposal { border-color: #c4b5e8; color: #6b5c9e; }
+  .asset-research { border-color: #a8c5e8; color: #3f5a8a; }
+  .flash-meta .commit { font-size: 14px; color: var(--faint); margin-left: auto; }
   .related a.wikilink { font-family: var(--sans); font-size: 12px; padding: 2px 8px; border-radius: 7px; background: transparent; border: 1px dotted var(--line2);
     color: var(--muted); cursor: pointer; }
   .related a.wikilink:hover { border-style: solid; border-color: var(--s-decision); color: var(--s-decision); text-decoration: none; }
@@ -1057,9 +1122,13 @@ const DATA = ${dataJson};
 const byName = {};
 DATA.memories.forEach(m => byName[m.name] = m);
 DATA.decisions.forEach(d => byName[d.slug] = d);
+(DATA.proposals||[]).forEach(p => byName[p.name] = p);
+(DATA.researchDocs||[]).forEach(r => byName[r.name] = r);
 const fileToEntry = {};
 DATA.memories.forEach(m => fileToEntry[m.path] = m.name);
 DATA.decisions.forEach(d => fileToEntry[d.path] = d.slug);
+(DATA.proposals||[]).forEach(p => fileToEntry[p.path] = p.name);
+(DATA.researchDocs||[]).forEach(r => fileToEntry[r.path] = r.name);
 
 const scopeColor = { shared: getCss('--s-shared'), member: getCss('--s-member'), project: getCss('--s-project'), decision: getCss('--s-decision') };
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -1086,20 +1155,23 @@ document.getElementById('repo-link').href = DATA.repoUrl;
 
 // desk → emoji + colour (warm, readable on the stone paper)
 const DESK = {
-  Decisions: { emoji: '⚖️', color: '#9d4664' },
-  Research:  { emoji: '🔬', color: '#3f5a8a' },
-  Status:    { emoji: '📊', color: '#b07219' },
-  Features:  { emoji: '✨', color: '#4d7c2f' },
-  Brain:     { emoji: '🧠', color: '#7a5a44' },
-  Fixes:     { emoji: '🔧', color: '#b4531f' },
-  Docs:      { emoji: '📄', color: '#6b6660' },
-  Updates:   { emoji: '📌', color: '#8a8076' },
+  Decisions:  { emoji: '⚖️',  color: '#9d4664' },
+  Research:   { emoji: '🔬',  color: '#3f5a8a' },
+  Proposals:  { emoji: '💡',  color: '#6b5c9e' },
+  Direction:  { emoji: '🧭',  color: '#2d6a4f' },
+  Status:     { emoji: '📊',  color: '#b07219' },
+  Features:   { emoji: '✨',  color: '#4d7c2f' },
+  Assets:     { emoji: '🖼️', color: '#7a5a44' },
+  Brain:      { emoji: '🧠',  color: '#7a5a44' },
+  Fixes:      { emoji: '🔧',  color: '#b4531f' },
+  Docs:       { emoji: '📄',  color: '#6b6660' },
+  Updates:    { emoji: '📌',  color: '#8a8076' },
 };
 const desk = (n)=> DESK[n] || DESK.Updates;
 
 // ---- index bar ----
 const idx = [
-  ['changes','Dispatches'], ['memories','Memories'], ['decisions','Decisions'], ['members','Team'], ['links','Links']
+  ['changes','Updates'], ['memories','Memories'], ['decisions','Decisions'], ['proposals','Proposals'], ['members','Team']
 ];
 document.getElementById('index-bar').innerHTML = idx.map(([k,l])=>
   '<div class="box"><div class="n">'+DATA.stats[k]+'</div><div class="l">'+l+'</div></div>').join('');
@@ -1169,10 +1241,10 @@ function flashMeta(c){
   return '<div class="flash-meta">'+pill(c)+
     '<span class="when">'+relDay(c.date)+' · '+longDate(c.date)+'</span>'+
     '<span class="who">'+escapeHtml(c.author)+'</span>'+
-    '<a class="commit" href="'+c.url+'" target="_blank" rel="noopener">'+c.hash+'</a></div>';
+    '<a class="commit" href="'+c.url+'" target="_blank" rel="noopener" title="View commit '+c.hash+'">↗</a></div>';
 }
 function assetChip(a){
-  const emo = a.kind==='decision' ? '⚖️' : '📄';
+  const emo = a.kind==='decision' ? '⚖️' : a.kind==='proposal' ? '💡' : a.kind==='research' ? '🔬' : '📄';
   return '<a class="asset asset-'+a.kind+'" data-open="'+a.name+'">'+emo+' '+escapeHtml(a.label)+'</a>';
 }
 function assetsHtml(c){
@@ -1190,10 +1262,17 @@ function assetsHtml(c){
   }
   return html;
 }
+// The most content-rich asset a commit touches — prefer proposals/research over index files.
+function primaryReadable(c){
+  const ranked = (c.assets||[]).filter(a => byName[a.name] && (byName[a.name].body||'').length > 120);
+  // Prefer proposal/research (rich content) over terse memory files.
+  return ranked.find(a => ['proposal','research'].includes(a.kind || byName[a.name]?.scope))
+    || ranked[0] || null;
+}
 function introHtml(c){
-  if(!c.intro) return '';
-  const link = (c.introAsset && byName[c.introAsset])
-    ? ' <a class="more" data-open="'+c.introAsset+'">Read the note →</a>' : '';
+  const readable = primaryReadable(c);
+  const link = readable ? ' <a class="more" data-open="'+readable.name+'">Read full article →</a>' : '';
+  if(!c.intro) return link ? '<p class="intro">'+link+'</p>' : '';
   return '<p class="intro">'+renderInline(c.intro)+link+'</p>';
 }
 function figureHtml(c, cls){
@@ -1206,11 +1285,16 @@ function figureHtml(c, cls){
 }
 function flashCard(c, cls, style){
   const hero = cls==='hero';
+  const readable = primaryReadable(c);
+  // Headline opens the drawer when there's rich content to read; falls back to commit link.
+  const titleLink = readable
+    ? '<a data-open="'+readable.name+'">'+escapeHtml(c.headline)+'</a>'
+    : '<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
   return '<div class="'+cls+'" style="'+style+'">'+
     '<div class="'+(hero?'hero-main':'')+'">'+
     (hero ? figureHtml(c,'hero-photo') : figureHtml(c,'thumb'))+
     flashMeta(c)+
-    '<h3><a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a></h3>'+
+    '<h3>'+titleLink+'</h3>'+
     '<div class="summary">'+renderInline(c.summary)+'</div>'+
     introHtml(c)+
     assetsHtml(c)+'</div></div>';
