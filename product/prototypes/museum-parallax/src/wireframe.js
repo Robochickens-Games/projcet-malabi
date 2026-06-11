@@ -1,7 +1,9 @@
-// Low-fidelity wireframe/blockout art for the side-scrolling prototype.
-// Everything is outlines + labels on ink — placeholder geometry to be replaced
-// 1:1 by painted layers later. Single source of truth for world layout: the
-// exported *_SPOTS / GUIDE constants drive both the drawings and the hotspots.
+// Low-fidelity blockout art for the side-scrolling prototype.
+// Filled silhouettes + outlines + labels on ink — placeholder geometry to be
+// replaced 1:1 by painted layers later. Single source of truth for world
+// layout: the exported *_SPOTS / GUIDE constants drive both the drawings and
+// the hotspots. Fills are depth-graded (far = darker/recedes, near = lighter)
+// so the parallax reads even before real art.
 import { SILHOUETTES, toothSVGInner } from './art.js'
 
 export const INK = '#0d141d'
@@ -12,6 +14,17 @@ const FORE = '#c2d6e2'
 const GOLD = '#e8a948'
 const ROPE = '#b96a6a'
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace'
+
+// depth-graded fills — each darker than its layer's stroke, so the outline reads
+const FAR_F = '#16242f'
+const WALL_F = '#111d26'
+const MID_F = '#1d2d39'
+const MAIN_F = '#273a47'
+const FORE_F = '#33485a'
+const PANEL_F = '#0f1820'
+const PAPER_F = '#23201a'
+const GOLD_F = '#3a2a12'
+const BONE_F = '#34454f'
 
 const svgOpen = (w, h) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
@@ -40,12 +53,15 @@ export function lobbyBackSVG() {
   let windows = ''
   for (const cx of [300, 800, 1300, 1800]) {
     windows += `
-      <g transform="translate(${cx},0)" stroke="${FAR}" fill="none" stroke-width="3">
-        <path d="M-90,640 L-90,330 A90,90 0 0 1 90,330 L90,640 Z"/>
-        <line x1="0" y1="245" x2="0" y2="640"/><line x1="-90" y1="430" x2="90" y2="430"/>
+      <g transform="translate(${cx},0)">
+        <path d="M-90,640 L-90,330 A90,90 0 0 1 90,330 L90,640 Z" fill="${FAR_F}" stroke="${FAR}" stroke-width="3"/>
+        <g stroke="${FAR}" stroke-width="3" fill="none">
+          <line x1="0" y1="245" x2="0" y2="640"/><line x1="-90" y1="430" x2="90" y2="430"/>
+        </g>
       </g>`
   }
   return `${svgOpen(W, 1080)}
+    <rect x="0" y="170" width="${W}" height="680" fill="${WALL_F}"/>
     <g stroke="${FAR}" stroke-width="3" fill="none">
       <line x1="0" y1="170" x2="${W}" y2="170"/>
       <line x1="0" y1="850" x2="${W}" y2="850"/>
@@ -59,31 +75,31 @@ export function lobbyBackSVG() {
 export function lobbyMainSVG() {
   const door = (x, label, open) => `
     <g transform="translate(${x},0)">
-      <g stroke="${open ? GOLD : MID}" stroke-width="${open ? 5 : 3}" fill="none">
-        <path d="M-160,880 L-160,480 A160,160 0 0 1 160,480 L160,880 Z"/>
-        ${open ? '' : `<line x1="-150" y1="500" x2="150" y2="860" stroke="${ROPE}"/>
-                       <line x1="150" y1="500" x2="-150" y2="860" stroke="${ROPE}"/>`}
-      </g>
+      <path d="M-160,880 L-160,480 A160,160 0 0 1 160,480 L160,880 Z"
+            fill="${open ? GOLD_F : MAIN_F}" stroke="${open ? GOLD : MID}" stroke-width="${open ? 5 : 3}"/>
+      ${open ? '' : `<g stroke="${ROPE}" stroke-width="3" fill="none">
+        <line x1="-150" y1="500" x2="150" y2="860"/><line x1="150" y1="500" x2="-150" y2="860"/></g>`}
       ${tag(0, 300, label, open ? GOLD : MID, 26)}
       ${tag(0, 340, open ? '[ ENTER ]' : '· soon ·', open ? GOLD : FAR, 20)}
     </g>`
   let ticks = ''
   for (let x = 40; x < LOBBY_W; x += 120) ticks += `<line x1="${x}" y1="880" x2="${x - 18}" y2="912" stroke="${MID}" stroke-width="2" opacity="0.5"/>`
   return `${svgOpen(LOBBY_W, 1080)}
+    <rect x="0" y="880" width="${LOBBY_W}" height="200" fill="${MAIN_F}"/>
     <line x1="0" y1="880" x2="${LOBBY_W}" y2="880" stroke="${MAIN}" stroke-width="4"/>
     ${ticks}
     ${door(LOBBY_SPOTS.doorInventions.x, 'INVENTIONS', false)}
     ${door(LOBBY_SPOTS.doorSpace.x, 'SPACE', false)}
     ${door(LOBBY_SPOTS.doorDino.x, 'DINOSAUR WING', true)}
     <!-- info desk -->
-    <g transform="translate(330,0)" stroke="${MID}" fill="none" stroke-width="3">
-      <rect x="-130" y="700" width="260" height="180"/>
-      <line x1="-130" y1="745" x2="130" y2="745"/>
+    <g transform="translate(330,0)">
+      <rect x="-130" y="700" width="260" height="180" fill="${MAIN_F}" stroke="${MID}" stroke-width="3"/>
+      <line x1="-130" y1="745" x2="130" y2="745" stroke="${MID}" stroke-width="3"/>
     </g>
     ${tag(330, 675, 'INFO DESK', MID, 18)}
     <!-- bench -->
-    <g transform="translate(1950,0)" stroke="${MID}" fill="none" stroke-width="3">
-      <rect x="-150" y="790" width="300" height="34"/>
+    <g transform="translate(1950,0)" stroke="${MID}" stroke-width="3">
+      <rect x="-150" y="790" width="300" height="34" fill="${MAIN_F}"/>
       <line x1="-120" y1="824" x2="-120" y2="880"/><line x1="120" y1="824" x2="120" y2="880"/>
     </g>
     ${tag(1950, 765, 'BENCH', MID, 18)}
@@ -95,23 +111,21 @@ export function lobbyMainSVG() {
 export function lobbyForeSVG() {
   const W = 3300
   const column = (x) => `
-    <g transform="translate(${x},0)" stroke="${FORE}" stroke-width="5" fill="none">
-      <line x1="-52" y1="80" x2="-52" y2="1020"/><line x1="52" y1="80" x2="52" y2="1020"/>
-      <rect x="-78" y="40" width="156" height="42"/>
-      <rect x="-78" y="1020" width="156" height="42"/>
+    <g transform="translate(${x},0)" stroke="${FORE}" stroke-width="5">
+      <rect x="-52" y="80" width="104" height="940" fill="${FORE_F}"/>
+      <rect x="-78" y="40" width="156" height="42" fill="${FORE_F}"/>
+      <rect x="-78" y="1020" width="156" height="42" fill="${FORE_F}"/>
     </g>`
   return `${svgOpen(W, 1080)}
     ${column(200)}${column(1750)}${column(2480)}${column(3150)}
     <!-- planter: the tooth hides behind this -->
     <g transform="translate(${LOBBY_SPOTS.planter.x},0)">
-      <g stroke="${FORE}" stroke-width="5" fill="${INK}">
-        <path d="M-120,780 L120,780 L92,1000 L-92,1000 Z"/>
-      </g>
-      <g stroke="${FORE}" stroke-width="4" fill="none">
-        <path d="M0,780 C-30,690 -90,650 -130,640"/>
-        <path d="M0,780 C-10,670 -30,610 -20,560"/>
-        <path d="M0,780 C30,680 90,640 135,635"/>
-        <path d="M0,780 C15,690 55,640 60,590"/>
+      <path d="M-120,780 L120,780 L92,1000 L-92,1000 Z" fill="${FORE_F}" stroke="${FORE}" stroke-width="5"/>
+      <g stroke="${FORE}" stroke-width="4" fill="${MID_F}">
+        <path d="M0,780 C-30,690 -90,650 -130,640 C-95,672 -40,720 0,780 Z"/>
+        <path d="M0,780 C-10,670 -30,610 -20,560 C2,608 18,690 0,780 Z"/>
+        <path d="M0,780 C30,680 90,640 135,635 C98,668 42,722 0,780 Z"/>
+        <path d="M0,780 C15,690 55,640 60,590 C40,640 18,712 0,780 Z"/>
       </g>
       ${tag(0, 1045, 'PLANTER', FORE, 18)}
     </g>
@@ -154,34 +168,35 @@ export function groveCloudsSVG() {
     const a = (i * Math.PI) / 4
     rays += `<line x1="${1620 + Math.cos(a) * 70}" y1="${300 + Math.sin(a) * 70}"
                    x2="${1620 + Math.cos(a) * 105}" y2="${300 + Math.sin(a) * 105}"
-                   stroke="${FAR}" stroke-width="3"/>`
+                   stroke="${GOLD}" stroke-width="3"/>`
   }
   const cloud = (cx, cy, rx) => `
-    <g stroke="${FAR}" stroke-width="3" fill="none">
+    <g stroke="${FAR}" stroke-width="3" fill="${FAR_F}">
       <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${rx * 0.24}"/>
       <ellipse cx="${cx - rx * 0.35}" cy="${cy - rx * 0.16}" rx="${rx * 0.45}" ry="${rx * 0.16}"/>
     </g>`
   return `${svgOpen(W, 1080)}
-    <circle cx="1620" cy="300" r="54" stroke="${FAR}" stroke-width="3" fill="none"/>
+    <circle cx="1620" cy="300" r="54" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="3"/>
     ${rays}
     ${cloud(300, 210, 140)}${cloud(840, 140, 170)}${cloud(1280, 250, 110)}${cloud(1900, 180, 150)}
     ${speedTag('LAYER: CLOUDS + SUN · 0.1x')}
   ${'</svg>'}`
 }
 
-// mountain ridges: their own speed, clearly sliding between clouds and treeline
+// mountain ridges: filled silhouettes, sliding between clouds and treeline
 export function groveMountainsSVG() {
   const W = 2520
-  const ridge = (baseY, amp, step) => {
-    let pts = ''
+  const ridge = (baseY, amp, step, fill) => {
+    let pts = `-40,700 `
     for (let x = -40, i = 0; x <= W + 40; x += step, i++) {
       pts += `${x},${baseY - amp * (0.35 + ((i * 7) % 10) / 11)} ${x + step / 2},${baseY - amp * 0.12} `
     }
-    return `<polyline points="${pts}" stroke="${FAR}" stroke-width="3" fill="none"/>`
+    pts += `${W + 40},700`
+    return `<polygon points="${pts}" fill="${fill}" stroke="${FAR}" stroke-width="3"/>`
   }
   return `${svgOpen(W, 1080)}
-    ${ridge(520, 240, 420)}
-    ${ridge(590, 160, 300)}
+    ${ridge(520, 240, 420, FAR_F)}
+    ${ridge(590, 160, 300, MID_F)}
     ${speedTag('LAYER: MOUNTAINS · 0.3x')}
   ${'</svg>'}`
 }
@@ -193,7 +208,7 @@ export function groveMidSVG() {
     const r = 55 + ((i * 13) % 4) * 12
     const y = 705 + ((i * 7) % 3) * 16
     trees += `
-      <path d="M${x - r},${y} A${r},${r} 0 0 1 ${x + r},${y}" stroke="${MID}" stroke-width="3" fill="none"/>
+      <path d="M${x - r},${y} A${r},${r} 0 0 1 ${x + r},${y} Z" fill="${MID_F}" stroke="${MID}" stroke-width="3"/>
       <line x1="${x}" y1="${y}" x2="${x}" y2="${y + 70}" stroke="${MID}" stroke-width="3"/>`
   }
   return `${svgOpen(W, 1080)}
@@ -206,7 +221,7 @@ export function groveMainSVG() {
   let ticks = ''
   for (let x = 30, i = 0; x < GROVE_W; x += 130, i++) {
     ticks += `<line x1="${x}" y1="880" x2="${x - 20}" y2="914" stroke="${MAIN}" stroke-width="2" opacity="0.5"/>`
-    if (i % 3 === 0) ticks += `<path d="M${x + 60},880 l10,-26 l16,4 l8,22 Z" stroke="${MID}" stroke-width="2" fill="none"/>`
+    if (i % 3 === 0) ticks += `<path d="M${x + 60},880 l10,-26 l16,4 l8,22 Z" stroke="${MID}" stroke-width="2" fill="${MID_F}"/>`
     if (i % 4 === 1) ticks += `<g stroke="${MID}" stroke-width="2">
       <line x1="${x + 30}" y1="880" x2="${x + 24}" y2="852"/><line x1="${x + 36}" y1="880" x2="${x + 38}" y2="850"/>
       <line x1="${x + 42}" y1="880" x2="${x + 50}" y2="856"/></g>`
@@ -215,9 +230,9 @@ export function groveMainSVG() {
   // tooth-type cards in the field guide
   const card = (c) => `
     <g transform="translate(${c.x},${c.y})">
-      <rect x="0" y="0" width="${c.w}" height="${c.h}" rx="10" stroke="${MAIN}" stroke-width="3" fill="${INK}"/>
+      <rect x="0" y="0" width="${c.w}" height="${c.h}" rx="10" stroke="${MAIN}" stroke-width="3" fill="${PAPER_F}"/>
       <g transform="translate(${c.w / 2 - 38},22) scale(0.76) ${c.small ? 'translate(22,30) scale(0.6)' : ''}">
-        ${toothSVGInner(c.tooth, INK, MAIN)}
+        ${toothSVGInner(c.tooth, BONE_F, MAIN)}
       </g>
       ${tag(c.w / 2, c.h - 32, c.label, MAIN, 17)}
       ${tag(c.w / 2, c.h - 10, c.sub, FAR, 14)}
@@ -225,22 +240,25 @@ export function groveMainSVG() {
 
   const S = GROVE_SPOTS
   return `${svgOpen(GROVE_W, 1080)}
+    <rect x="0" y="880" width="${GROVE_W}" height="200" fill="${MAIN_F}"/>
     <line x1="0" y1="880" x2="${GROVE_W}" y2="880" stroke="${MAIN}" stroke-width="4"/>
     ${ticks}
 
     <!-- trailhead -->
-    <g transform="translate(${S.backPost.x + 110},0)" stroke="${GOLD}" stroke-width="4" fill="none">
-      <line x1="0" y1="880" x2="0" y2="640"/><rect x="-105" y="590" width="210" height="60"/>
+    <g transform="translate(${S.backPost.x + 110},0)">
+      <line x1="0" y1="880" x2="0" y2="640" stroke="${GOLD}" stroke-width="4"/>
+      <rect x="-105" y="590" width="210" height="60" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
     </g>
     ${tag(S.backPost.x + 110, 628, '&#8592; LOBBY', GOLD, 22)}
-    <g transform="translate(620,0)" stroke="${MID}" stroke-width="3" fill="none">
-      <line x1="0" y1="880" x2="0" y2="660"/><rect x="-150" y="610" width="300" height="56"/>
+    <g transform="translate(620,0)">
+      <line x1="0" y1="880" x2="0" y2="660" stroke="${MID}" stroke-width="3"/>
+      <rect x="-150" y="610" width="300" height="56" fill="${MAIN_F}" stroke="${MID}" stroke-width="3"/>
     </g>
     ${tag(620, 646, 'NESTING GROVE &#8594;', MID, 20)}
 
     <!-- placard -->
     <g transform="translate(${S.placard.x},0) rotate(-3)">
-      <rect x="-85" y="640" width="170" height="200" rx="8" stroke="${MAIN}" stroke-width="3" fill="${INK}"/>
+      <rect x="-85" y="640" width="170" height="200" rx="8" stroke="${MAIN}" stroke-width="3" fill="${PAPER_F}"/>
       ${tag(0, 680, 'PLACARD', MAIN, 16)}
       ${[706, 726, 746, 766, 786].map((y) => `<line x1="-62" y1="${y}" x2="62" y2="${y}" stroke="${FAR}" stroke-width="3"/>`).join('')}
     </g>
@@ -248,7 +266,7 @@ export function groveMainSVG() {
     <!-- the skeleton mount -->
     <g transform="translate(${S.skeleton.x},0)">
       <line x1="-320" y1="880" x2="320" y2="880" stroke="${MAIN}" stroke-width="6"/>
-      <g transform="translate(-310,388) scale(0.9)">${SILHOUETTES.trike('#22313d', '#1a2630', MAIN)}</g>
+      <g transform="translate(-310,388) scale(0.9)">${SILHOUETTES.trike(BONE_F, '#223039', MAIN)}</g>
       <g fill="none" stroke="${MAIN}" stroke-width="2" opacity="0.6">
         <rect x="-320" y="350" width="640" height="530" rx="14" stroke-dasharray="10 8"/>
       </g>
@@ -256,8 +274,8 @@ export function groveMainSVG() {
     </g>
 
     <!-- field guide -->
-    <g stroke="${MAIN}" stroke-width="4" fill="${INK}">
-      <rect x="3105" y="290" width="530" height="520" rx="14"/>
+    <g stroke="${MAIN}" stroke-width="4">
+      <rect x="3105" y="290" width="530" height="520" rx="14" fill="${PAPER_F}"/>
       <line x1="3370" y1="290" x2="3370" y2="810"/>
       <line x1="3370" y1="810" x2="3370" y2="880"/>
     </g>
@@ -265,16 +283,16 @@ export function groveMainSVG() {
     ${GUIDE.cards.map(card).join('')}
 
     <!-- found clues tray -->
-    <g transform="translate(${S.tray.x},${S.tray.y})" stroke="${MAIN}" stroke-width="3" fill="none">
-      <rect x="0" y="0" width="620" height="110" rx="12"/>
-      ${[0, 1, 2, 3].map((i) => `<rect x="${24 + i * 152}" y="18" width="120" height="74" rx="8" stroke="${FAR}"/>`).join('')}
+    <g transform="translate(${S.tray.x},${S.tray.y})">
+      <rect x="0" y="0" width="620" height="110" rx="12" fill="${PANEL_F}" stroke="${MAIN}" stroke-width="3"/>
+      ${[0, 1, 2, 3].map((i) => `<rect x="${24 + i * 152}" y="18" width="120" height="74" rx="8" fill="${INK}" stroke="${FAR}" stroke-width="3"/>`).join('')}
     </g>
     ${tag(S.tray.x + 310, S.tray.y - 14, 'FOUND CLUES', MAIN, 18)}
 
     <!-- bag + hint -->
-    <circle cx="${S.bag.x}" cy="${S.bag.y}" r="56" stroke="${GOLD}" stroke-width="4" fill="${INK}"/>
+    <circle cx="${S.bag.x}" cy="${S.bag.y}" r="56" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
     ${tag(S.bag.x, S.bag.y + 7, 'BAG', GOLD, 18)}
-    <circle cx="${S.hint.x}" cy="${S.hint.y}" r="56" stroke="${GOLD}" stroke-width="4" fill="${INK}"/>
+    <circle cx="${S.hint.x}" cy="${S.hint.y}" r="56" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
     ${tag(S.hint.x, S.hint.y + 7, 'HINT', GOLD, 18)}
 
     ${speedTag('LAYER: TRAIL + SCENE · 1.0x')}
@@ -284,21 +302,17 @@ export function groveMainSVG() {
 // small repeated foreground sprites (fastest layer)
 export function canopySVG() {
   return `${svgOpen(360, 250)}
-    <g stroke="${FORE}" stroke-width="5" fill="none">
-      <path d="M10,0 Q60,90 30,180"/>
-      <path d="M120,0 Q150,110 110,210"/>
-      <path d="M230,0 Q240,100 290,170"/>
-      <path d="M330,0 Q300,80 340,150"/>
-      <path d="M60,0 Q110,70 95,150"/>
+    <path d="M180,0 C120,40 70,30 30,170 C90,150 130,120 180,40 C230,120 270,150 330,150 C290,40 240,40 180,0 Z"
+          fill="${FORE_F}" stroke="${FORE}" stroke-width="4"/>
+    <g stroke="${FORE}" stroke-width="3" fill="none">
+      <path d="M180,30 Q150,110 95,150"/><path d="M180,30 Q210,110 290,140"/>
     </g>
   ${'</svg>'}`
 }
 
 export function bushSVG() {
   return `${svgOpen(280, 170)}
-    <g stroke="${FORE}" stroke-width="5" fill="${INK}">
-      <path d="M10,165 Q30,60 90,55 Q140,-10 200,55 Q260,60 272,165 Z"/>
-    </g>
+    <path d="M10,165 Q30,60 90,55 Q140,-10 200,55 Q260,60 272,165 Z" fill="${FORE_F}" stroke="${FORE}" stroke-width="5"/>
     <g stroke="${FORE}" stroke-width="3" fill="none">
       <line x1="95" y1="160" x2="105" y2="80"/><line x1="160" y1="160" x2="150" y2="60"/>
     </g>
