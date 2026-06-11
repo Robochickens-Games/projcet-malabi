@@ -638,6 +638,33 @@ for (const item of history) {
     item.image = useLocal(a.image, a.label, a.name);
     continue;
   }
+  // 2b) desk/keyword-based fallback to project concept art (before Wikipedia)
+  {
+    const hay = `${item.headline} ${item.summary || ""} ${item.intro || ""} ${item.desk}`.toLowerCase();
+    const hasDino = hay.match(/dinosaur|dino|fossil|paleo|prehistoric|t.rex|triceratop/);
+    const hasGame = hay.match(/museum|game|concept|art.?direction|visual|design|proposal|mechanic|puzzle|wing|launch/);
+    const hasCover = existsSync(join(ROOT, "brain/images/cover-decisions.png"));
+    const coverMap = {
+      Decisions:  hasCover ? "brain/images/cover-decisions.png"  : null,
+      Proposals:  hasCover ? "brain/images/cover-proposals.png"  : null,
+      Research:   hasCover ? "brain/images/cover-research.png"   : null,
+      Updates:    hasCover ? "brain/images/cover-status.png"     : null,
+      Brain:      hasCover ? "brain/images/cover-status.png"     : null,
+    };
+    const deskCover = coverMap[item.desk];
+    if (hasDino && existsSync(join(ROOT, "brain/images/landscape dino.png"))) {
+      item.image = useLocal("brain/images/landscape dino.png", "Dinosaur wing");
+      continue;
+    }
+    if (hasGame && existsSync(join(ROOT, "brain/images/Science Museum Mystery.png"))) {
+      item.image = useLocal("brain/images/Science Museum Mystery.png", "Science Museum Mystery");
+      continue;
+    }
+    if (deskCover && existsSync(join(ROOT, deskCover))) {
+      item.image = useLocal(deskCover, item.desk);
+      continue;
+    }
+  }
   // 3) otherwise, a relevant photo from Wikipedia
   for (const q of imageQueriesFor(item)) {
     const img = await ensureImage(q, imgManifest);

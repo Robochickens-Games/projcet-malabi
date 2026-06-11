@@ -5,6 +5,7 @@ owner: dor
 scope: shared
 created: 2026-06-11
 updated: 2026-06-11
+image: brain/images/Science Museum Mystery.png
 tags: [design, art, visual-direction, ui]
 ---
 
