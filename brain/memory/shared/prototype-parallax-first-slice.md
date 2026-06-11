@@ -36,6 +36,14 @@ A painted-art experiment using Gidi's Nesting Grove mock
 engine; its slicing pipeline (feathered layer cuts + inpainted base) is kept in
 `scripts/generate-assets.mjs` for when final art lands.
 
+**Live (2026-06-11):** deployed to Vercel, public + always reachable at
+**https://malabi-museum-parallax.vercel.app** — linked from the masthead of
+[[project-gazette]] ("▶ Play the prototype", visible on every tab). The Vercel
+project is `malabi-museum-parallax` under Dor's `dortaldts-projects` scope.
+**Redeploy** (no git integration yet — it's a manual prebuilt static deploy):
+`npm run build` in `product/prototypes/museum-parallax/`, then
+`vercel deploy --prod --yes --scope dortaldts-projects` from the `dist/` folder.
+
 **Why:** test the walk-and-discover feel ([[gameplay-principles]],
 [[click-to-play-engagement-concern]]) before investing in art or engine work.
 

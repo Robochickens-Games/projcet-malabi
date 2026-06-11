@@ -44,7 +44,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [game-concepts](shared/game-concepts.md) — current concept: Science Museum Mystery, three wings (Dinosaurs/Space/Inventions), tap-and-explore, ages 5–10, no ads
 - [art-direction](shared/art-direction.md) — visual direction: warm illustrated museum, Art Deco, amber/gold + teal/space palette, back-facing child protagonist with magnifying glass
 - [status-board-reconcile](shared/status-board-reconcile.md) — the status board self-corrects at build: done Next-up items auto-move to Done via resolved-when markers
-- [prototype-parallax-first-slice](shared/prototype-parallax-first-slice.md) — first playable feel-prototype (parallax lobby → tooth → dino hall → catalog match) is built; stack = Vite + Pixi.js + GSAP, in product/prototypes/museum-parallax
+- [prototype-parallax-first-slice](shared/prototype-parallax-first-slice.md) — first playable feel-prototype (parallax lobby → tooth → dino hall → catalog match) is built + live on Vercel (malabi-museum-parallax.vercel.app, linked from the gazette masthead); stack = Vite + Pixi.js + GSAP, in product/prototypes/museum-parallax
 - [daily-dispatch-2026-06-11](shared/daily-dispatch-2026-06-11.md) — special-edition roundup of June 11: dinosaurs confirmed, Science Museum Mystery named, 15 dino mechanics, first playable prototype, gazette glow-up
 
 ## Members
