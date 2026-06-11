@@ -1,0 +1,67 @@
+name: notify-note
+
+# Near-real-time "letters to the editor": the moment a team member posts a note
+# in the Malabi Daily (a GitHub issue or comment titled/threaded "[note] <slug>"),
+# ping the team's Telegram group with the note and a deep link to the article.
+# The note itself is folded into the brain at the next sync (brain/processes/daily-notes.md).
+# Requires repo secrets: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # Only for note threads — issues whose title starts with "[note]".
+    if: startsWith(github.event.issue.title, '[note]') || startsWith(github.event.issue.title, '[NOTE]')
+    steps:
+      - name: Send Telegram ping for the new note
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NOTE_TITLE: ${{ github.event.issue.title }}
+          NOTE_URL: ${{ github.event.comment.html_url || github.event.issue.html_url }}
+          NOTE_BODY: ${{ github.event.comment.body || github.event.issue.body }}
+          NOTE_AUTHOR: ${{ github.event.comment.user.login || github.event.issue.user.login }}
+          OWNER: ${{ github.repository_owner }}
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not set — skipping."
+            exit 0
+          fi
+
+          # Slug = the piece the note is about: title is "[note] <slug>" or "[note] <slug>: subject".
+          SLUG="$(printf '%s' "$NOTE_TITLE" | sed -E 's/^\[[Nn][Oo][Tt][Ee]\][[:space:]]*([a-zA-Z0-9-]+).*/\1/')"
+          [ -z "$SLUG" ] && SLUG="general"
+
+          # Deep link to the article in the Malabi Daily (Pages owner is lowercased).
+          OWNER_LC="$(printf '%s' "$OWNER" | tr 'A-Z' 'a-z')"
+          PAGES_BASE="https://${OWNER_LC}.github.io/${REPO_FULL#*/}/"
+          if [ "$SLUG" = "general" ]; then
+            GAZETTE_URL="$PAGES_BASE"
+          else
+            GAZETTE_URL="${PAGES_BASE}#/${SLUG}"
+          fi
+
+          # Trim the note body for the message (Telegram is fine with plain text).
+          SNIPPET="$(printf '%s' "$NOTE_BODY" | head -c 600)"
+
+          MSG="$(printf '✉️ New letter to the editor — on “%s”\n\nFrom %s:\n%s\n\n📰 Read & reply in The Malabi Daily:\n%s\n\nThread: %s\n\nIt gets folded into the brain at the next /sync.' \
+            "$SLUG" "$NOTE_AUTHOR" "$SNIPPET" "$GAZETTE_URL" "$NOTE_URL")"
+
+          RESP="$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "disable_web_page_preview=true" \
+            --data-urlencode "text=${MSG}")"
+          echo "Telegram API response: ${RESP}"
+          case "$RESP" in
+            *'"ok":true'*) echo "Telegram note ping sent." ;;
+            *) echo "Telegram send failed."; exit 1 ;;
+          esac

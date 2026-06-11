@@ -1367,91 +1367,109 @@ document.querySelectorAll('#mem-filters button').forEach(b=>
     document.querySelectorAll('#mem-filters button').forEach(x=>x.classList.toggle('active', x===b)); renderGrid(); }));
 renderGrid();
 
-// ---- letters to the editor ----
-// Notes/content the team attaches to any piece of info, backed by GitHub issues
-// (free, no backend). Convention: issue title "[note] <slug>: subject" — slug is
-// the memory/decision the letter is about, or "general". The brain ingests open
-// letters at every sync and closes them via "Closes #N" in the addressing commit.
-const API = DATA.repoUrl.replace('https://github.com/', 'https://api.github.com/repos/');
-const NOTE_RE = /^\\[note\\]\\s*([a-z0-9-]+)\\s*:\\s*(.*)$/i;
-let lettersPromise = null;
-function loadLetters(){
-  if(!lettersPromise) lettersPromise =
-    fetch(API + '/issues?state=all&per_page=100&sort=created&direction=desc')
-      .then(r => r.ok ? r.json() : [])
-      .then(list => (Array.isArray(list) ? list : [])
-        .filter(i => !i.pull_request)
-        .map(i => {
-          const m = (i.title || '').match(NOTE_RE);
-          if(!m) return null;
-          return { slug: m[1].toLowerCase(), subject: m[2] || '(untitled)',
-            body: i.body || '', author: i.user ? i.user.login : 'someone',
-            avatar: i.user ? i.user.avatar_url : '', url: i.html_url, n: i.number,
-            open: i.state === 'open', comments: i.comments || 0,
-            date: (i.created_at || '').slice(0, 10) };
-        })
-        .filter(Boolean))
-      .catch(() => []);
-  return lettersPromise;
+// ---- letters to the editor (utterances: post in-page, no backend) ----
+// Notes live as GitHub issues + comments, written straight from the page via the
+// utterances widget (GitHub login handled by the utterances app — no token, no
+// infra). One issue per piece, titled "[note] <slug>" (slug = the memory/decision,
+// or "general"); each comment is a note. The brain ingests these at sync and an
+// on-issue Action pings Telegram the moment one is posted. The mailbag below polls
+// the public API gently (unauthenticated = 60 req/hr/IP, so ~every 90s, one call).
+const REPO = DATA.repoUrl.replace('https://github.com/', '').replace(/\\/$/, '');
+const API = DATA.repoUrl.replace('https://github.com/', 'https://api.github.com/repos/').replace(/\\/$/, '');
+const NOTE_RE = /^\\[note\\]\\s*([a-z0-9-]+)/i; // tolerant: "[note] slug" or "[note] slug: subject"
+
+// Mount the utterances comment box (read existing notes + post a new one in place).
+function mountUtterances(container, term){
+  container.innerHTML = '';
+  const s = document.createElement('script');
+  s.src = 'https://utteranc.es/client.js';
+  s.async = true; s.crossOrigin = 'anonymous';
+  s.setAttribute('repo', REPO);
+  s.setAttribute('issue-term', term);   // literal term → find/create issue titled exactly this
+  s.setAttribute('label', 'daily-note');
+  s.setAttribute('theme', 'github-light');
+  container.appendChild(s);
 }
-function noteUrl(slug){
-  const body = 'Write your note here — extra context, a correction, new content, a question.' +
-    '\\n\\n_The brain reads open letters at every sync, folds them into the right memory, and closes this letter once addressed._';
-  return DATA.repoUrl + '/issues/new?labels=daily-note&title=' +
-    encodeURIComponent('[note] ' + slug + ': ') + '&body=' + encodeURIComponent(body);
+const noteTerm = (slug) => '[note] ' + slug;
+
+// The mailbag = note threads (one per piece), newest activity first. One API call.
+function loadThreads(){
+  return fetch(API + '/issues?labels=daily-note&state=all&per_page=100&sort=updated&direction=desc')
+    .then(r => r.ok ? r.json() : [])
+    .then(list => (Array.isArray(list) ? list : [])
+      .filter(i => !i.pull_request && NOTE_RE.test(i.title || ''))
+      .map(i => {
+        const m = (i.title || '').match(NOTE_RE);
+        const slug = (m ? m[1] : 'general').toLowerCase();
+        const subj = (i.title || '').replace(/^\\[note\\]\\s*[a-z0-9-]+\\s*:?\\s*/i, '').trim();
+        return { slug, subject: subj, author: i.user ? i.user.login : 'someone',
+          avatar: i.user ? i.user.avatar_url : '', url: i.html_url, n: i.number,
+          open: i.state === 'open', notes: i.comments || 0,
+          date: (i.updated_at || i.created_at || '').slice(0, 10) };
+      }))
+    .catch(() => []);
 }
-function letterCard(L, showOn){
-  const onChip = showOn && L.slug !== 'general' && byName[L.slug]
-    ? '<a class="asset" data-open="' + L.slug + '">📄 ' + escapeHtml(L.slug) + '</a>'
+function threadCard(t){
+  const onArticle = t.slug !== 'general' && byName[t.slug];
+  const title = t.subject || (onArticle ? 'Notes on ' + t.slug : 'General notes');
+  const openArt = onArticle
+    ? ' data-open="' + t.slug + '"'
     : '';
-  return '<div class="letter' + (L.open ? '' : ' addressed') + '">' +
+  return '<div class="letter' + (t.open ? '' : ' addressed') + '"' + openArt +
+    ' style="cursor:' + (onArticle ? 'pointer' : 'default') + '">' +
     '<div class="letter-meta">' +
-    (L.avatar ? '<img src="' + L.avatar + '" alt="" loading="lazy">' : '') +
-    '<span class="who">' + escapeHtml(L.author) + '</span>' +
-    '<span>' + longDate(L.date) + '</span>' +
-    (L.open ? '' : '<span class="badge accepted">✓ addressed</span>') +
-    onChip +
-    '<a class="thread" href="' + L.url + '" target="_blank" rel="noopener">#' + L.n +
-    (L.comments ? ' · ' + L.comments + ' 💬' : '') + ' ↗</a></div>' +
-    '<div class="letter-subject">' + escapeHtml(L.subject) + '</div>' +
-    (L.body ? '<div class="letter-body markdown">' + renderMd(L.body) + '</div>' : '') +
+    (t.avatar ? '<img src="' + t.avatar + '" alt="" loading="lazy">' : '') +
+    '<span class="who">' + escapeHtml(t.author) + '</span>' +
+    '<span>updated ' + longDate(t.date) + '</span>' +
+    (t.open ? '' : '<span class="badge accepted">✓ addressed</span>') +
+    (onArticle ? '<a class="asset" data-open="' + t.slug + '">📄 ' + escapeHtml(t.slug) + '</a>' : '') +
+    '<a class="thread" href="' + t.url + '" target="_blank" rel="noopener">#' + t.n +
+    ' · ' + t.notes + ' note' + (t.notes === 1 ? '' : 's') + ' ↗</a></div>' +
+    '<div class="letter-subject">' + escapeHtml(title) + '</div>' +
+    (onArticle ? '<div class="letters-hint">Open the article to read every note and add yours in place →</div>' : '') +
     '</div>';
 }
+// Static shell, mounted once: a thread list that refreshes + a general write box
+// that does NOT (so it never resets while someone's mid-note).
 const lettersEl = document.getElementById('letters');
-lettersEl.innerHTML = '<p class="letters-empty">Checking the mailbag…</p>';
-loadLetters().then(all => {
-  const open = all.filter(l => l.open);
-  const addressed = all.filter(l => !l.open).slice(0, 4);
-  let html = '';
-  if(!all.length) html = '<p class="letters-empty">The mailbag is empty — be the first to write in.</p>';
-  else {
-    html = open.map(l => letterCard(l, true)).join('');
-    if(!open.length) html += '<p class="letters-empty">No open letters — everything addressed.</p>';
-    html += addressed.map(l => letterCard(l, true)).join('');
-  }
-  html += '<p style="margin-top:16px"><a class="write-note" href="' + noteUrl('general') +
-    '" target="_blank" rel="noopener">✍️ Write to the editor</a> ' +
-    '<span class="letters-hint">— or open any article and add a note right on it.</span></p>';
-  lettersEl.innerHTML = html;
-  wireWikilinks(lettersEl);
-});
+lettersEl.innerHTML =
+  '<div id="thread-list"><p class="letters-empty">Checking the mailbag…</p></div>' +
+  '<div class="letters-general"><div class="letters-hint" style="margin:18px 0 8px">' +
+  '✍️ Write to the editor — a general note (sign in with GitHub, post right here):</div>' +
+  '<div id="utter-general"></div></div>';
+mountUtterances(document.getElementById('utter-general'), noteTerm('general'));
+const threadListEl = document.getElementById('thread-list');
+function refreshMailbag(){
+  loadThreads().then(threads => {
+    const open = threads.filter(t => t.open);
+    const addressed = threads.filter(t => !t.open).slice(0, 4);
+    let html = '';
+    if(open.length) html += open.map(threadCard).join('');
+    else html += '<p class="letters-empty">No open letters right now — add a note on any piece, or write a general one below.</p>';
+    if(addressed.length)
+      html += '<div class="letters-hint" style="margin:14px 0 6px">Recently addressed</div>' +
+        addressed.map(threadCard).join('');
+    threadListEl.innerHTML = html;
+    wireWikilinks(threadListEl);
+    threadListEl.querySelectorAll('.letter[data-open]').forEach(el =>
+      el.addEventListener('click', e => { if(e.target.closest('a')) return; openEntry(el.getAttribute('data-open')); }));
+  });
+}
+refreshMailbag();
+// Near-real-time: refresh the thread list on a gentle timer + when the tab refocuses.
+function frontIsActive(){ const f = document.getElementById('front'); return f && f.classList.contains('active'); }
+setInterval(() => { if(!document.hidden && frontIsActive()) refreshMailbag(); }, 90000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden && frontIsActive()) refreshMailbag(); });
 
 // ---- drawer ----
 const drawer = document.getElementById('drawer'), dbg = document.getElementById('drawer-bg');
 function renderDrawerLetters(id){
   const lt = document.getElementById('drawer-letters');
-  lt.dataset.for = id;
-  lt.innerHTML = '<h3>✉️ Letters on this piece</h3><p class="letters-empty">Checking the mailbag…</p>';
-  loadLetters().then(all => {
-    if(lt.dataset.for !== id) return; // a different article was opened meanwhile
-    const mine = all.filter(l => l.slug === id);
-    lt.innerHTML = '<h3>✉️ Letters on this piece</h3>' +
-      (mine.length ? mine.map(l => letterCard(l, false)).join('')
-        : '<p class="letters-empty">No letters on this piece yet.</p>') +
-      '<p style="margin-top:14px"><a class="write-note" href="' + noteUrl(id) +
-      '" target="_blank" rel="noopener">✍️ Add a note</a> ' +
-      '<span class="letters-hint">— the brain folds it in at the next sync.</span></p>';
-  });
+  lt.innerHTML = '<h3>✉️ Letters on this piece</h3>' +
+    '<p class="letters-hint" style="margin:-4px 0 10px">Sign in with GitHub and add a note right here — ' +
+    'extra context, a correction, new content, a question. The team gets pinged instantly; the brain folds it in at the next sync.</p>' +
+    '<div id="utter-drawer"></div>';
+  mountUtterances(document.getElementById('utter-drawer'), noteTerm(id));
 }
 function openEntry(id){
   const e = byName[id]; if(!e) return;
