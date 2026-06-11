@@ -13,4 +13,8 @@ Run the team sync protocol defined in `brain/processes/sync-protocol.md`:
    - **What's new** — changes since I last worked (new decisions, memory, updates).
    - **Built / created** — what's done and ready now.
    - **Waiting** — what's open, parked, or needs me next.
-5. Flag any conflicts or open loops (pending PRs, proposals awaiting review).
+5. Fetch open letters to the editor (GitHub issues titled `[note] <slug>: …` on
+   the brain repo — public API, no auth) and include them in **Waiting**; then
+   address them per `brain/processes/daily-notes.md` (fold each into the right
+   memory, close with `Closes #N` in the addressing commit).
+6. Flag any conflicts or open loops (pending PRs, proposals awaiting review).

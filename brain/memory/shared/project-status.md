@@ -48,6 +48,9 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 - **Design inspirations captured:** Loom, Monkey Island, Leisure Suit Larry —
   specifically the **exploration mechanic**, not their art/humor style.
   See [[design-inspirations]].
+- **Letters to the Editor (live):** anyone can attach notes/content to any piece
+  of info in the Malabi Daily (✍️ Add a note); the brain ingests open letters at
+  every sync and closes them by commit. See [[daily-notes]].
 
 ## In progress / open ⏳
 - **ADR 0003 (proposed — Ohad review pending):** product = **Science Museum Mystery**,

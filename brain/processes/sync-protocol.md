@@ -26,7 +26,12 @@ How a member catches up and stays in sync. Runs at the **start of a work session
    - **Waiting** — what's open, parked, or needs them next (open questions, their
      todos, decisions pending).
 
-5. **Flag conflicts / open loops.** Pending PRs touching `brain/**`, contradictory
+5. **Fetch open letters.** Pull open daily notes (GitHub issues titled
+   `[note] <slug>: …`) and include them in the **Waiting** bucket — then address
+   them per [daily-notes](daily-notes.md): fold each into the right memory and
+   close it with `Closes #N` in the addressing commit.
+
+6. **Flag conflicts / open loops.** Pending PRs touching `brain/**`, contradictory
    decisions, or stale project state that needs a call.
 
 ## Notes

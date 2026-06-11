@@ -38,6 +38,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [visual-language-references](shared/visual-language-references.md) — inspiration games for the VISUAL language (illustrated adventure, premium tactile, hidden-object, kids-explorable) + what to steal from each
 - [aso-research-findings](shared/aso-research-findings.md) — ASO keyword research results: dinosaurs are the strongest launch theme; full report in brain/research/
 - [project-gazette](shared/project-gazette.md) — the newspaper-style wiki auto-published to GitHub Pages; visualizes the brain + what changed when
+- [daily-notes](shared/daily-notes.md) — Letters to the Editor: notes/content on any piece of info via the Daily; the brain ingests open notes at every sync, closes them by commit
 - [click-to-play-engagement-concern](shared/click-to-play-engagement-concern.md) — open design concern: will the click-to-play exploration loop create the engagement we want (kids/touch)? + mitigations + prototype-to-resolve
 - [gameplay-principles](shared/gameplay-principles.md) — the six gameplay principles we design toward (every tap rewards, drip of aha, obvious-tappable, no dead ends, collection layer, soft guidance)
 - [game-concepts](shared/game-concepts.md) — current concept: Science Museum Mystery, three wings (Dinosaurs/Space/Inventions), tap-and-explore, ages 5–10, no ads

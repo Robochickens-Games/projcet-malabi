@@ -18,6 +18,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  issues: write # ensure the daily-note label for "Letters to the Editor"
 
 # Let an in-progress run finish; only the newest queued edition deploys.
 concurrency:
@@ -38,6 +39,18 @@ jobs:
 
       - name: Typeset the Gazette
         run: node scripts/build-wiki.mjs
+
+      # Letters to the Editor are GitHub issues titled "[note] <slug>: …" with
+      # this label; the prefilled "Add a note" links rely on it existing.
+      - name: Ensure the daily-note label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create daily-note \
+            --repo "${{ github.repository }}" \
+            --color FDE68A \
+            --description "A letter to the Malabi Daily — the brain ingests it at the next sync" \
+            || true
 
       - uses: actions/upload-pages-artifact@v3
         with:

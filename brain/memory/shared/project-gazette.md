@@ -21,6 +21,9 @@ turns `brain/**` into a single, always-current page the whole team can skim.
 - **Decisions** — the ADR ledger with status badges (proposed / accepted / abandoned).
 - **The Team** — Dor / Gidi / Ohad masthead.
 - **Archive** — every memory, filterable by scope.
+- **Letters to the Editor** — notes/content the team attaches to any article
+  (✍️ Add a note on each piece + a front-page mailbag), backed by GitHub issues;
+  the brain ingests open letters at every sync. See [[daily-notes]].
 
 **How it's built**
 - Generator: [`scripts/build-wiki.mjs`](../../../scripts/build-wiki.mjs) — zero npm deps,

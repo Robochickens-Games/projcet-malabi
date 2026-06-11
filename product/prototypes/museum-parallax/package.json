@@ -1,0 +1,19 @@
+{
+  "name": "museum-parallax-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Science Museum Mystery — parallax feel prototype: lobby tooth → dinosaur hall → match the diorama via the catalog",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "gsap": "^3.12.7",
+    "pixi.js": "^8.6.6"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

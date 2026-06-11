@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Science Museum Mystery — feel prototype</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="vignette"></div>
+
+  <!-- HUD -->
+  <header id="hud">
+    <button id="back-btn" class="hud-btn hidden" aria-label="Back to lobby">‹ Lobby</button>
+    <div id="hud-title">SCIENCE MUSEUM MYSTERY</div>
+    <div id="hud-right">
+      <div id="tooth-slot" class="empty" title="Your find"></div>
+      <button id="catalog-btn" class="hud-btn">📖 Catalog</button>
+    </div>
+  </header>
+
+  <!-- toast -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- tilt permission (iOS) -->
+  <button id="tilt-btn" class="hidden">✦ Enable tilt to look around</button>
+
+  <!-- catalog -->
+  <div id="catalog" class="hidden">
+    <div id="catalog-panel">
+      <div id="catalog-head">
+        <h2>Dinosaur Catalog</h2>
+        <button id="catalog-close" aria-label="Close">✕</button>
+      </div>
+      <div id="catalog-cards"></div>
+    </div>
+  </div>
+
+  <!-- success -->
+  <div id="success" class="hidden">
+    <div id="success-card">
+      <div class="big">✨ It's a match! ✨</div>
+      <p id="success-text"></p>
+      <div id="fragment-badge">FOSSIL FRAGMENT&nbsp;<b>1</b>&nbsp;/ 4</div>
+      <button id="replay-btn">Play again</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

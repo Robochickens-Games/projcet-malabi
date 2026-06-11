@@ -936,6 +936,27 @@ function renderHtml(dataJson) {
     width: 36px; height: 36px; cursor: pointer; font-size: 20px; font-family: var(--sans); }
   .drawer .dpath { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--faint); margin-bottom: 16px; word-break: break-all; }
 
+  /* ---- letters to the editor (notes via GitHub issues) ---- */
+  .letters-blurb { font-size: 14px; color: var(--muted); max-width: 720px; margin: 0 0 16px; }
+  .letter { background: var(--card); border: 1px solid var(--line); border-left: 3px solid #b07219; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+  .letter.addressed { opacity: .65; border-left-color: #4d7c2f; }
+  .letter-meta { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-family: var(--sans); font-size: 12px; color: var(--faint); margin-bottom: 7px; }
+  .letter-meta img { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line2); }
+  .letter-meta .who { font-weight: 700; color: var(--muted); }
+  .letter-meta .thread { margin-left: auto; font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--faint); }
+  .letter-meta .thread:hover { color: var(--ink); }
+  .letter-subject { font-family: var(--display); font-weight: 700; font-size: 16.5px; margin-bottom: 4px; }
+  .letter-body { font-size: 14px; color: var(--ink2); }
+  .letter-body > :first-child { margin-top: 0; } .letter-body > :last-child { margin-bottom: 0; }
+  .letters-empty { color: var(--faint); font-size: 14px; font-style: italic; }
+  .letters-hint { font-family: var(--sans); font-size: 12.5px; color: var(--faint); }
+  .write-note { display: inline-flex; align-items: center; gap: 7px; font-family: var(--sans); font-weight: 700; font-size: 12.5px;
+    letter-spacing: .03em; border: 1px solid var(--ink); border-radius: 8px; padding: 7px 14px; background: var(--card); color: var(--ink); }
+  .write-note:hover { background: var(--ink); color: var(--paper); text-decoration: none; }
+  .drawer-letters { margin-top: 30px; border-top: 2px solid var(--rule); padding-top: 14px; }
+  .drawer-letters h3 { font-family: var(--display); font-size: 17px; margin: 0 0 12px; }
+
   footer { font-family: var(--sans); color: var(--faint); font-size: 12px; text-align: center; margin-top: 56px; border-top: 1px solid var(--line); padding-top: 18px; }
 </style>
 </head>
@@ -971,6 +992,10 @@ function renderHtml(dataJson) {
     <div class="band"><span class="band-emoji">📰</span><h2 class="band-title">The latest</h2><span class="band-rule"></span></div>
     <div id="hero"></div>
     <div class="timeline" id="feed"></div>
+    <div class="band"><span class="band-emoji">✉️</span><h2 class="band-title">Letters to the Editor</h2><span class="band-rule"></span></div>
+    <p class="letters-blurb">Notes from the team on any piece of info — extra context, corrections, new content,
+      questions. The brain reads every open letter at the next sync, folds it into the right memory, and marks it addressed.</p>
+    <div id="letters"></div>
   </section>
 
   <section class="view" id="status">
@@ -1022,6 +1047,7 @@ function renderHtml(dataJson) {
   <button class="close" id="drawer-close">×</button>
   <div class="dpath" id="drawer-path"></div>
   <div class="markdown" id="drawer-body"></div>
+  <div class="drawer-letters" id="drawer-letters"></div>
 </div></aside>
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
@@ -1257,14 +1283,99 @@ document.querySelectorAll('#mem-filters button').forEach(b=>
     document.querySelectorAll('#mem-filters button').forEach(x=>x.classList.toggle('active', x===b)); renderGrid(); }));
 renderGrid();
 
+// ---- letters to the editor ----
+// Notes/content the team attaches to any piece of info, backed by GitHub issues
+// (free, no backend). Convention: issue title "[note] <slug>: subject" — slug is
+// the memory/decision the letter is about, or "general". The brain ingests open
+// letters at every sync and closes them via "Closes #N" in the addressing commit.
+const API = DATA.repoUrl.replace('https://github.com/', 'https://api.github.com/repos/');
+const NOTE_RE = /^\\[note\\]\\s*([a-z0-9-]+)\\s*:\\s*(.*)$/i;
+let lettersPromise = null;
+function loadLetters(){
+  if(!lettersPromise) lettersPromise =
+    fetch(API + '/issues?state=all&per_page=100&sort=created&direction=desc')
+      .then(r => r.ok ? r.json() : [])
+      .then(list => (Array.isArray(list) ? list : [])
+        .filter(i => !i.pull_request)
+        .map(i => {
+          const m = (i.title || '').match(NOTE_RE);
+          if(!m) return null;
+          return { slug: m[1].toLowerCase(), subject: m[2] || '(untitled)',
+            body: i.body || '', author: i.user ? i.user.login : 'someone',
+            avatar: i.user ? i.user.avatar_url : '', url: i.html_url, n: i.number,
+            open: i.state === 'open', comments: i.comments || 0,
+            date: (i.created_at || '').slice(0, 10) };
+        })
+        .filter(Boolean))
+      .catch(() => []);
+  return lettersPromise;
+}
+function noteUrl(slug){
+  const body = 'Write your note here — extra context, a correction, new content, a question.' +
+    '\\n\\n_The brain reads open letters at every sync, folds them into the right memory, and closes this letter once addressed._';
+  return DATA.repoUrl + '/issues/new?labels=daily-note&title=' +
+    encodeURIComponent('[note] ' + slug + ': ') + '&body=' + encodeURIComponent(body);
+}
+function letterCard(L, showOn){
+  const onChip = showOn && L.slug !== 'general' && byName[L.slug]
+    ? '<a class="asset" data-open="' + L.slug + '">📄 ' + escapeHtml(L.slug) + '</a>'
+    : '';
+  return '<div class="letter' + (L.open ? '' : ' addressed') + '">' +
+    '<div class="letter-meta">' +
+    (L.avatar ? '<img src="' + L.avatar + '" alt="" loading="lazy">' : '') +
+    '<span class="who">' + escapeHtml(L.author) + '</span>' +
+    '<span>' + longDate(L.date) + '</span>' +
+    (L.open ? '' : '<span class="badge accepted">✓ addressed</span>') +
+    onChip +
+    '<a class="thread" href="' + L.url + '" target="_blank" rel="noopener">#' + L.n +
+    (L.comments ? ' · ' + L.comments + ' 💬' : '') + ' ↗</a></div>' +
+    '<div class="letter-subject">' + escapeHtml(L.subject) + '</div>' +
+    (L.body ? '<div class="letter-body markdown">' + renderMd(L.body) + '</div>' : '') +
+    '</div>';
+}
+const lettersEl = document.getElementById('letters');
+lettersEl.innerHTML = '<p class="letters-empty">Checking the mailbag…</p>';
+loadLetters().then(all => {
+  const open = all.filter(l => l.open);
+  const addressed = all.filter(l => !l.open).slice(0, 4);
+  let html = '';
+  if(!all.length) html = '<p class="letters-empty">The mailbag is empty — be the first to write in.</p>';
+  else {
+    html = open.map(l => letterCard(l, true)).join('');
+    if(!open.length) html += '<p class="letters-empty">No open letters — everything addressed.</p>';
+    html += addressed.map(l => letterCard(l, true)).join('');
+  }
+  html += '<p style="margin-top:16px"><a class="write-note" href="' + noteUrl('general') +
+    '" target="_blank" rel="noopener">✍️ Write to the editor</a> ' +
+    '<span class="letters-hint">— or open any article and add a note right on it.</span></p>';
+  lettersEl.innerHTML = html;
+  wireWikilinks(lettersEl);
+});
+
 // ---- drawer ----
 const drawer = document.getElementById('drawer'), dbg = document.getElementById('drawer-bg');
+function renderDrawerLetters(id){
+  const lt = document.getElementById('drawer-letters');
+  lt.dataset.for = id;
+  lt.innerHTML = '<h3>✉️ Letters on this piece</h3><p class="letters-empty">Checking the mailbag…</p>';
+  loadLetters().then(all => {
+    if(lt.dataset.for !== id) return; // a different article was opened meanwhile
+    const mine = all.filter(l => l.slug === id);
+    lt.innerHTML = '<h3>✉️ Letters on this piece</h3>' +
+      (mine.length ? mine.map(l => letterCard(l, false)).join('')
+        : '<p class="letters-empty">No letters on this piece yet.</p>') +
+      '<p style="margin-top:14px"><a class="write-note" href="' + noteUrl(id) +
+      '" target="_blank" rel="noopener">✍️ Add a note</a> ' +
+      '<span class="letters-hint">— the brain folds it in at the next sync.</span></p>';
+  });
+}
 function openEntry(id){
   const e = byName[id]; if(!e) return;
   document.getElementById('drawer-path').textContent = e.path;
   const bodyEl = document.getElementById('drawer-body');
   bodyEl.innerHTML = renderMd(e.body);
   wireWikilinks(bodyEl);
+  renderDrawerLetters(id);
   drawer.scrollTop = 0;
   drawer.classList.add('open'); dbg.classList.add('open');
   // Reflect the open article in the URL so it can be linked to / shared.
