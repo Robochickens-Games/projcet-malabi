@@ -51,6 +51,24 @@ build host has no access to the brain's image pipeline, the prototype's
 `public/img/` assets are **committed** to the repo (un-gitignored) so builds are
 self-contained.
 
+**Art handoff (Dor, 2026-06-11):** a single master vector asset board lives at
+`product/prototypes/museum-parallax/assets/asset-board.svg` — **generated**, not
+hand-drawn, by `node scripts/build-asset-board.mjs`, which pulls every swappable
+layer + prop straight from `src/wireframe.js`/`src/art.js` so each frame is the
+exact 1:1 export size the engine expects (frames are named: `lobby-back`,
+`grove-main`, `tooth-leaf-herbivore`, `skeleton-trike`…). Imports natively into
+Figma/Illustrator/Affinity as named layers; an artist traces over the blockout,
+matches the bottom "painted-direction" reference section, and exports each to
+`public/img/<id>.png`. Rebuild whenever the world layout changes so the handoff
+never drifts from live geometry. See `assets/README.md`.
+
+**Throwaway caveat (Dor, 2026-06-11):** this prototype is **Vite-based** and is a
+**feel test, not the foundation** — when the real app moves to **Expo (React
+Native)**, this code is thrown away. Keep investment here proportionate: it exists
+to validate the walk-and-discover feel and the art direction, not to be carried
+forward. Port the *learnings* (world widths, layer speeds, reveal timing), not the
+code.
+
 **Why:** test the walk-and-discover feel ([[gameplay-principles]],
 [[click-to-play-engagement-concern]]) before investing in art or engine work.
 
