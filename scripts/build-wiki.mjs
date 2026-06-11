@@ -641,7 +641,13 @@ const imgManifest = loadManifest();
 for (const item of history) {
   // Always prefer the project's own images, in order of relevance:
   // 1) an image the commit itself added/changed (e.g. team avatars, a screenshot)
-  const touched = item.files.find((f) => IMG_RE.test(f) && existsSync(join(ROOT, f)));
+  //    — skip desk-cover files (they're meta-assets, not article content)
+  const touched = item.files.find((f) =>
+    IMG_RE.test(f) &&
+    existsSync(join(ROOT, f)) &&
+    !/\/cover-/.test(f) &&           // skip desk cover images
+    !/gazetCovers/.test(f)           // skip the source folder if it ever reappears
+  );
   if (touched) {
     const mm = touched.match(/members\/([^/]+)\//);
     const title = mm ? mm[1][0].toUpperCase() + mm[1].slice(1) : primaryAsset(item)?.label || "From the brain";
@@ -668,16 +674,20 @@ for (const item of history) {
       item.image = useLocal("brain/images/Science Museum Mystery.png", "Science Museum Mystery");
       continue;
     }
-    // Desk covers: every desk now has a bespoke illustrated cover
+    // Desk covers: every desk has a bespoke illustrated cover.
+    // For desks with a rotation pool, pick deterministically by commit hash
+    // so the same article always gets the same cover but adjacent articles differ.
+    const h = parseInt(item.hash.slice(0, 6), 16);
+    const rotPick = (pool) => pool[h % pool.length];
     const coverMap = {
-      Decisions:  "brain/images/cover-decisions.png",
-      Direction:  "brain/images/cover-decisions.png",
-      Proposals:  "brain/images/cover-proposals.png",
-      Research:   "brain/images/cover-research.png",
-      Updates:    "brain/images/cover-status.png",
-      Brain:      "brain/images/cover-status.png",
-      Features:   "brain/images/cover-team.png",
-      Assets:     "brain/images/cover-team.png",
+      Decisions: "brain/images/cover-decisions.png",
+      Direction: "brain/images/cover-decisions.png",
+      Proposals: "brain/images/cover-proposals.png",
+      Research:  "brain/images/cover-research.png",
+      Updates:   rotPick(["brain/images/cover-status.png", "brain/images/cover-research.png"]),
+      Brain:     rotPick(["brain/images/cover-status.png", "brain/images/cover-decisions.png"]),
+      Features:  rotPick(["brain/images/cover-team.png", "brain/images/cover-status.png", "brain/images/cover-research.png"]),
+      Assets:    rotPick(["brain/images/cover-team.png", "brain/images/Science Museum Mystery.png", "brain/images/cover-proposals.png"]),
     };
     const deskCover = coverMap[item.desk];
     if (deskCover && existsSync(join(ROOT, deskCover))) {
@@ -949,23 +959,25 @@ function renderHtml(dataJson) {
   .news-dayband .nd-rule { flex: 1; border-top: 2px solid var(--rule); height: 0; }
   .news-dayband .nd-label { font-family: var(--sans); font-size: 10.5px; font-weight: 700; letter-spacing: .13em;
     text-transform: uppercase; color: var(--faint); white-space: nowrap; }
-  /* borderless: whitespace alone separates stories — generous column gaps + row spacing */
-  .news-row { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 54px; row-gap: 50px; margin-top: 50px; align-items: start; }
-  /* article cell — no borders, no inset padding; the grid gaps do the spacing */
-  .ni { min-width: 0; overflow: hidden; }
+  /* card grid — gaps + borders give the card feel */
+  .news-row { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 16px; row-gap: 18px; margin-top: 28px; align-items: start; }
+  .ni { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 5px;
+    background: var(--card); padding: 0 18px 18px;
+    box-shadow: 0 1px 5px rgba(28,25,23,.07); }
   .ni.s8 { grid-column: span 8; }
   .ni.s6 { grid-column: span 6; }
   .ni.s4 { grid-column: span 4; }
   .ni.s12 { grid-column: span 12; }
-  .ni.strip { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-  @media (max-width: 800px) { .ni { grid-column: span 12 !important; } .news-row { column-gap: 0; row-gap: 40px; margin-top: 40px; } }
-  /* cover image — sits flush at the top of its cell */
-  .ni-cover { margin: 0 0 16px; overflow: hidden; }
+  .ni.strip { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    padding: 10px 16px; border-radius: 4px; }
+  @media (max-width: 800px) { .ni { grid-column: span 12 !important; } .news-row { column-gap: 0; row-gap: 14px; margin-top: 20px; } }
+  /* cover image — bleeds to card edges (negative horizontal margin to cancel card padding) */
+  .ni-cover { margin: 0 -18px 16px; overflow: hidden; border-radius: 4px 4px 0 0; }
   .ni.s8 .ni-cover img { height: 230px; }
   .ni.s6 .ni-cover img { height: 184px; }
   .ni.s4 .ni-cover img { height: 132px; }
   .ni-cover img { width: 100%; object-fit: cover; object-position: center 30%; display: block; filter: saturate(.9) contrast(1.02); cursor: zoom-in; }
-  .ni-cover figcaption { padding: 6px 0 0; }
+  .ni-cover figcaption { padding: 6px 18px 0; }
   /* headlines */
   .ni-head { font-family: var(--display); font-weight: 700; line-height: 1.22; margin: 10px 0 10px; }
   .ni.s8 .ni-head { font-size: 24px; letter-spacing: -.2px; }
