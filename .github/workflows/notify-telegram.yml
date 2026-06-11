@@ -41,6 +41,46 @@ jobs:
           BODY="$(git log -1 --pretty='%b')"
           DIFF="$(git diff HEAD~1 HEAD -- brain/ 2>/dev/null | head -c 6000)"
 
+          # Work out the relevant Malabi Daily article: the main memory/decision
+          # this commit touched. Prefer a memory file, then a decision; skip the
+          # index and the status snapshot (they aren't "an article").
+          CHANGED="$(git diff --name-only HEAD~1 HEAD -- 'brain/**/*.md' 2>/dev/null)"
+          PRIMARY=""
+          for f in $CHANGED; do
+            case "$f" in */index.md|*project-status.md) continue ;; esac
+            case "$f" in brain/memory/*) PRIMARY="$f"; break ;; esac
+          done
+          if [ -z "$PRIMARY" ]; then
+            for f in $CHANGED; do
+              case "$f" in brain/decisions/*) PRIMARY="$f"; break ;; esac
+            done
+          fi
+          if [ -z "$PRIMARY" ]; then
+            for f in $CHANGED; do
+              case "$f" in */index.md|*project-status.md) continue ;; *.md) PRIMARY="$f"; break ;; esac
+            done
+          fi
+
+          # Slug = the wiki's id for that article. Decisions use the filename;
+          # memories use their frontmatter `name:` (falling back to the filename).
+          SLUG=""
+          if [ -n "$PRIMARY" ]; then
+            case "$PRIMARY" in
+              brain/decisions/*) SLUG="$(basename "$PRIMARY" .md)" ;;
+              *) SLUG="$(sed -n 's/^name:[[:space:]]*//p' "$PRIMARY" | head -1 | tr -d '\r"')"
+                 [ -z "$SLUG" ] && SLUG="$(basename "$PRIMARY" .md)" ;;
+            esac
+          fi
+
+          # GitHub Pages base for this repo (owner lowercased), + deep link if known.
+          OWNER_LC="$(printf '%s' "${{ github.repository_owner }}" | tr 'A-Z' 'a-z')"
+          PAGES_BASE="https://${OWNER_LC}.github.io/${GITHUB_REPOSITORY#*/}/"
+          if [ -n "$SLUG" ]; then
+            GAZETTE_URL="${PAGES_BASE}#/${SLUG}"
+          else
+            GAZETTE_URL="$PAGES_BASE"
+          fi
+
           SYS="You are the friendly voice of a small game studio's shared team brain. Given a change to the team's shared notes, write a short update (1-3 sentences, under ~45 words) telling the 3-person team what changed and why it matters, in warm plain English. Refer to the author by name. Do NOT use file paths, git/commit jargon, markdown, code, or hashtags. Output only the message text."
           USER="$(printf 'Author: %s\nSummary line: %s\n\nDetails:\n%s\n\nWhat changed (diff):\n%s' "$AUTHOR" "$SUBJECT" "$BODY" "$DIFF")"
 
@@ -61,7 +101,7 @@ jobs:
             SUMMARY="$SUBJECT"
           fi
 
-          MSG="$(printf '🧠 %s\n\n%s\n\nRun /sync to pull the latest.' "$SUMMARY" "$COMMIT_URL")"
+          MSG="$(printf '🧠 %s\n\n📰 Read it in The Malabi Daily:\n%s\n\nSource: %s\nRun /sync to pull the latest.' "$SUMMARY" "$GAZETTE_URL" "$COMMIT_URL")"
 
           # Capture the response (no pipe) — piping into `grep -q` trips pipefail
           # via SIGPIPE when grep exits early, failing the step even on success.

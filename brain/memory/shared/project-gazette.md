@@ -30,6 +30,10 @@ turns `brain/**` into a single, always-current page the whole team can skim.
   every push to `main` touching `brain/**` (or the generator). A **new edition prints
   on every commit** — same notify-by-committing model as the rest of the brain.
 - The front-page feed needs full history, so the Action checks out with `fetch-depth: 0`.
+- **Deep-linkable articles:** any memory/decision opens directly via `…/#/<slug>`
+  (the wiki reads `location.hash` on load). The **Telegram brain-update digest**
+  uses this — every announcement links to the relevant Malabi Daily article (the
+  memory/decision the commit was about), plus the raw commit as source.
 
 **One-time setup (still pending):** repo **Settings → Pages → Source = "GitHub Actions"**
 must be switched on once for the site to go live. Until then the Action builds but can't

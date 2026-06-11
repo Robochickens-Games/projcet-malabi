@@ -1192,11 +1192,27 @@ function openEntry(id){
   wireWikilinks(bodyEl);
   drawer.scrollTop = 0;
   drawer.classList.add('open'); dbg.classList.add('open');
+  // Reflect the open article in the URL so it can be linked to / shared.
+  history.replaceState(null, '', '#/' + encodeURIComponent(id));
 }
-function closeDrawer(){ drawer.classList.remove('open'); dbg.classList.remove('open'); }
+function closeDrawer(){
+  drawer.classList.remove('open'); dbg.classList.remove('open');
+  if(location.hash) history.replaceState(null, '', location.pathname + location.search);
+}
 document.getElementById('drawer-close').addEventListener('click', closeDrawer);
 dbg.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+
+// ---- deep links: open a specific article straight from a URL (#/<slug>) ----
+// Lets the Telegram digest (and any shared link) point at the relevant article.
+function applyHash(){
+  const m = (location.hash || '').match(/^#\\/(.+)$/);
+  if(!m) return;
+  const slug = decodeURIComponent(m[1]);
+  if(byName[slug]) openEntry(slug);
+}
+window.addEventListener('hashchange', applyHash);
+applyHash();
 
 // ---- tabs ----
 document.querySelectorAll('nav.tabs button').forEach(b=>
