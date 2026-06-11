@@ -31,6 +31,11 @@ agrees; Ohad (tech feasibility) review is pending.
    is a first-class pillar, not a layer added at the end.
 5. **Compliance:** build for Apple Kids Category + Google Families Policy + Teacher
    Approved eligibility from day one — required for store trust with parents.
+6. **Gameplay:** exploration-driven, click-to-play core loop ([[design-inspirations]])
+   held to six engagement principles — every tap rewards, a steady drip of "aha",
+   tappable-is-obvious, no dead ends/fail states, a collection/progression layer,
+   soft guidance when idle. These are design constraints on every scene, not
+   nice-to-haves. See [[gameplay-principles]] (engagement → retention → "make money").
 
 ## Consequences
 - **Makes it easier:** clear niche to research and build toward; data-driven topic
@@ -52,4 +57,6 @@ agrees; Ohad (tech feasibility) review is pending.
   Result: dinosaurs confirmed as strongest launch theme; decision updated above.
 
 ## Pending
-- **Ohad:** review and sign off → move status to accepted.
+- **Ohad:** review and sign off → move status to accepted. Note the gameplay
+  principles ([[gameplay-principles]]) — flag any that are technically costly to
+  guarantee (esp. "every tap rewards" and "no dead ends") so we size them early.

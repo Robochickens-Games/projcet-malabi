@@ -49,7 +49,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [ohad-role](members/ohad/ohad-role.md) — Ohad's role: tech
 
 ## Decisions
-- [0003-first-product-direction-science-games-for-kids](../decisions/0003-first-product-direction-science-games-for-kids.md) — proposed: kids science games niche, ASO topic research, Apple feature design bar (Ohad review pending)
+- [0003-first-product-direction-science-games-for-kids](../decisions/0003-first-product-direction-science-games-for-kids.md) — proposed: kids science games niche, ASO topic research, Apple feature design bar, click-to-play gameplay held to six engagement principles (Ohad review pending)
 
 ## Projects
 _(none yet — first initiative creates `memory/projects/<slug>/` and a section here)_
