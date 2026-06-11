@@ -397,9 +397,18 @@ function primaryAsset(c) {
   return cands.length ? pathMeta[cands[0]] : null;
 }
 
-// The most substantive prose paragraph near the top of a markdown body:
-// skips headings/quotes and the short "Status: proposed" style lines, so an
-// ADR yields its Context, not its one-word status.
+// A paragraph that's mostly file paths / asset bookkeeping (e.g. "brain/images/
+// foo.png — …") reads as noise in a dek — the reader wants prose, not a manifest.
+function looksTechnical(text) {
+  const files = (text.match(/[\w./-]+\.(png|jpe?g|webp|gif|svg|md|mjs|js|json|css|html)\b/gi) || []).length;
+  if (files >= 2) return true;                                    // a list of files
+  if (files >= 1 && /\b(brain|src|assets|images|product|scripts)\/[\w./-]+/i.test(text)) return true;
+  return false;
+}
+// The most substantive *prose* paragraph near the top of a markdown body:
+// skips headings/quotes, the short "Status: proposed" lines, and file-path
+// manifests, so a dek reads like a sentence — an ADR yields its Context, not
+// its one-word status, and an asset note yields its description, not its paths.
 function bestParagraph(body) {
   const paras = [];
   for (const block of (body || "").split(/\n\s*\n/)) {
@@ -412,7 +421,14 @@ function bestParagraph(body) {
       .trim();
     if (text) paras.push(text);
   }
-  return paras.find((p) => p.length >= 80) || paras[0] || "";
+  // How much real prose survives once wikilinks / links / code are stripped — a
+  // "Informs [[a]] and [[b]]." line has almost none, and reads poorly as a dek.
+  const proseLen = (t) => t
+    .replace(/\[\[[^\]]+\]\]/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/`[^`]+`/g, "")
+    .replace(/[^A-Za-z0-9]+/g, " ").trim().length;
+  const good = paras.filter((p) => !looksTechnical(p) && proseLen(p) >= 45);
+  return good.find((p) => p.length >= 80) || good.find(Boolean)
+    || paras.filter((p) => !looksTechnical(p)).find(Boolean) || "";
 }
 
 function clampSentences(s, maxSent, maxChars) {
@@ -910,33 +926,33 @@ function renderHtml(dataJson) {
   figcaption a { color: var(--faint); }
   figcaption a:hover { color: var(--ink); }
   .hero-photo { margin: 4px 0 14px; }
-  .hero-photo img { height: 240px; object-fit: cover; object-position: center 30%; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
+  .hero-photo img { height: 240px; object-fit: cover; object-position: center 30%; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); cursor: zoom-in; }
 
   /* ---- newspaper article grid (below hero) ---- */
   .news-day { margin: 0; }
-  .news-dayband { display: flex; align-items: center; gap: 10px; padding: 22px 0 0; }
+  .news-dayband { display: flex; align-items: center; gap: 12px; padding: 58px 0 4px; }
   .news-dayband .nd-rule { flex: 1; border-top: 2px solid var(--rule); height: 0; }
   .news-dayband .nd-label { font-family: var(--sans); font-size: 10.5px; font-weight: 700; letter-spacing: .13em;
     text-transform: uppercase; color: var(--faint); white-space: nowrap; }
-  .news-row { display: grid; grid-template-columns: repeat(12, 1fr); border-top: 1px solid var(--line); }
-  /* article cell */
-  .ni { padding: 20px 22px 22px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; overflow: hidden; }
-  .ni:last-child { border-right: 0; }
+  /* borderless: whitespace alone separates stories — generous column gaps + row spacing */
+  .news-row { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 54px; row-gap: 50px; margin-top: 50px; align-items: start; }
+  /* article cell — no borders, no inset padding; the grid gaps do the spacing */
+  .ni { min-width: 0; overflow: hidden; }
   .ni.s8 { grid-column: span 8; }
   .ni.s6 { grid-column: span 6; }
   .ni.s4 { grid-column: span 4; }
-  .ni.s12 { grid-column: span 12; border-right: 0; }
-  .ni.strip { padding: 11px 22px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-  @media (max-width: 800px) { .ni { grid-column: span 12 !important; border-right: 0; } }
-  /* cover image — bleeds to cell edges */
-  .ni-cover { margin: -20px -22px 16px; overflow: hidden; }
-  .ni.s8 .ni-cover img { height: 210px; }
-  .ni.s6 .ni-cover img { height: 170px; }
-  .ni.s4 .ni-cover img { height: 115px; }
-  .ni-cover img { width: 100%; object-fit: cover; object-position: center 30%; display: block; filter: saturate(.9) contrast(1.02); }
-  .ni-cover figcaption { padding: 4px 22px 0; }
+  .ni.s12 { grid-column: span 12; }
+  .ni.strip { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  @media (max-width: 800px) { .ni { grid-column: span 12 !important; } .news-row { column-gap: 0; row-gap: 40px; margin-top: 40px; } }
+  /* cover image — sits flush at the top of its cell */
+  .ni-cover { margin: 0 0 16px; overflow: hidden; }
+  .ni.s8 .ni-cover img { height: 230px; }
+  .ni.s6 .ni-cover img { height: 184px; }
+  .ni.s4 .ni-cover img { height: 132px; }
+  .ni-cover img { width: 100%; object-fit: cover; object-position: center 30%; display: block; filter: saturate(.9) contrast(1.02); cursor: zoom-in; }
+  .ni-cover figcaption { padding: 6px 0 0; }
   /* headlines */
-  .ni-head { font-family: var(--display); font-weight: 700; line-height: 1.18; margin: 8px 0 7px; }
+  .ni-head { font-family: var(--display); font-weight: 700; line-height: 1.22; margin: 10px 0 10px; }
   .ni.s8 .ni-head { font-size: 24px; letter-spacing: -.2px; }
   .ni.s6 .ni-head { font-size: 20px; }
   .ni.s4 .ni-head { font-size: 16px; }
@@ -944,7 +960,7 @@ function renderHtml(dataJson) {
   .ni-head a { cursor: pointer; }
   .ni-head a:hover { text-decoration: underline; }
   /* body text — hidden for briefs */
-  .ni-body { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 9px; }
+  .ni-body { font-size: 14px; line-height: 1.65; color: var(--muted); margin: 2px 0 13px; }
   .ni.s8 .ni-body { font-size: 14.5px; color: var(--ink2); }
   .ni.s4 .ni-body, .ni.strip .ni-body { display: none; }
   /* read link */
@@ -996,6 +1012,7 @@ function renderHtml(dataJson) {
   .markdown table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 15px; }
   .markdown th, .markdown td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; }
   .markdown th { background: var(--tint); font-family: var(--sans); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
+  .markdown img { max-width: 100%; height: auto; display: block; margin: 14px 0; border: 1px solid var(--line2); cursor: zoom-in; }
   .markdown a.wikilink { color: var(--s-decision); border-bottom: 1px dotted var(--s-decision); cursor: pointer; }
   .markdown a.wikilink:hover { text-decoration: none; background: var(--tint); }
 
@@ -1089,6 +1106,17 @@ function renderHtml(dataJson) {
   .drawer-letters { margin-top: 30px; border-top: 2px solid var(--rule); padding-top: 14px; }
   .drawer-letters h3 { font-family: var(--display); font-size: 17px; margin: 0 0 12px; }
 
+  /* ---- image lightbox: tap any cover/photo to see the asset full-size ---- */
+  .lightbox { position: fixed; inset: 0; z-index: 60; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 4vmin; background: rgba(20,18,16,.92); cursor: zoom-out; backdrop-filter: blur(3px); }
+  .lightbox.open { display: flex; animation: fade .18s ease; }
+  .lightbox img { max-width: 94vw; max-height: 84vh; object-fit: contain; background: #fff;
+    box-shadow: 0 14px 60px rgba(0,0,0,.55); border-radius: 3px; }
+  .lightbox-cap { font-family: var(--sans); font-size: 13px; letter-spacing: .02em; color: rgba(255,255,255,.82);
+    text-align: center; max-width: 80ch; }
+  .lightbox-cap a { color: rgba(255,255,255,.82); text-decoration: underline; }
+  .lightbox-hint { font-family: var(--sans); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+
   footer { font-family: var(--sans); color: var(--faint); font-size: 12px; text-align: center; margin-top: 56px; border-top: 1px solid var(--line); padding-top: 18px; }
 </style>
 </head>
@@ -1172,6 +1200,12 @@ function renderHtml(dataJson) {
     The Malabi Daily · auto-typeset by <code>scripts/build-wiki.mjs</code> from <code>brain/**</code> ·
     new editions print on every commit.
   </footer>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <img id="lightbox-img" alt="" />
+  <div class="lightbox-cap" id="lightbox-cap"></div>
+  <div class="lightbox-hint">click anywhere or press Esc to close</div>
 </div>
 
 <div class="drawer-bg" id="drawer-bg"></div>
@@ -1438,6 +1472,25 @@ document.getElementById('feed').innerHTML = groups.map(g=>{
 
 wireWikilinks(document.getElementById('hero'));
 wireWikilinks(document.getElementById('feed'));
+
+// ---- image lightbox: tap any cover / hero photo / in-article image to see it
+// large and clear (concept art, screenshots) — covers are cropped, this isn't. ----
+const lb = document.getElementById('lightbox');
+const lbImg = document.getElementById('lightbox-img');
+const lbCap = document.getElementById('lightbox-cap');
+function openLightbox(src, cap){ lbImg.src = src; lbCap.textContent = cap || ''; lb.classList.add('open'); }
+function closeLightbox(){ lb.classList.remove('open'); lbImg.removeAttribute('src'); }
+lb.addEventListener('click', closeLightbox);
+document.addEventListener('click', (e)=>{
+  const img = e.target.closest('.ni-cover img, .hero-photo img, .markdown img');
+  if(!img || lb.contains(img)) return;
+  e.preventDefault();
+  openLightbox(img.currentSrc || img.src, img.getAttribute('alt'));
+});
+// Esc closes the lightbox first (capture phase) without also closing the drawer.
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape' && lb.classList.contains('open')){ e.stopPropagation(); closeLightbox(); }
+}, true);
 
 // ---- status ----
 const statusEl = document.getElementById('status-md');
