@@ -25,8 +25,10 @@ agrees; Ohad (tech feasibility) review is pending.
    science overlap found in ASO research (search proxy 42–55; 5M+ downloads on
    comparable titles). First app = a science mystery with dinosaurs in the front window.
    Franchise expands: space (chapter 2) → Leonardo's workshop (prestige chapter).
-3. **Franchise structure:** series brand = *Science Quest*; launch app title =
-   *Dino Time Lab* or *Dinosaur Mystery Quest* (demand hook carries discoverability).
+3. **Franchise structure:** series brand = *Science Quest*; launch app title candidates =
+   *Starfall Fossil Rescue: Dino Space Mystery*, *Dino Space Mystery: Starfall Fossils*,
+   or *Fossil Rescue: Dinosaur Crater Quest*. Franchise expands: space (chapter 2) →
+   Leonardo's workshop (prestige). See [[game-concepts]].
 4. **Design bar:** aim for **Apple feature-worthy** (App of the Year / Month). Design
    is a first-class pillar, not a layer added at the end.
 5. **Compliance:** build for Apple Kids Category + Google Families Policy + Teacher
@@ -51,10 +53,14 @@ agrees; Ohad (tech feasibility) review is pending.
   and we're not time-constrained in the same way we're money-constrained.
 
 ## Research
-- **Gidi — 2026-06-10:** ASO keyword research completed via ChatGPT deep research.
-  Full report: `brain/research/aso-keyword-research-2026-06-10.md`.
+- **Gidi — 2026-06-10:** ASO keyword research (round 1) — dinosaurs confirmed as
+  strongest launch theme. Full report: `brain/research/aso-keyword-research-2026-06-10.md`.
   Summary: [[aso-research-findings]].
-  Result: dinosaurs confirmed as strongest launch theme; decision updated above.
+- **Gidi — 2026-06-11:** ASO deep research (round 2) — three game concepts evaluated.
+  **Starfall Fossil Rescue** (dino+space mystery, age 6–9) recommended as first launch;
+  projected 6k–10k downloads in 6 months, 11k–20k at 12 months on $8k–$12k UA.
+  Full report: `brain/research/aso-deep-research-game-concepts-2026-06-11.md`.
+  Summary: [[game-concepts]].
 
 ## Pending
 - **Ohad:** review and sign off → move status to accepted. Note the gameplay
