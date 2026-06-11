@@ -40,9 +40,14 @@ engine; its slicing pipeline (feathered layer cuts + inpainted base) is kept in
 **https://malabi-museum-parallax.vercel.app** — linked from the masthead of
 [[project-gazette]] ("▶ Play the prototype", visible on every tab). The Vercel
 project is `malabi-museum-parallax` under Dor's `dortaldts-projects` scope.
-**Redeploy** (no git integration yet — it's a manual prebuilt static deploy):
-`npm run build` in `product/prototypes/museum-parallax/`, then
-`vercel deploy --prod --yes --scope dortaldts-projects` from the `dist/` folder.
+**Auto-deploy is on:** the project is connected to the GitHub repo (production
+branch `main`, root directory `product/prototypes/museum-parallax`, framework
+Vite). **Every push that touches the prototype path rebuilds and republishes
+automatically** — no manual step (an Ignored-Build-Step skips pushes that don't
+touch the prototype, so routine brain commits don't trigger builds). Because the
+build host has no access to the brain's image pipeline, the prototype's
+`public/img/` assets are **committed** to the repo (un-gitignored) so builds are
+self-contained.
 
 **Why:** test the walk-and-discover feel ([[gameplay-principles]],
 [[click-to-play-engagement-concern]]) before investing in art or engine work.
