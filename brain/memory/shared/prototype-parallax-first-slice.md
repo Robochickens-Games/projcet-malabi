@@ -1,49 +1,48 @@
 ---
 name: prototype-parallax-first-slice
-description: First playable feel-prototype is built — parallax lobby → tooth → dino hall → catalog-deduction diorama match; stack = Vite + Pixi.js + GSAP, lives in product/prototypes/museum-parallax
+description: Playable prototype of scenario 1 — wide side-scrolling platformer-parallax format (Dor's format decision), wireframe blockout art now, painted assets to drop in later; in product/prototypes/museum-parallax
 owner: dor
 scope: shared
 created: 2026-06-11
-tags: [prototype, parallax, stack, design, gameplay, dinosaurs]
+tags: [prototype, parallax, platformer, stack, design, gameplay, dinosaurs]
 ---
 
-# First feel-prototype: parallax museum slice (built, working)
+# Playable prototype: wide platformer-parallax slice (built, working)
 
 **What:** A playable web prototype of scenario 1 lives in
 `product/prototypes/museum-parallax/` (`npm install && npm run dev`):
 
-1. **Lobby** (warm Art Deco, per [[art-direction]]) with real parallax depth —
-   mouse / touch-drag / device tilt shifts layers at different rates, so things
-   hide *behind* things. A fossil tooth is half-hidden behind the foreground
-   planter; you must look around to spot it.
-2. Tap the tooth → flies into a collection slot.
-3. **Catalog** shows 3 dinos + diets + tooth shapes — the tooth is wide and
-   flat → plant eater (the deduction is the teaching moment).
-4. **Dinosaur hall**: 3 dioramas (Spinosaurus / Allosaurus / Triceratops).
-   Wrong guesses shake + teach; Triceratops celebrates and awards
-   **Fossil Fragment 1/4** (the collectible spine from [[puzzle-brush-away-the-dust]]).
+1. **Lobby** — a 2880px walkable hall (drag / fling / scroll / arrow keys with
+   acceleration / tilt). A fossil tooth hides behind a planter **on a slower
+   parallax layer — walking past it IS the reveal**.
+2. **Nesting Grove** — a 3840px jungle trail. Layer stack: clouds+sun 0.1× ·
+   mountains 0.3× · treeline 0.5× · trail+scene 1.0× · foreground 1.42×.
+3. Arrive at a skeleton + **field guide with four tooth-type cards**
+   (carnivore/piscivore/insectivore/herbivore); the wide flat tooth → herbivore
+   → Triceratops match. Wrong cards shake + teach; success awards Fragment 1/4.
 
-**Stack decision (Dor, 2026-06-11):** **Vite + Pixi.js (WebGL) + GSAP**, all
-free ([[budget-constraint]]); deploys as a static URL anyone can open on a
-phone. Chosen over Unity/Godot (slow to share/iterate) and CSS-only (caps out
-on masking/particles/feel). The brush-reveal puzzle's layer masking is native
-to this stack.
+**Format decision (Dor, 2026-06-11):** the game uses a **wide, continuous
+side-scrolling world with platformer parallax** — not a static screen with a
+tilt lens. Walking the world is the core feel; depth comes from layer speeds.
 
-**Art:** code-authored layered SVG in the captured palette — placeholder for
-painted illustration later; the layer/depth structure is the deliverable.
+**Art decision (Dor, 2026-06-11):** prototype stays **low-fi wireframe**
+(outlines + labels, each layer carries its speed tag) until real assets arrive;
+painted layers will replace wireframe layers 1:1 (same world widths). World
+layout constants in `src/wireframe.js` drive both drawings and hotspots.
 
-**Why:** test the *feel* (parallax discovery + tap rewards, per
-[[gameplay-principles]] and [[click-to-play-engagement-concern]]) before
-investing in real art or engine work.
+**Stack:** Vite + Pixi.js (WebGL) + GSAP, all free ([[budget-constraint]]).
+A painted-art experiment using Gidi's Nesting Grove mock
+(`brain/images/landscape dino.png`) validated that the art direction works in
+engine; its slicing pipeline (feathered layer cuts + inpainted base) is kept in
+`scripts/generate-assets.mjs` for when final art lands.
 
-**How to apply:** judge the prototype against the anchors in
-[[visual-language-references]]; iterate on feel here before any engine
-decision. Copy says "ferns and leaves," not grass (paleo-accurate — vet final
-content with the `paleontologist` skill).
+**Why:** test the walk-and-discover feel ([[gameplay-principles]],
+[[click-to-play-engagement-concern]]) before investing in art or engine work.
 
 **Gotcha worth keeping:** with Vite/Rollup, a top-level `await` in the entry
-chunk deadlocks Pixi v8's dynamically-imported renderer chunks (circular
-chunk wait, build-only — dev mode works). Boot via an async function instead.
+chunk deadlocks Pixi v8's dynamically-imported renderer chunks (circular chunk
+wait, build-only — dev mode works). Boot via an async function instead.
 
 Related: [[game-concepts]], [[art-direction]], [[design-inspirations]],
+[[visual-language-references]],
 [[0003-first-product-direction-science-games-for-kids]], [[north-star]].

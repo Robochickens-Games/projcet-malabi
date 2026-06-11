@@ -53,8 +53,10 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
   every sync and closes them by commit. See [[daily-notes]].
 
 ## In progress / open ⏳
-- **First playable feel-prototype built (2026-06-11, Dor):** parallax museum slice —
-  lobby → find tooth → dino hall → match the herbivore diorama via the catalog.
+- **First playable prototype built (2026-06-11, Dor):** scenario 1 in the game's
+  chosen format — **wide side-scrolling platformer parallax** (walk the lobby →
+  tooth reveals from behind a planter → jungle trail → match the tooth in the
+  field guide). Wireframe blockout art for now; painted layers drop in 1:1 later.
   Vite + Pixi.js + GSAP, in `product/prototypes/museum-parallax/` (`npm i && npm run dev`).
   Team: play it and judge the feel. See [[prototype-parallax-first-slice]].
 - **ADR 0003 (proposed — Ohad review pending):** product = **Science Museum Mystery**,
