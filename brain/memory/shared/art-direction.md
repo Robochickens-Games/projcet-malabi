@@ -1,15 +1,19 @@
 ---
 name: art-direction
-description: Visual direction for Science Museum Mystery — art style, palette, character, UI language from first concept image
+description: Visual direction for Science Museum Mystery — art style, palette, character, UI language from concept images
 owner: dor
 scope: shared
 created: 2026-06-11
+updated: 2026-06-11
 tags: [design, art, visual-direction, ui]
 ---
 
 # Art direction — Science Museum Mystery
 
-From the first concept image (2026-06-11): `brain/images/Science Museum Mystery.png`.
+Two concept images from Dor (2026-06-11):
+- `brain/images/Science Museum Mystery.png` — hub lobby / UI concept (portrait, all three wings visible)
+- `brain/images/landscape dino.png` — environment/atmosphere concept (landscape, dinosaur hall exterior)
+
 Informs [[game-concepts]] and [[0003-first-product-direction-science-games-for-kids]].
 
 ## Overall style
@@ -67,3 +71,15 @@ Three icon + label callout cards:
 ## Tone
 Not scary, not dumbed-down. Curious, warm, slightly mysterious. "You're the detective
 in a museum that's more than it looks." Every corner has something to tap.
+
+## Landscape / environment reference (`brain/images/landscape dino.png`)
+Second concept from Dor — establishes the outdoor/environmental mood for the
+dinosaur section and possibly the museum exterior:
+- Scale and grandeur: giant prehistoric creature dwarfs the landscape
+- Painterly, editorial illustration style — not pixel, not vector-flat; textured brush strokes
+- Rich, slightly muted naturalistic palette: dusty terracotta/ochre earth, deep olive greens, overcast sky
+- Cinematic wide composition — horizon, open sky, sense of time and depth
+- Subject off-centre with strong negative space — emphasises wonder and isolation
+- Tone: awe without fear; the scale is magical, not threatening
+- **Application:** use this palette + scale reference for dino-wing environment art; the lobby
+  concept handles UI/navigation while this drives the in-wing scene composition.
