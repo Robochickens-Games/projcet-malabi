@@ -1,46 +1,51 @@
 ---
 name: game-concepts
-description: Three evaluated game concepts for the first launch — Starfall Fossil Rescue is recommended
+description: Current product concept — Science Museum Mystery, tap-and-explore adventure with three wings (Dinosaurs, Space, Inventions)
 owner: gidi
 scope: shared
 created: 2026-06-11
 tags: [product, game, concepts, aso, launch]
 ---
 
-# Game concepts (from ASO deep research, 2026-06-11)
+# Game concepts
 
-Full report: `brain/research/aso-deep-research-game-concepts-2026-06-11.md`.
-Follows [[aso-research-findings]]. Informs [[0003-first-product-direction-science-games-for-kids]].
+Full ASO research: `brain/research/aso-deep-research-game-concepts-2026-06-11.md`.
+Informs [[0003-first-product-direction-science-games-for-kids]].
 
-## Recommendation: Starfall Fossil Rescue (launch first)
+## Current direction: Science Museum Mystery ⭐
 
-**The idea:** dinosaur + asteroid/space fusion mystery. A meteor shower wakes the
-museum fossils; kids rebuild a lost star map by solving a crater mystery.
+**Name:** Science Museum Mystery
+**Tagline:** A Tap-and-Explore Adventure Through Science
+**Age:** 5–10
 
-- Age 6–9 primary
-- Scientists: Mary Anning, Galileo, Katherine Johnson
-- Market gap: dino+space+mystery+tap-quest is thin — good differentiation
-- ASO: lead with "dinosaur games" (18k–45k/mo, difficulty 18–28) + "fossil game" (2k–6k)
-- Downloads: 6k–10k (6 mo), 11k–20k (12 mo)
-- UA budget: $8k–$12k / 6 months
+The museum is the franchise. Three wings = three worlds, each its own content area:
+- **Dinosaurs** (left wing) — fossils, paleontology, excavation
+- **Space** (centre arch/portal) — solar system, moon, rockets, astronomy
+- **Inventions** (right wing) — gears, blueprints, Victorian/steampunk, Leonardo-adjacent
 
-**App name candidates:**
-- *Starfall Fossil Rescue: Dino Space Mystery*
-- *Dino Space Mystery: Starfall Fossils*
-- *Fossil Rescue: Dinosaur Crater Quest*
+Kids explore the museum lobby, then go deeper into each wing as a self-contained mystery.
+The lobby is the hub; each wing is a world. Strongly aligns with the ASO research finding
+that "worlds inside the museum are stronger ASO hooks than 'museum' alone."
 
-## Option 2: Time Telescope: Dino to Deep Space
+**Monetization:** No ads. Ever. (parent pass / expansion model)
+**Offline:** Play offline confirmed.
+**Trust signals:** Kid-Safe, Made for curious minds.
 
-Best episodic pipeline / sequel candidate. Broken observatory scatters dinosaur
-eras and space history — kids restore the timeline. Age 7–10. Best as follow-up
-once the studio has brand recognition.
+**Art direction:** See [[art-direction]] — warm illustrated museum, Art Deco interior,
+amber/gold + teal/space palette, back-facing child protagonist with magnifying glass.
 
-## Option 3: Mars Rover and the Last Dino Signal
+**ASO strategy (from research):**
+- Lead with "dinosaur games" (18k–45k/mo) + "fossil game" + "museum mystery game"
+- "Science" as descriptor, not primary hook
+- Projected downloads: 6k–10k (6 mo), 11k–20k (12 mo) on ~$8k–$12k UA
 
-Strongest science-brand and press/teacher angle. Astrobiology spine (Perseverance
-rover tie-in). Age 8–11. Slightly narrower store demand — best STEM-brand sequel.
+## Earlier candidates (from ASO research — superseded)
+These informed the current direction but are no longer the primary concept:
+- **Starfall Fossil Rescue** — dino+asteroid fusion; narrower than the museum umbrella
+- **Time Telescope: Dino to Deep Space** — best episodic pipeline; could inform wing structure
+- **Mars Rover and the Last Dino Signal** — best STEM/press angle; potential future wing
 
-## Cross-theme rules (apply to all)
+## Cross-theme product rules
 - Session: 5–8 minute scene solves
 - One observable science idea per scene
 - Free core + optional expansion / parent pass (never lock the learning spine)

@@ -25,10 +25,11 @@ agrees; Ohad (tech feasibility) review is pending.
    science overlap found in ASO research (search proxy 42–55; 5M+ downloads on
    comparable titles). First app = a science mystery with dinosaurs in the front window.
    Franchise expands: space (chapter 2) → Leonardo's workshop (prestige chapter).
-3. **Franchise structure:** series brand = *Science Quest*; launch app title candidates =
-   *Starfall Fossil Rescue: Dino Space Mystery*, *Dino Space Mystery: Starfall Fossils*,
-   or *Fossil Rescue: Dinosaur Crater Quest*. Franchise expands: space (chapter 2) →
-   Leonardo's workshop (prestige). See [[game-concepts]].
+3. **Product concept:** **Science Museum Mystery** — "A Tap-and-Explore Adventure Through
+   Science." The museum is the franchise hub. Three wings = three worlds: **Dinosaurs**,
+   **Space**, **Inventions**. Kids explore the lobby, then go deeper into each wing as a
+   self-contained mystery. Monetization: no ads, ever; parent pass / expansion model.
+   Offline play. Ages 5–10. See [[game-concepts]], [[art-direction]].
 4. **Design bar:** aim for **Apple feature-worthy** (App of the Year / Month). Design
    is a first-class pillar, not a layer added at the end.
 5. **Compliance:** build for Apple Kids Category + Google Families Policy + Teacher

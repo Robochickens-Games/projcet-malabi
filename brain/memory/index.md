@@ -39,7 +39,8 @@ After writing a memory, add a one-line pointer below under the right section.
 - [project-gazette](shared/project-gazette.md) — the newspaper-style wiki auto-published to GitHub Pages; visualizes the brain + what changed when
 - [click-to-play-engagement-concern](shared/click-to-play-engagement-concern.md) — open design concern: will the click-to-play exploration loop create the engagement we want (kids/touch)? + mitigations + prototype-to-resolve
 - [gameplay-principles](shared/gameplay-principles.md) — the six gameplay principles we design toward (every tap rewards, drip of aha, obvious-tappable, no dead ends, collection layer, soft guidance)
-- [game-concepts](shared/game-concepts.md) — three evaluated game concepts; Starfall Fossil Rescue recommended for first launch (dino+space mystery, age 6–9)
+- [game-concepts](shared/game-concepts.md) — current concept: Science Museum Mystery, three wings (Dinosaurs/Space/Inventions), tap-and-explore, ages 5–10, no ads
+- [art-direction](shared/art-direction.md) — visual direction: warm illustrated museum, Art Deco, amber/gold + teal/space palette, back-facing child protagonist with magnifying glass
 
 ## Members
 ### Dor
