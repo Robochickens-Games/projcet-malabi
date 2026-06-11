@@ -30,7 +30,9 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 - **Decisions recorded:** ADR 0001 (architecture), ADR 0002 (Dudu — abandoned).
 - **Skills:** `product-designer` (Dor's domain), `project-management` (team-wide
   coordination — *not* product, which is Gidi's), `brain-dump` (ideas →
-  team-reviewed proposals) — all usable by anyone.
+  team-reviewed proposals), `paleontologist` (scientific fact-check / accuracy
+  review for the dino game — verdicts claims, corrects errors, cites sources) —
+  all usable by anyone.
 - **Auto-briefing:** every session / clone opens with **What's new / Built / Waiting**
   (SessionStart hook + `/sync`).
 - **Proposals gate:** `brain/proposals/` — ideas are logged and surfaced but not
@@ -38,6 +40,9 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 - **Proactive sync push (live + verified):** GitHub Action posts every `brain/**`
   change to the team's Telegram group. CI false-fail fixed; confirmed working.
   See [[proactive-sync-push-telegram]].
+- **Team onboarded:** Gidi & Ohad added as repo collaborators; everyone is cloned in
+  and synced. (`.github/CODEOWNERS` still uses `@*-gh` placeholder handles — deferred,
+  low priority; review routing works via collaborator access.)
 - **Natural-language Telegram digests (live):** daily digest written in plain English
   via GitHub Models (free tier) — not raw diffs. Members stay synced without a session.
 - **Design inspirations captured:** Loom, Monkey Island, Leisure Suit Larry —
@@ -64,6 +69,15 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 
 ## Next steps
 - **Ohad:** review ADR 0003 → agree or push back → move to accepted.
-- **Team:** once ADR 0003 accepted, start first initiative — create `brain/memory/projects/science-museum-mystery/`.
+- **Team:** once ADR 0003 accepted, start first initiative — create `brain/memory/projects/science-museum-mystery/`. <!-- resolved-when: path-exists:brain/memory/projects/science-museum-mystery -->
 - **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub
-  usernames in `.github/CODEOWNERS`.
+  usernames in `.github/CODEOWNERS`. <!-- resolved-when: codeowners-filled -->
+
+<!--
+  Reconcile markers: append an HTML comment containing  resolved-when: CHECK  to any
+  "Next up" / "In progress" bullet that is machine-verifiable. At wiki build time the
+  board auto-moves it to Done (marked auto-verified) once the check passes, so finished
+  work stops lingering here. Supported checks: path-exists:REPO-RELATIVE-PATH and
+  codeowners-filled. See scripts/build-wiki.mjs (reconcileStatus).
+-->
+
