@@ -35,6 +35,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [project-status](shared/project-status.md) — where we are: done / in progress / parked / next
 - [dudu-direction-note](shared/dudu-direction-note.md) — Dudu isn't going as Dor hoped; accepted, parked
 - [design-inspirations](shared/design-inspirations.md) — games the team likes: Loom, Monkey Island, Larry
+- [visual-language-references](shared/visual-language-references.md) — inspiration games for the VISUAL language (illustrated adventure, premium tactile, hidden-object, kids-explorable) + what to steal from each
 - [aso-research-findings](shared/aso-research-findings.md) — ASO keyword research results: dinosaurs are the strongest launch theme; full report in brain/research/
 - [project-gazette](shared/project-gazette.md) — the newspaper-style wiki auto-published to GitHub Pages; visualizes the brain + what changed when
 - [click-to-play-engagement-concern](shared/click-to-play-engagement-concern.md) — open design concern: will the click-to-play exploration loop create the engagement we want (kids/touch)? + mitigations + prototype-to-resolve
