@@ -35,9 +35,10 @@ turns `brain/**` into a single, always-current page the whole team can skim.
   uses this — every announcement links to the relevant Malabi Daily article (the
   memory/decision the commit was about), plus the raw commit as source.
 
-**One-time setup (still pending):** repo **Settings → Pages → Source = "GitHub Actions"**
-must be switched on once for the site to go live. Until then the Action builds but can't
-publish.
+**Live (2026-06-11):** GitHub Pages is switched on (**Settings → Pages → Source =
+"GitHub Actions"**), so the site publishes on every deploy. Public URL:
+`https://robochickens-games.github.io/projcet-malabi/` (articles deep-link at
+`…/#/<slug>`).
 
 Serves the north star by keeping the team synced at a glance. Related: [[project-status]],
 [[architecture-of-the-brain]], [[north-star]].
