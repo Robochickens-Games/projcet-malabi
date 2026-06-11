@@ -620,6 +620,81 @@ try {
 }
 const buildDate = history[0]?.date || "";
 
+// ---- gazette filter: not every commit deserves an article -------------------
+//
+// Score each commit. Commits scoring < 1 are suppressed. Duplicates (same
+// primary asset already published at a lower score) are also suppressed.
+//
+// To force any commit into the gazette, add [gazette] or [team] to the message.
+//
+function gazetteScore(item) {
+  const sub = item.subject.toLowerCase();
+
+  // Explicit force-include markers
+  if (/\[gazette\]|\[team\]|\[notify\]/.test(sub)) return 100;
+
+  // Maintenance prefixes — never newsworthy
+  if (/^(fix|style|chore|refactor|tweak|wip|temp|build|ci|test|lint):/.test(sub)) return -10;
+
+  // Minor-signal keywords
+  if (/\b(minor|typo|cleanup|whitespace|small tweak|reformat)\b/.test(sub)) return -5;
+
+  let score = 0;
+  const prefix = (sub.split(":")[0] || "").trim();
+  const hasPrimary = primaryAsset(item) !== null;
+
+  // High-value content types
+  if (item.files.some((f) => f.startsWith("brain/decisions/"))) score += 4;
+  if (item.files.some((f) => f.startsWith("brain/proposals/"))) score += 3;
+  if (item.files.some((f) => f.startsWith("brain/research/"))) score += 3;
+
+  // Real project images (not desk covers)
+  if (item.files.some((f) => f.startsWith("brain/images/") && !/\/cover-/.test(f))) score += 2;
+
+  // Commit prefix value
+  if (["decision", "adr", "research", "proposal", "direction"].includes(prefix)) score += 3;
+  if (["feat", "feature", "asset"].includes(prefix)) score += 2;
+  if (["brain", "memory", "status", "sync"].includes(prefix)) score -= 1;
+  if (["update", "refresh"].includes(prefix)) score -= 2;
+
+  // No substantive asset → housekeeping
+  if (!hasPrimary) score -= 2;
+
+  // Only touching cover/meta images → not news
+  const onlyCoverImages =
+    item.files.length > 0 && item.files.every((f) => f.startsWith("brain/images/cover-"));
+  if (onlyCoverImages) score -= 4;
+
+  // Volume bonus: multiple substantive files = bigger change
+  const contentFiles = item.files.filter(
+    (f) => !f.startsWith("brain/images/cover-") && !f.endsWith("index.md")
+  );
+  if (contentFiles.length >= 3) score += 1;
+
+  return score;
+}
+
+// Deduplicate: if the same primary asset was already published and this update
+// isn't a significant enough change (score < 4), suppress it.
+const publishedAssets = new Map();
+const gazetteHistory = [];
+for (const item of history) {
+  const score = gazetteScore(item);
+  if (score < 1) {
+    console.log(`[gazette] skip  (${score}): ${item.subject.slice(0, 72)}`);
+    continue;
+  }
+  const a = primaryAsset(item);
+  const key = a?.name;
+  if (key && publishedAssets.has(key) && score < 4) {
+    console.log(`[gazette] dedup "${key}" (${score}): ${item.subject.slice(0, 72)}`);
+    continue;
+  }
+  if (key) publishedAssets.set(key, score);
+  gazetteHistory.push(item);
+}
+console.log(`[gazette] ${gazetteHistory.length}/${history.length} commits become articles`);
+
 // Resolve a news image for each dispatch: a project image if the asset has one,
 // otherwise a relevant photo from Wikipedia. siteImages = [absSource, destName].
 const siteImages = [];
@@ -638,7 +713,7 @@ const useLocal = (relPath, title, asset) => {
 const IMG_RE = /\.(jpe?g|png|webp|gif|avif)$/i;
 mkdirSync(NEWS_CACHE, { recursive: true });
 const imgManifest = loadManifest();
-for (const item of history) {
+for (const item of gazetteHistory) {
   // Always prefer the project's own images, in order of relevance:
   // 1) an image the commit itself added/changed (e.g. team avatars, a screenshot)
   //    — skip desk-cover files (they're meta-assets, not article content)
@@ -711,7 +786,7 @@ writeFileSync(manifestPath, JSON.stringify(imgManifest, null, 2));
 // check whether a -wide counterpart exists and set item.imageWide if so.
 // niCoverHtml uses imageWide on s8 (feature) slots, image on s6/s4.
 const seenLocalReverse = new Map([...seenLocal.entries()].map(([rel, dest]) => [dest, rel]));
-for (const item of history) {
+for (const item of gazetteHistory) {
   if (!item.image?.local) continue;
   const dest = item.image.src.replace(/^news\//, "");
   const relPath = seenLocalReverse.get(dest);
@@ -766,7 +841,7 @@ const payload = {
   proposals,
   researchDocs,
   members,
-  history,
+  history: gazetteHistory,
   graph: { nodes: graphNodes, links: graphLinks },
   stats: {
     memories: memories.length,
@@ -774,7 +849,8 @@ const payload = {
     proposals: proposals.length,
     members: members.length,
     links: graphLinks.length,
-    changes: history.length,
+    changes: history.length,       // total commits, not just gazette articles
+    articles: gazetteHistory.length,
   },
 };
 
