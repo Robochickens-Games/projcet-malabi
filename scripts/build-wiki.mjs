@@ -697,6 +697,21 @@ for (const item of history) {
 }
 writeFileSync(manifestPath, JSON.stringify(imgManifest, null, 2));
 
+// Attach wide variants: for every item whose image came from a local cover file,
+// check whether a -wide counterpart exists and set item.imageWide if so.
+// niCoverHtml uses imageWide on s8 (feature) slots, image on s6/s4.
+const seenLocalReverse = new Map([...seenLocal.entries()].map(([rel, dest]) => [dest, rel]));
+for (const item of history) {
+  if (!item.image?.local) continue;
+  const dest = item.image.src.replace(/^news\//, "");
+  const relPath = seenLocalReverse.get(dest);
+  if (!relPath) continue;
+  const widePath = relPath.replace(/(\.[^.]+)$/, "-wide$1");
+  if (existsSync(join(ROOT, widePath))) {
+    item.imageWide = useLocal(widePath, item.image.title);
+  }
+}
+
 // ---- graph -----------------------------------------------------------------
 
 const graphNodes = [
@@ -1434,10 +1449,11 @@ function packRows(items){
 }
 function niCoverHtml(c,span){
   if(!c.image||span===12) return '';
-  const cap=c.image.page
-    ?'<figcaption><a href="'+c.image.page+'" target="_blank" rel="noopener">'+escapeHtml(c.image.title||'')+'</a></figcaption>'
-    :(c.image.title?'<figcaption>'+escapeHtml(c.image.title)+'</figcaption>':'');
-  return '<figure class="ni-cover"><img loading="lazy" src="'+c.image.src+'" alt="'+escapeHtml(c.image.title||'')+'">'+cap+'</figure>';
+  const img=(span>=8&&c.imageWide)?c.imageWide:c.image;
+  const cap=img.page
+    ?'<figcaption><a href="'+img.page+'" target="_blank" rel="noopener">'+escapeHtml(img.title||'')+'</a></figcaption>'
+    :(img.title?'<figcaption>'+escapeHtml(img.title)+'</figcaption>':'');
+  return '<figure class="ni-cover"><img loading="lazy" src="'+img.src+'" alt="'+escapeHtml(img.title||'')+'">'+cap+'</figure>';
 }
 function newsItemHtml({c,span,strip}){
   const readable=primaryReadable(c);
