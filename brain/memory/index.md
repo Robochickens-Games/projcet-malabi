@@ -51,6 +51,10 @@ After writing a memory, add a one-line pointer below under the right section.
 ### Ohad
 - [ohad-role](members/ohad/ohad-role.md) — Ohad's role: tech
 
+## Proposals (under review)
+- [dinosaur-section-mechanics](../proposals/dinosaur-section-mechanics.md) — 15 mechanic ideas for the dino wing; recommended trio: Time Lens + Fossil Detective Board + Living Diorama
+- [puzzle-brush-away-the-dust](../proposals/puzzle-brush-away-the-dust.md) — first dino puzzle: find brush → brush rock in layers → reveal out-of-place ammonite
+
 ## Decisions
 - [0003-first-product-direction-science-games-for-kids](../decisions/0003-first-product-direction-science-games-for-kids.md) — proposed: kids science games niche, ASO topic research, Apple feature design bar, click-to-play gameplay held to six engagement principles (Ohad review pending)
 
