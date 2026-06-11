@@ -2,6 +2,8 @@ name: build-wiki
 
 # Typesets the project Gazette (site/index.html) from brain/** + git history and
 # publishes it to GitHub Pages. New edition prints on every commit to the brain.
+# Also bundles the playable prototype into site/prototype/ so the team can open
+# it on a phone at <pages-url>/prototype/.
 #
 # One-time setup: repo Settings → Pages → Build and deployment → Source = "GitHub Actions".
 
@@ -12,6 +14,7 @@ on:
       - "brain/**"
       - "scripts/build-wiki.mjs"
       - ".github/workflows/build-wiki.yml"
+      - "product/prototypes/museum-parallax/**"
   workflow_dispatch:
 
 permissions:
@@ -39,6 +42,16 @@ jobs:
 
       - name: Typeset the Gazette
         run: node scripts/build-wiki.mjs
+
+      # Bundle the playable prototype into site/prototype/ (Vite base is './',
+      # so it runs from any subpath). Served alongside the Gazette.
+      - name: Build the prototype
+        working-directory: product/prototypes/museum-parallax
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          mkdir -p "$GITHUB_WORKSPACE/site/prototype"
+          cp -r dist/. "$GITHUB_WORKSPACE/site/prototype/"
 
       # Letters to the Editor are GitHub issues titled "[note] <slug>: …" with
       # this label; the prefilled "Add a note" links rely on it existing.
