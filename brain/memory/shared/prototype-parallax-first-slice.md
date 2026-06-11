@@ -4,6 +4,8 @@ description: Playable prototype of scenario 1 — wide side-scrolling platformer
 owner: dor
 scope: shared
 created: 2026-06-11
+updated: 2026-06-11
+image: brain/images/landscape dino.png
 tags: [prototype, parallax, platformer, stack, design, gameplay, dinosaurs]
 ---
 
