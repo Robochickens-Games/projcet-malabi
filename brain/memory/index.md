@@ -44,6 +44,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [game-concepts](shared/game-concepts.md) — current concept: Science Museum Mystery, three wings (Dinosaurs/Space/Inventions), tap-and-explore, ages 5–10, no ads
 - [art-direction](shared/art-direction.md) — visual direction: warm illustrated museum, Art Deco, amber/gold + teal/space palette, back-facing child protagonist with magnifying glass
 - [status-board-reconcile](shared/status-board-reconcile.md) — the status board self-corrects at build: done Next-up items auto-move to Done via resolved-when markers
+- [prototype-parallax-first-slice](shared/prototype-parallax-first-slice.md) — first playable feel-prototype (parallax lobby → tooth → dino hall → catalog match) is built; stack = Vite + Pixi.js + GSAP, in product/prototypes/museum-parallax
 
 ## Members
 ### Dor

@@ -53,6 +53,10 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
   every sync and closes them by commit. See [[daily-notes]].
 
 ## In progress / open ⏳
+- **First playable feel-prototype built (2026-06-11, Dor):** parallax museum slice —
+  lobby → find tooth → dino hall → match the herbivore diorama via the catalog.
+  Vite + Pixi.js + GSAP, in `product/prototypes/museum-parallax/` (`npm i && npm run dev`).
+  Team: play it and judge the feel. See [[prototype-parallax-first-slice]].
 - **ADR 0003 (proposed — Ohad review pending):** product = **Science Museum Mystery**,
   tap-and-explore, three wings (Dinosaurs / Space / Inventions), no ads, ages 5–10,
   design bar = Apple feature-worthy. See [[0003-first-product-direction-science-games-for-kids]].
