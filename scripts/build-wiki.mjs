@@ -641,25 +641,29 @@ for (const item of history) {
   // 2b) desk/keyword-based fallback to project concept art (before Wikipedia)
   {
     const hay = `${item.headline} ${item.summary || ""} ${item.intro || ""} ${item.desk}`.toLowerCase();
-    const hasDino = hay.match(/dinosaur|dino|fossil|paleo|prehistoric|t.rex|triceratop/);
-    const hasGame = hay.match(/museum|game|concept|art.?direction|visual|design|proposal|mechanic|puzzle|wing|launch/);
-    const hasCover = existsSync(join(ROOT, "brain/images/cover-decisions.png"));
-    const coverMap = {
-      Decisions:  hasCover ? "brain/images/cover-decisions.png"  : null,
-      Proposals:  hasCover ? "brain/images/cover-proposals.png"  : null,
-      Research:   hasCover ? "brain/images/cover-research.png"   : null,
-      Updates:    hasCover ? "brain/images/cover-status.png"     : null,
-      Brain:      hasCover ? "brain/images/cover-status.png"     : null,
-    };
-    const deskCover = coverMap[item.desk];
-    if (hasDino && existsSync(join(ROOT, "brain/images/landscape dino.png"))) {
+    const hasDino    = /dinosaur|dino|fossil|paleo|prehistoric|t.rex|triceratop|specimen|bone/.test(hay);
+    const hasMuseum  = /museum|game concept|art.?direction|science game|wing|launch|exhibit/.test(hay);
+    // Keyword overrides: use the most evocative project image first
+    if (hasDino) {
       item.image = useLocal("brain/images/landscape dino.png", "Dinosaur wing");
       continue;
     }
-    if (hasGame && existsSync(join(ROOT, "brain/images/Science Museum Mystery.png"))) {
+    if (hasMuseum) {
       item.image = useLocal("brain/images/Science Museum Mystery.png", "Science Museum Mystery");
       continue;
     }
+    // Desk covers: every desk now has a bespoke illustrated cover
+    const coverMap = {
+      Decisions:  "brain/images/cover-decisions.png",
+      Direction:  "brain/images/cover-decisions.png",
+      Proposals:  "brain/images/cover-proposals.png",
+      Research:   "brain/images/cover-research.png",
+      Updates:    "brain/images/cover-status.png",
+      Brain:      "brain/images/cover-status.png",
+      Features:   "brain/images/cover-team.png",
+      Assets:     "brain/images/cover-team.png",
+    };
+    const deskCover = coverMap[item.desk];
     if (deskCover && existsSync(join(ROOT, deskCover))) {
       item.image = useLocal(deskCover, item.desk);
       continue;
