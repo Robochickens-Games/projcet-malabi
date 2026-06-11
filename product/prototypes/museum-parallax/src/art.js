@@ -69,8 +69,8 @@ export function lobbyBack() {
     <rect y="855" width="2400" height="14" fill="${GOLD_DEEP}" opacity="0.9"/>
     ${Array.from({ length: 60 }, (_, i) =>
       `<rect x="${i * 40 + 8}" y="872" width="18" height="14" fill="${GOLD_DEEP}" opacity="0.55"/>`).join('')}
-    <text x="1200" y="190" text-anchor="middle" font-family="${SERIF}" font-size="64"
-          letter-spacing="26" fill="${GOLD}" opacity="0.95">MUSEUM OF NATURAL SCIENCE</text>
+    <text x="1200" y="190" text-anchor="middle" font-family="${SERIF}" font-size="52"
+          letter-spacing="16" fill="${GOLD}" opacity="0.95">MUSEUM OF NATURAL SCIENCE</text>
     <text x="1200" y="240" text-anchor="middle" font-family="${SERIF}" font-size="22"
           letter-spacing="14" fill="${GOLD_DEEP}">· EST. 1899 ·</text>
   ${'</svg>'}`
@@ -116,9 +116,9 @@ export function lobbyMid() {
       </g>
       <!-- plaque -->
       <g transform="translate(0,372)">
-        <rect x="-235" y="-44" width="470" height="84" rx="12" fill="#241409" stroke="${GOLD}" stroke-width="5"/>
-        <text x="0" y="14" text-anchor="middle" font-family="${SERIF}" font-size="44"
-              letter-spacing="13" fill="${GOLD}">DINOSAUR WING</text>
+        <rect x="-262" y="-44" width="524" height="84" rx="12" fill="#241409" stroke="${GOLD}" stroke-width="5"/>
+        <text x="0" y="14" text-anchor="middle" font-family="${SERIF}" font-size="40"
+              letter-spacing="12" fill="${GOLD}">DINOSAUR WING</text>
       </g>
     </g>
 
@@ -427,6 +427,9 @@ export function dioramaSVG(dino) {
         <stop offset="0" stop-color="#ffd98a" stop-opacity="0.5"/>
         <stop offset="1" stop-color="#ffd98a" stop-opacity="0"/>
       </radialGradient>
+      <clipPath id="clip-${dino.id}">
+        <path d="M44,610 L44,260 A236,220 0 0 1 516,260 L516,610 Z"/>
+      </clipPath>
     </defs>
 
     <!-- frame -->
@@ -435,15 +438,17 @@ export function dioramaSVG(dino) {
     <path d="M44,610 L44,260 A236,220 0 0 1 516,260 L516,610 Z" fill="url(#niche-${dino.id})"/>
     <path d="M44,610 L44,260 A236,220 0 0 1 516,260 L516,610 Z" fill="url(#halo-${dino.id})"/>
 
-    <!-- ground inside the niche -->
-    <path d="M44,560 Q160,538 300,552 Q440,566 516,548 L516,610 L44,610 Z" fill="#0e2126"/>
+    <g clip-path="url(#clip-${dino.id})">
+      <!-- ground inside the niche -->
+      <path d="M44,560 Q160,538 300,552 Q440,566 516,548 L516,610 L44,610 Z" fill="#0e2126"/>
 
-    <!-- skeleton-silhouette mount -->
-    <g transform="translate(280,392) scale(0.72) translate(-350,-300)">${sil}</g>
+      <!-- skeleton-silhouette mount -->
+      <g transform="translate(280,400) scale(0.66) translate(-350,-300)">${sil}</g>
 
-    <!-- glass glint -->
-    <path d="M70,560 L210,210 L260,210 L120,580 Z" fill="#fff" opacity="0.07"/>
-    <path d="M150,575 L300,215 L322,215 L172,585 Z" fill="#fff" opacity="0.05"/>
+      <!-- glass glint -->
+      <path d="M70,560 L210,210 L260,210 L120,580 Z" fill="#fff" opacity="0.07"/>
+      <path d="M150,575 L300,215 L322,215 L172,585 Z" fill="#fff" opacity="0.05"/>
+    </g>
 
     <!-- plaque -->
     <rect x="120" y="632" width="320" height="64" rx="10" fill="#241409" stroke="${GOLD}" stroke-width="4"/>

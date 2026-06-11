@@ -50,7 +50,7 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
   50% { box-shadow: 0 0 18px 4px rgba(232, 169, 72, 0.55); }
 }
 
-#hud-right { display: flex; align-items: center; gap: 10px; }
+#hud-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
 #tooth-slot {
   width: 44px; height: 44px; border-radius: 12px;
