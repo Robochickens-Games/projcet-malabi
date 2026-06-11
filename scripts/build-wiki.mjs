@@ -586,13 +586,14 @@ try {
   const SEP = "\x1f";
   const raw = execSync(
     `git log --no-merges -n 80 --date=format:'%Y-%m-%d' ` +
-      `--pretty=format:'@@COMMIT@@%H${SEP}%an${SEP}%ad${SEP}%s' --name-only -- brain`,
+      `--pretty=format:'@@COMMIT@@%H${SEP}%an${SEP}%ad${SEP}%aI${SEP}%s' --name-only -- brain`,
     { cwd: ROOT, encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }
   );
   for (const block of raw.split("@@COMMIT@@")) {
     if (!block.trim()) continue;
     const lines = block.split("\n");
-    const [hash, author, date, subject] = lines[0].split(SEP);
+    const [hash, author, date, isoDate, subject] = lines[0].split(SEP);
+    const time = (isoDate.match(/T(\d{2}:\d{2})/) || [])[1] || "";
     const files = lines
       .slice(1)
       .map((l) => l.trim())
@@ -602,6 +603,7 @@ try {
       hash: hash.slice(0, 7),
       author: displayAuthor(author),
       date,
+      time,
       subject,
       headline: cleanHead(headline(subject)),
       desk: deskFor(subject),
@@ -973,6 +975,65 @@ function renderHtml(dataJson) {
   .index-bar .l { font-family: var(--sans); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-top: 5px; }
   @media (max-width: 720px) { .index-bar { grid-template-columns: repeat(2, 1fr); } .index-bar .box:nth-child(2){border-right:0;} }
 
+  /* ---- edition toggle: two-state pill in the masthead, beside "Play" ---- */
+  .edition-toggle { display: inline-flex; align-items: center; gap: .4em; font-family: var(--sans); font-weight: 700;
+    font-size: 12px; line-height: 1.6; letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
+    background: var(--card); border: 1px solid var(--line2); border-radius: 999px; padding: 3px 13px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+  .edition-toggle:hover { border-color: var(--ink); }
+  .edition-toggle[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .edition-toggle .et-icon { font-size: .95em; }
+
+  /* ---- "Newspaper" front (NYT-style) ---- */
+  #front-times .nyt-top { display: grid; grid-template-columns: 1fr 1.55fr 1fr; gap: 0; border-top: 2px solid var(--rule); }
+  #front-times .nyt-col { padding: 20px 22px 8px; min-width: 0; }
+  #front-times .nyt-col.left { padding-left: 0; border-right: 1px solid var(--line2); }
+  #front-times .nyt-col.right { padding-right: 0; border-left: 1px solid var(--line2); }
+  #front-times .nyt-art { padding: 15px 0; border-bottom: 1px solid var(--line); }
+  #front-times .nyt-col .nyt-art:first-child { padding-top: 0; }
+  #front-times .nyt-col .nyt-art:last-child { border-bottom: 0; }
+  #front-times .nyt-kicker { font-family: var(--sans); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
+  #front-times .nyt-kicker.live { color: #b91c1c; }
+  #front-times .nyt-kicker .live-dot { font-size: .85em; margin-right: 3px; }
+  #front-times .nyt-hl { font-family: var(--display); font-weight: 700; line-height: 1.13; letter-spacing: -.3px; margin: 0 0 8px; font-size: 20px; }
+  #front-times .nyt-hl a:hover { text-decoration: underline; }
+  #front-times .nyt-lead .nyt-hl { font-size: 29px; }
+  #front-times .nyt-center .nyt-hl { font-size: 33px; }
+  #front-times .nyt-feature .nyt-hl { font-size: 22px; }
+  #front-times .nyt-sum { font-family: var(--serif); font-size: 15px; line-height: 1.5; color: var(--ink2); margin: 0; }
+  #front-times .nyt-byline { display: flex; align-items: baseline; gap: 8px; margin-top: 9px;
+    font-family: var(--sans); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+  #front-times .nyt-author { font-weight: 700; color: var(--muted); }
+  #front-times .nyt-time { color: var(--faint); }
+  #front-times .nyt-time::before { content: "·"; margin-right: 8px; }
+  #front-times .nyt-commit { color: var(--faint); text-decoration: none; margin-left: auto; }
+  #front-times .nyt-commit:hover { color: var(--ink); }
+  #front-times .nyt-center .nyt-sum, #front-times .nyt-lead .nyt-sum { font-size: 16px; }
+  #front-times .nyt-figure { margin: 0 0 11px; }
+  #front-times .nyt-figure img { width: 100%; display: block; object-fit: cover; filter: saturate(.94) contrast(1.02); cursor: zoom-in; }
+  #front-times .nyt-center .nyt-figure img { aspect-ratio: 16/10; }
+  #front-times .nyt-feature .nyt-figure img { aspect-ratio: 4/3; }
+  #front-times .nyt-figure figcaption { font-family: var(--sans); font-size: 11px; color: var(--faint); margin-top: 5px; }
+  #front-times .nyt-more-rule { border-top: 2px solid var(--rule); margin: 6px 0 0; }
+  #front-times .nyt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  #front-times .nyt-grid .nyt-art { padding: 16px 20px; border-bottom: 0; border-right: 1px solid var(--line2); border-top: 1px solid var(--line); }
+  #front-times .nyt-grid .nyt-art:nth-child(4n) { border-right: 0; padding-right: 0; }
+  #front-times .nyt-grid .nyt-art:first-child { padding-left: 0; }
+  #front-times .nyt-grid .nyt-hl { font-size: 18px; }
+  @media (max-width: 860px) {
+    #front-times .nyt-top { grid-template-columns: 1fr; }
+    #front-times .nyt-col { padding: 16px 0 4px; border: 0 !important; border-top: 1px solid var(--line) !important; }
+    #front-times .nyt-col.left { border-top: 0 !important; }
+    #front-times .nyt-grid { grid-template-columns: 1fr 1fr; }
+    #front-times .nyt-grid .nyt-art { padding: 14px 14px; }
+    #front-times .nyt-grid .nyt-art:nth-child(4n) { border-right: 1px solid var(--line2); }
+    #front-times .nyt-grid .nyt-art:nth-child(2n) { border-right: 0; padding-right: 0; }
+    #front-times .nyt-grid .nyt-art:nth-child(-n+2) { border-top: 0; }
+  }
+  @media (max-width: 560px) {
+    #front-times .nyt-grid { grid-template-columns: 1fr; }
+    #front-times .nyt-grid .nyt-art { border-right: 0 !important; padding: 14px 0; }
+  }
+
   /* section bands give clear hierarchy between "stands" and "happened" */
   .band { display: flex; align-items: center; gap: 12px; margin: 38px 0 16px; }
   .band-emoji { font-size: 22px; }
@@ -1242,6 +1303,7 @@ function renderHtml(dataJson) {
       <span>“<b>Make us money. Make it fun.</b>” 🌟</span>
       <span><a id="repo-link" href="#">All the knowledge that's fit to commit</a></span>
       <span><a class="play-link" href="https://malabi-museum-parallax.vercel.app" target="_blank" rel="noopener"><span class="play-tri">▶</span> Play the prototype</a></span>
+      <span><button class="edition-toggle" id="layout-toggle" aria-pressed="false" title="Switch front-page layout"><span class="et-icon">⇄</span> <span id="et-label">Classic</span></button></span>
     </div>
   </header>
 
@@ -1255,12 +1317,15 @@ function renderHtml(dataJson) {
   </nav>
 
   <section class="view active" id="front">
-    <div class="standfirst" id="standfirst"></div>
-    <div class="index-bar" id="index-bar"></div>
-    <p class="tldr catchup" id="tldr"></p>
-    <div class="band"><span class="band-emoji">📰</span><h2 class="band-title">The latest</h2><span class="band-rule"></span></div>
-    <div id="hero"></div>
-    <div class="timeline" id="feed"></div>
+    <div id="front-classic">
+      <div class="standfirst" id="standfirst"></div>
+      <div class="index-bar" id="index-bar"></div>
+      <p class="tldr catchup" id="tldr"></p>
+      <div class="band"><span class="band-emoji">📰</span><h2 class="band-title">The latest</h2><span class="band-rule"></span></div>
+      <div id="hero"></div>
+      <div class="timeline" id="feed"></div>
+    </div>
+    <div id="front-times" hidden></div>
     <div class="band"><span class="band-emoji">✉️</span><h2 class="band-title">Letters to the Editor</h2><span class="band-rule"></span></div>
     <p class="letters-blurb">Notes from the team on any piece of info — extra context, corrections, new content,
       questions. The brain reads every open letter at the next sync, folds it into the right memory, and marks it addressed.</p>
@@ -1583,6 +1648,101 @@ document.getElementById('feed').innerHTML = groups.map(g=>{
 wireWikilinks(document.getElementById('hero'));
 wireWikilinks(document.getElementById('feed'));
 
+// ---- "Newspaper" front: a NYT-style three-column front page over the same
+// dispatches, offered as an alternate edition behind the Classic/Newspaper switch. ----
+function nytHeadLink(c){
+  const readable = primaryReadable(c);
+  return readable
+    ? '<a data-open="'+readable.name+'">'+escapeHtml(c.headline)+'</a>'
+    : '<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
+}
+function nytKicker(c, live){
+  if(live){
+    const when = relDay(c.date) || longDate(c.date);
+    return '<div class="nyt-kicker live"><span class="live-dot">●</span> Latest · '+escapeHtml(when)+'</div>';
+  }
+  return '<div class="nyt-kicker">'+escapeHtml(c.desk)+'</div>';
+}
+function nytFigure(c, wide){
+  if(!c.image) return '';
+  const img = (wide && c.imageWide) ? c.imageWide : c.image;
+  const cap = img.page
+    ? '<figcaption><a href="'+img.page+'" target="_blank" rel="noopener">'+escapeHtml(img.credit||img.title||'')+'</a></figcaption>'
+    : (img.credit||img.title ? '<figcaption>'+escapeHtml(img.credit||img.title)+'</figcaption>' : '');
+  return '<figure class="nyt-figure"><img loading="lazy" src="'+img.src+'" alt="'+escapeHtml(img.title||'')+'">'+cap+'</figure>';
+}
+function nytByline(c){
+  const day = relDay(c.date) || longDate(c.date);
+  const when = c.time ? day+', '+c.time : day;
+  return '<div class="nyt-byline">By <span class="nyt-author">'+escapeHtml(c.author)+'</span>'+
+    '<span class="nyt-time">'+escapeHtml(when)+'</span>'+
+    '<a class="nyt-commit" href="'+c.url+'" target="_blank" rel="noopener" title="View commit '+c.hash+'">↗</a></div>';
+}
+function nytArt(c, cls, opts){
+  opts = opts || {};
+  return '<article class="nyt-art '+(cls||'')+'">'+
+    (opts.image ? nytFigure(c, opts.wide) : '')+
+    nytKicker(c, opts.live)+
+    '<h3 class="nyt-hl">'+nytHeadLink(c)+'</h3>'+
+    (opts.sum !== false && c.summary ? '<p class="nyt-sum">'+renderInline(c.summary)+'</p>' : '')+
+    nytByline(c)+
+    '</article>';
+}
+function buildTimesFront(){
+  const ft = document.getElementById('front-times');
+  const used = new Set();
+  const take = c => { if(c) used.add(c.hash); return c; };
+  const all = DATA.history.slice();
+  if(!all.length){ ft.innerHTML = '<p class="standfirst">No dispatches yet.</p>'; return; }
+  const nextImg = () => all.find(c => c.image && !used.has(c.hash));
+  // Center = the strongest image-led dispatch; right feature = the next one.
+  const center  = take(nextImg() || all[0]);
+  const feature = take(nextImg());
+  const rest    = all.filter(c => !used.has(c.hash));
+  const lead     = rest.shift();          // big text lead, top-left
+  const leftMore = rest.splice(0, 3);     // stacked under the lead
+  const rightMore= rest.splice(0, 2);     // under the feature
+  const bottom   = rest.slice(0, 8);      // lower-fold grid
+
+  const left = '<div class="nyt-col left">'+
+    (lead ? nytArt(lead, 'nyt-lead', {live:true}) : '')+
+    leftMore.map(c => nytArt(c, '')).join('')+'</div>';
+  const mid = '<div class="nyt-col center">'+
+    nytArt(center, 'nyt-center', {image:true, wide:true})+'</div>';
+  const right = '<div class="nyt-col right">'+
+    (feature ? nytArt(feature, 'nyt-feature', {image:true}) : '')+
+    rightMore.map(c => nytArt(c, '')).join('')+'</div>';
+  const grid = bottom.length
+    ? '<div class="nyt-more-rule"></div><div class="nyt-grid">'+bottom.map(c => nytArt(c, '', {sum:false})).join('')+'</div>'
+    : '';
+  ft.innerHTML = '<div class="nyt-top">'+left+mid+right+'</div>'+grid;
+  wireWikilinks(ft);
+}
+
+// ---- edition toggle (two-state, persisted in localStorage) ----
+(function(){
+  const btn = document.getElementById('layout-toggle');
+  const label = document.getElementById('et-label');
+  const classic = document.getElementById('front-classic');
+  const times = document.getElementById('front-times');
+  const NAME = { classic: 'Classic', times: 'Paper' };
+  let built = false, mode = 'classic';
+  function apply(m){
+    mode = m;
+    const isTimes = m === 'times';
+    if(isTimes && !built){ buildTimesFront(); built = true; }
+    classic.hidden = isTimes;
+    times.hidden = !isTimes;
+    label.textContent = NAME[m];
+    btn.setAttribute('aria-pressed', String(isTimes));
+    try { localStorage.setItem('malabi-front-layout', m); } catch(e){}
+  }
+  btn.addEventListener('click', () => apply(mode === 'times' ? 'classic' : 'times'));
+  let saved = 'classic';
+  try { saved = localStorage.getItem('malabi-front-layout') || 'classic'; } catch(e){}
+  apply(saved);
+})();
+
 // ---- image lightbox: tap any cover / hero photo / in-article image to see it
 // large and clear (concept art, screenshots) — covers are cropped, this isn't. ----
 const lb = document.getElementById('lightbox');
@@ -1592,7 +1752,7 @@ function openLightbox(src, cap){ lbImg.src = src; lbCap.textContent = cap || '';
 function closeLightbox(){ lb.classList.remove('open'); lbImg.removeAttribute('src'); }
 lb.addEventListener('click', closeLightbox);
 document.addEventListener('click', (e)=>{
-  const img = e.target.closest('.ni-cover img, .hero-photo img, .markdown img');
+  const img = e.target.closest('.ni-cover img, .hero-photo img, .nyt-figure img, .markdown img');
   if(!img || lb.contains(img)) return;
   e.preventDefault();
   openLightbox(img.currentSrc || img.src, img.getAttribute('alt'));
