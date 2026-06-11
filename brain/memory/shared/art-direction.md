@@ -9,7 +9,8 @@ tags: [design, art, visual-direction, ui]
 
 # Art direction — Science Museum Mystery
 
-From the first concept image (2026-06-11). Informs [[game-concepts]] and [[0003-first-product-direction-science-games-for-kids]].
+From the first concept image (2026-06-11): `brain/images/Science Museum Mystery.png`.
+Informs [[game-concepts]] and [[0003-first-product-direction-science-games-for-kids]].
 
 ## Overall style
 Warm illustrated museum/adventure. Not 3D rendered — hand-illustrated, detailed,
