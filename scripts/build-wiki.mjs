@@ -1179,8 +1179,8 @@ function figureHtml(c, cls){
     '<figcaption>'+(c.image.local?'🗂 ':'📷 ')+cap+'</figcaption></figure>';
 }
 function flashCard(c, cls, style){
-  const k=desk(c.desk), hero = cls==='hero';
-  return '<div class="'+cls+'" style="'+style+'">'+ (hero ? '<div class="hero-emoji">'+k.emoji+'</div>' : '')+
+  const hero = cls==='hero';
+  return '<div class="'+cls+'" style="'+style+'">'+
     '<div class="'+(hero?'hero-main':'')+'">'+
     (hero ? figureHtml(c,'hero-photo') : figureHtml(c,'thumb'))+
     flashMeta(c)+
