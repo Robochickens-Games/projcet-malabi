@@ -880,10 +880,46 @@ function renderHtml(dataJson) {
   figcaption a:hover { color: var(--ink); }
   .hero-photo { margin: 4px 0 14px; }
   .hero-photo img { height: 240px; object-fit: cover; object-position: center 30%; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
-  .thumb { float: right; width: 140px; margin: 2px 0 10px 18px; }
-  .thumb img { height: 100px; object-fit: cover; object-position: center 30%; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); }
-  .tl-item::after { content: ""; display: block; clear: both; }
-  @media (max-width: 560px) { .thumb { width: 104px; margin-left: 12px; } .thumb img { height: 78px; } }
+
+  /* ---- newspaper article grid (below hero) ---- */
+  .news-day { margin: 0; }
+  .news-dayband { display: flex; align-items: center; gap: 10px; padding: 22px 0 0; }
+  .news-dayband .nd-rule { flex: 1; border-top: 2px solid var(--rule); height: 0; }
+  .news-dayband .nd-label { font-family: var(--sans); font-size: 10.5px; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--faint); white-space: nowrap; }
+  .news-row { display: grid; grid-template-columns: repeat(12, 1fr); border-top: 1px solid var(--line); }
+  /* article cell */
+  .ni { padding: 20px 22px 22px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; overflow: hidden; }
+  .ni:last-child { border-right: 0; }
+  .ni.s8 { grid-column: span 8; }
+  .ni.s6 { grid-column: span 6; }
+  .ni.s4 { grid-column: span 4; }
+  .ni.s12 { grid-column: span 12; border-right: 0; }
+  .ni.strip { padding: 11px 22px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  @media (max-width: 800px) { .ni { grid-column: span 12 !important; border-right: 0; } }
+  /* cover image — bleeds to cell edges */
+  .ni-cover { margin: -20px -22px 16px; overflow: hidden; }
+  .ni.s8 .ni-cover img { height: 210px; }
+  .ni.s6 .ni-cover img { height: 170px; }
+  .ni.s4 .ni-cover img { height: 115px; }
+  .ni-cover img { width: 100%; object-fit: cover; object-position: center 30%; display: block; filter: saturate(.9) contrast(1.02); }
+  .ni-cover figcaption { padding: 4px 22px 0; }
+  /* headlines */
+  .ni-head { font-family: var(--display); font-weight: 700; line-height: 1.18; margin: 8px 0 7px; }
+  .ni.s8 .ni-head { font-size: 24px; letter-spacing: -.2px; }
+  .ni.s6 .ni-head { font-size: 20px; }
+  .ni.s4 .ni-head { font-size: 16px; }
+  .ni.strip .ni-head { font-size: 14px; font-family: var(--sans); flex: 1; margin: 0; }
+  .ni-head a { cursor: pointer; }
+  .ni-head a:hover { text-decoration: underline; }
+  /* body text — hidden for briefs */
+  .ni-body { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 9px; }
+  .ni.s8 .ni-body { font-size: 14.5px; color: var(--ink2); }
+  .ni.s4 .ni-body, .ni.strip .ni-body { display: none; }
+  /* read link */
+  .ni-read { font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--s-decision); cursor: pointer; display: inline-block; }
+  .ni-read:hover { text-decoration: underline; }
+  .ni.s4 .ni-read, .ni.strip .ni-read { display: none; }
 
   .assets, .related { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .assets-label { font-family: var(--sans); font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 1px; }
@@ -1303,17 +1339,70 @@ function flashCard(c, cls, style){
 if(lastChange)
   document.getElementById('hero').innerHTML = flashCard(lastChange, 'hero', '--hero:'+desk(lastChange.desk).color);
 
+// ---- newspaper layout engine ----
+function sizeFor(c){
+  if(['Proposals','Research','Direction','Decisions'].includes(c.desk)) return 'lg';
+  if(['Features','Assets'].includes(c.desk)) return 'md';
+  return 'sm';
+}
+function packRows(items){
+  const rows=[], n=items.length; let i=0;
+  while(i<n){
+    const c=items[i], sz=sizeFor(c);
+    if(sz==='lg'){
+      const nxt=items[i+1];
+      rows.push(nxt?[{c,span:8},{c:nxt,span:4}]:[{c,span:8}]); i+=nxt?2:1;
+    } else if(sz==='md'){
+      const nxt=items[i+1];
+      if(nxt&&sizeFor(nxt)!=='lg'){rows.push([{c,span:6},{c:nxt,span:6}]);i+=2;}
+      else{rows.push([{c,span:6}]);i++;}
+    } else {
+      const batch=[];
+      while(i<n&&sizeFor(items[i])==='sm'&&batch.length<3){batch.push(items[i]);i++;}
+      const bn=batch.length;
+      if(bn===1) rows.push([{c:batch[0],span:12,strip:true}]);
+      else if(bn===2) rows.push([{c:batch[0],span:6},{c:batch[1],span:6}]);
+      else rows.push([{c:batch[0],span:4},{c:batch[1],span:4},{c:batch[2],span:4}]);
+    }
+  }
+  return rows;
+}
+function niCoverHtml(c,span){
+  if(!c.image||span===12) return '';
+  const cap=c.image.page
+    ?'<figcaption><a href="'+c.image.page+'" target="_blank" rel="noopener">'+escapeHtml(c.image.title||'')+'</a></figcaption>'
+    :(c.image.title?'<figcaption>'+escapeHtml(c.image.title)+'</figcaption>':'');
+  return '<figure class="ni-cover"><img loading="lazy" src="'+c.image.src+'" alt="'+escapeHtml(c.image.title||'')+'">'+cap+'</figure>';
+}
+function newsItemHtml({c,span,strip}){
+  const readable=primaryReadable(c);
+  const titleLink=readable
+    ?'<a data-open="'+readable.name+'">'+escapeHtml(c.headline)+'</a>'
+    :'<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
+  const cls='ni s'+span+(strip?' strip':'');
+  const readLink=readable?'<a class="ni-read" data-open="'+readable.name+'">Read full article →</a>':'';
+  return '<div class="'+cls+'">'+
+    niCoverHtml(c,span)+
+    flashMeta(c)+
+    '<div class="ni-head">'+titleLink+'</div>'+
+    (c.summary&&!strip?'<div class="ni-body">'+renderInline(c.summary)+'</div>':'')+
+    (!strip?readLink:'')+
+    '</div>';
+}
+
 const groups=[]; let cur=null;
 for(const c of DATA.history.slice(1)){
-  if(!cur || cur.date!==c.date){ cur={date:c.date, items:[]}; groups.push(cur); }
+  if(!cur||cur.date!==c.date){cur={date:c.date,items:[]};groups.push(cur);}
   cur.items.push(c);
 }
 document.getElementById('feed').innerHTML = groups.map(g=>{
-  const rel = relDay(g.date);
-  return '<div class="tl-day"><div class="tl-daterow">'+
-    (rel?'<span class="tl-rel">'+rel+'</span>':'')+'<span class="tl-abs">'+longDate(g.date)+'</span></div>'+
-    '<div class="tl-items">'+ g.items.map(c=> flashCard(c, 'tl-item', '--ti:'+desk(c.desk).color)).join('') +
-    '</div></div>';
+  const rel=relDay(g.date), rows=packRows(g.items);
+  return '<div class="news-day">'+
+    '<div class="news-dayband"><span class="nd-rule"></span>'+
+    '<span class="nd-label">'+(rel?rel+' · ':'')+longDate(g.date)+'</span>'+
+    '<span class="nd-rule"></span></div>'+
+    rows.map(row=>'<div class="news-row">'+row.map(item=>newsItemHtml(item)).join('')+'</div>').join('')+
+    '</div>';
 }).join('');
 
 wireWikilinks(document.getElementById('hero'));
