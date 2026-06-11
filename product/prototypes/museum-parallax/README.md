@@ -1,8 +1,9 @@
-# Museum Parallax — feel prototype
+# Museum Parallax — playable prototype (wireframe / blockout)
 
-First playable slice of **Science Museum Mystery**, built to test the *feel*:
-parallax depth (find things hiding behind things), and scenario 1 —
-**lobby → find the tooth → dinosaur hall → match it to the right diorama using the catalog.**
+First playable slice of **Science Museum Mystery**, in the format the game will
+use: a **wide, continuous side-scrolling world with platformer parallax** —
+layers scroll at different speeds as you walk. Art is intentionally low-fi
+wireframe (outlines + labels on ink); real painted layers replace it 1:1 later.
 
 ## Run it
 
@@ -11,37 +12,41 @@ npm install
 npm run dev
 ```
 
-Open the printed URL. `--host` is on, so you can open it on your phone over
-the same Wi-Fi (tilt works on Android over LAN; iOS needs HTTPS for tilt —
-use touch-drag there, or `npm run build` + any HTTPS static host).
+Open the printed URL (works on a phone over the same Wi-Fi).
 
 ## The slice
 
-1. **Lobby** — warm Art Deco museum hall. Move the mouse / drag / tilt to look
-   around — layers shift at different depths. A fossil tooth is half-hidden
-   behind the planter on the right; you have to *look around* to spot it.
-2. Tap the tooth → it flies into your collection slot.
-3. The **📖 Catalog** shows three dinosaurs, what they eat, and their tooth
-   shapes. The found tooth is wide and flat → plant eater.
-4. Enter the **Dinosaur Wing** → three dioramas (Spinosaurus / Allosaurus /
-   Triceratops). Wrong picks shake and teach ("sharp jagged teeth are for
-   meat…"); the right one celebrates and awards **Fossil Fragment 1/4**.
+1. **Lobby** (2880px world) — walk right past three wing doors. A fossil tooth
+   hides behind the PLANTER on a *slower* layer than the planter: walking past
+   reveals it. Tap it → collection slot.
+2. **Dinosaur Wing → Nesting Grove** (3840px world) — a jungle trail. Layer
+   stack: clouds+sun 0.1× · mountains 0.3× · treeline 0.5× · trail+scene 1.0× ·
+   canopy/bush foreground 1.42×. Each wireframe layer carries its speed tag.
+3. Arrive at the **skeleton + field guide**: four tooth-type cards
+   (carnivore / piscivore / insectivore / herbivore). Wrong picks shake and
+   teach; **broad & flat → herbivore** glows the skeleton (Triceratops) and
+   awards Fossil Fragment 1/4.
 
-## Stack & why
+**Controls:** drag / fling, scroll wheel, arrow keys (with acceleration), or
+device tilt. BAG opens the dino field-notes; HINT nudges.
 
-- **Vite + Pixi.js (WebGL) + GSAP** — hot-reload iteration, 60fps layered
-  scene graph, animation with feel. Free, runs everywhere, deploys to any
-  static host (GitHub Pages) as a URL the team can open on a phone.
-- All art is code-authored layered SVG in the captured art direction
-  (amber/gold Art Deco + deep teal — see `brain/memory/shared/art-direction`),
-  rendered to WebGL textures. Swappable 1:1 for painted illustration later —
-  the layer/depth structure is the real deliverable.
-- Sound is a tiny built-in synth (no asset files).
+## Structure (for the art handoff)
+
+- `src/wireframe.js` — all blockout art + the world layout constants
+  (`LOBBY_SPOTS`, `GROVE_SPOTS`, `GUIDE`). Drawings and hotspots share these,
+  so repositioning is one edit. Replacing a wireframe layer = swapping the SVG
+  string for a painted texture of the same world width.
+- `src/main.js` — camera/scroll engine, input, game flow. Scene = a world width
+  + layers with `_speed`; nothing else is scene-specific.
+- `scripts/generate-assets.mjs` — the painted-asset slicing pipeline from the
+  earlier art experiment (cuts concept paintings into parallax layers with
+  feathered masks + inpainted base). Re-use it when real art lands
+  (`public/img/` output is gitignored; needs `npm i -D playwright-core` + Chrome).
 
 ## Notes
 
-- Science note: the herbivore copy says **ferns and leaves**, not grass —
-  grass barely existed in the dinosaurs' era. Run ideas past the
-  `paleontologist` skill before final copy/art.
-- Textures are 2400px wide per layer — fine on modern devices, slightly soft
-  on 3× phone screens. Real art pass would export @2x slices.
+- No top-level `await` in the entry: it deadlocks pixi's dynamically-imported
+  renderer chunks in the Rollup build (dev mode masks it). Boot via `boot()`.
+- Science note: herbivore copy says **ferns and leaves**, not grass — grass
+  barely existed in the dinosaurs' era. Vet final copy with the
+  `paleontologist` skill.

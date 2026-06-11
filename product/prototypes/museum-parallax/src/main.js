@@ -1,16 +1,21 @@
 import { Application, Container, Sprite, Graphics, Texture } from 'pixi.js'
 import { gsap } from 'gsap'
+import { toothSVG, catalogCardArt, DINOS } from './art.js'
 import {
-  lobbyBack, lobbyMid, lobbyFore, hallBack, hallFore,
-  dioramaSVG, floorToothSVG, toothSVG, catalogCardArt,
-  DINOS, DIORAMA_W, DIORAMA_H,
-} from './art.js'
+  INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
+  GROVE_W, GROVE_SPOTS, GUIDE, groveCloudsSVG, groveMountainsSVG, groveMidSVG, groveMainSVG, canopySVG, bushSVG,
+} from './wireframe.js'
 
 /* ---------- constants ---------- */
 const DESIGN_W = 1920
 const DESIGN_H = 1080
-const MAX_X = 200 // max parallax shift at depth 1
-const MAX_Y = 80
+
+// every scene is a side-scrolling world (platformer parallax): layers carry a
+// scroll speed; the camera walks left↔right; real art replaces wireframes 1:1
+const WORLDS = {
+  lobby: { w: LOBBY_W },
+  grove: { w: GROVE_W },
+}
 
 const $ = (id) => document.getElementById(id)
 
@@ -51,45 +56,71 @@ async function svgTexture(svg) {
   return tex
 }
 
-/* ---------- parallax input (mouse hover / touch drag / device tilt) ---------- */
-const parallax = {
-  tx: 0, ty: 0, // target, -1..1
-  x: 0, y: 0,   // smoothed
-  tiltX: 0, tiltY: 0,
-  dragX: 0, dragY: 0,
-  update() {
-    this.tx = Math.max(-1, Math.min(1, this.tiltX + this.dragX))
-    this.ty = Math.max(-1, Math.min(1, this.tiltY + this.dragY))
-    this.x += (this.tx - this.x) * 0.055
-    this.y += (this.ty - this.y) * 0.055
-  },
+/* ---------- game state ---------- */
+const state = { hasTooth: false, solved: false, scene: 'lobby', triedWrong: 0 }
+
+/* ---------- input: walk the world ---------- */
+const cams = { lobby: { x: 0, vel: 0 }, grove: { x: 0, vel: 0 } }
+const camMax = () => WORLDS[state.scene].w - DESIGN_W
+const cam = () => cams[state.scene]
+const lens = { x: 0, y: 0, tx: 0, ty: 0 } // micro hover parallax on top
+const keys = { left: false, right: false }
+
+function nudgeCam(dx) {
+  const c = cam()
+  c.x = Math.max(0, Math.min(camMax(), c.x + dx))
 }
 
 function setupInput() {
-  // mouse hover → absolute position
   window.addEventListener('mousemove', (e) => {
-    parallax.dragX = (e.clientX / window.innerWidth) * 2 - 1
-    parallax.dragY = (e.clientY / window.innerHeight) * 2 - 1
+    lens.tx = (e.clientX / window.innerWidth) * 2 - 1
+    lens.ty = (e.clientY / window.innerHeight) * 2 - 1
   })
 
-  // touch drag → pan around
-  let touch = null
-  window.addEventListener('touchstart', (e) => {
-    touch = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: parallax.dragX, dy: parallax.dragY }
-  }, { passive: true })
-  window.addEventListener('touchmove', (e) => {
-    if (!touch) return
-    parallax.dragX = touch.dx + (e.touches[0].clientX - touch.x) / (window.innerWidth * 0.35)
-    parallax.dragY = touch.dy + (e.touches[0].clientY - touch.y) / (window.innerHeight * 0.5)
+  // drag to walk (mouse + touch), with a fling on release
+  let drag = null
+  const dragStart = (x) => { drag = { lastX: x, lastT: performance.now(), moved: 0 } }
+  const dragMove = (x) => {
+    if (!drag) return
+    const dx = x - drag.lastX
+    drag.moved += Math.abs(dx)
+    drag.lastX = x
+    drag.lastT = performance.now()
+    nudgeCam(-dx * 1.5)
+    cam().vel = 0
+  }
+  const dragEnd = (x) => {
+    if (!drag) return
+    const dt = Math.max(16, performance.now() - drag.lastT)
+    if (drag.moved > 30) cam().vel = -((x - drag.lastX) / dt) * 800
+    drag = null
+  }
+  window.addEventListener('mousedown', (e) => dragStart(e.clientX))
+  window.addEventListener('mousemove', (e) => dragMove(e.clientX))
+  window.addEventListener('mouseup', (e) => dragEnd(e.clientX))
+  window.addEventListener('touchstart', (e) => dragStart(e.touches[0].clientX), { passive: true })
+  window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
+  window.addEventListener('touchend', (e) => dragEnd(e.changedTouches[0].clientX), { passive: true })
+
+  window.addEventListener('wheel', (e) => {
+    nudgeCam(Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY)
   }, { passive: true })
 
-  // device tilt
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') keys.left = true
+    if (e.key === 'ArrowRight') keys.right = true
+  })
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft') keys.left = false
+    if (e.key === 'ArrowRight') keys.right = false
+  })
+
+  // tilt to walk
   let base = null
   const onTilt = (e) => {
-    if (e.gamma == null || e.beta == null) return
-    base ??= { g: e.gamma, b: e.beta }
-    parallax.tiltX = Math.max(-1, Math.min(1, (e.gamma - base.g) / 22))
-    parallax.tiltY = Math.max(-1, Math.min(1, (e.beta - base.b) / 22))
+    if (e.gamma == null) return
+    base ??= e.gamma
+    cam().vel += Math.max(-1, Math.min(1, (e.gamma - base) / 22)) * 30
   }
   const needsPermission =
     typeof DeviceOrientationEvent !== 'undefined' &&
@@ -111,7 +142,7 @@ function setupInput() {
 
 /* ---------- toast ---------- */
 let toastTimer = null
-function toast(msg, ms = 4200) {
+function toast(msg, ms = 4800) {
   const el = $('toast')
   el.textContent = msg
   el.classList.remove('hidden')
@@ -119,34 +150,28 @@ function toast(msg, ms = 4200) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), ms)
 }
 
-/* ---------- game state ---------- */
-const state = { hasTooth: false, solved: false, scene: 'lobby', triedWrong: 0 }
-
 /* ---------- scene helpers ---------- */
-// place a child at design-space coords (0..1920, 0..1080) inside a centered layer
-function placeAt(child, dx, dy) {
-  child.position.set(dx - DESIGN_W / 2, dy - DESIGN_H / 2)
+// children are placed in WORLD coords (0..world width, 0..1080)
+function placeAt(child, wx, wy) {
+  child.position.set(wx - DESIGN_W / 2, wy - DESIGN_H / 2)
   return child
 }
 
-function makeLayer(tex, depth) {
+function scrollLayer(speed) {
   const c = new Container()
-  const s = new Sprite(tex)
-  s.anchor.set(0.5)
-  c.addChild(s)
-  c._depth = depth
+  c._speed = speed
   return c
 }
 
-function makeDust(scene, count, tint = 0xf4e6c8) {
+function makeDust(scene, count, worldW, tint = 0xc2d6e2) {
   for (let i = 0; i < count; i++) {
-    const g = new Graphics().circle(0, 0, 1 + Math.random() * 2.2).fill({ color: tint, alpha: 0.12 + Math.random() * 0.3 })
+    const g = new Graphics().circle(0, 0, 1 + Math.random() * 2).fill({ color: tint, alpha: 0.1 + Math.random() * 0.25 })
     g._p = {
-      x: (Math.random() - 0.5) * DESIGN_W * 1.1,
+      x: Math.random() * (worldW + 400) - DESIGN_W / 2 - 200,
       y: (Math.random() - 0.5) * DESIGN_H * 1.1,
       phase: Math.random() * Math.PI * 2,
       speed: 0.2 + Math.random() * 0.5,
-      depth: 0.15 + Math.random() * 0.7,
+      depth: 0.25 + Math.random() * 0.9,
       amp: 8 + Math.random() * 22,
     }
     scene._dust.push(g)
@@ -154,9 +179,9 @@ function makeDust(scene, count, tint = 0xf4e6c8) {
   }
 }
 
-function hitRect(dx, dy, w, h, onTap) {
+function hitRect(wx, wy, w, h, onTap) {
   const g = new Graphics().rect(0, 0, w, h).fill({ color: 0xffffff, alpha: 0.0001 })
-  placeAt(g, dx, dy)
+  placeAt(g, wx, wy)
   g.eventMode = 'static'
   g.cursor = 'pointer'
   g.on('pointertap', onTap)
@@ -164,12 +189,10 @@ function hitRect(dx, dy, w, h, onTap) {
 }
 
 /* ---------- boot ---------- */
-// NOTE: no top-level await here — with Vite/Rollup chunking, a top-level await
-// in the entry chunk deadlocks against pixi's dynamically-imported renderer
-// chunks (they import back from the paused entry chunk). Hence boot() at the end.
-let app, root, lobby, hall
-let toothSprite, sparkle, archGlow
-const dioramas = {}
+// no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
+let app, root, lobby, grove
+let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow
+const cardFx = {}
 
 function layout() {
   const s = Math.max(window.innerWidth / DESIGN_W, window.innerHeight / DESIGN_H)
@@ -177,98 +200,170 @@ function layout() {
   root.position.set(window.innerWidth / 2, window.innerHeight / 2)
 }
 
+/* ---------- LOBBY ---------- */
 async function buildLobby() {
-  const [back, mid, fore, toothTex] = await Promise.all(
-    [lobbyBack(), lobbyMid(), lobbyFore(), floorToothSVG()].map(svgTexture),
+  const [backT, mainT, foreT, toothT] = await Promise.all(
+    [lobbyBackSVG(), lobbyMainSVG(), lobbyForeSVG(), toothSVG('leaf', 64, 83)].map(svgTexture),
   )
 
-  const backL = makeLayer(back, 0.06)
-  const shaftL = new Container(); shaftL._depth = 0.12
-  const midL = makeLayer(mid, 0.28)
-  const toothL = new Container(); toothL._depth = 0.5
-  const foreL = makeLayer(fore, 0.82)
+  const backL = scrollLayer(0.25)
+  const back = new Sprite(backT)
+  back.anchor.set(0.5)
+  placeAt(back, 1100, 540)
+  backL.addChild(back)
 
-  // light shafts from the windows (design x: 360 / 960 / 1560)
-  for (const wx of [360, 960, 1560]) {
-    const shaft = new Graphics()
-      .poly([wx - 70, 100, wx + 80, 100, wx - 110, DESIGN_H, wx - 330, DESIGN_H])
-      .fill({ color: 0xffdf9e, alpha: 0.055 })
-    shaft.position.set(-DESIGN_W / 2, -DESIGN_H / 2)
-    shaft.blendMode = 'add'
-    gsap.to(shaft, { alpha: 0.55, duration: 3 + Math.random() * 2, yoyo: true, repeat: -1, ease: 'sine.inOut' })
-    shaftL.addChild(shaft)
-  }
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, LOBBY_W / 2, 540)
+  mainL.addChild(main)
 
-  // the tooth on the floor — half hidden behind the foreground planter;
-  // tilt / move to reveal it (the parallax "find things behind things" beat)
-  toothSprite = new Sprite(toothTex)
+  // glow under the dinosaur door once the tooth is collected
+  doorGlow = new Graphics().ellipse(0, 0, 230, 50).fill({ color: 0xe8a948, alpha: 0.3 })
+  placeAt(doorGlow, LOBBY_SPOTS.doorDino.x, 905)
+  doorGlow.blendMode = 'add'
+  doorGlow.alpha = 0
+  mainL.addChild(doorGlow)
+
+  mainL.addChild(hitRect(LOBBY_SPOTS.doorDino.x - 180, 300, 360, 580, enterGrove))
+  mainL.addChild(hitRect(LOBBY_SPOTS.doorSpace.x - 170, 320, 340, 560, () => { sfx.tap(); toast('SPACE wing — roped off. Opening soon! ✨') }))
+  mainL.addChild(hitRect(LOBBY_SPOTS.doorInventions.x - 170, 320, 340, 560, () => { sfx.tap(); toast('INVENTIONS wing — roped off. Opening soon! ⚙️') }))
+
+  // the tooth rides its own layer, slightly slower than the planter in front
+  // of it — WALKING past reveals it (the parallax beat)
+  const toothL = scrollLayer(1.15)
+  toothSprite = new Sprite(toothT)
   toothSprite.anchor.set(0.5)
-  placeAt(toothSprite, 1485, 988)
+  toothSprite.rotation = 0.4
+  placeAt(toothSprite, LOBBY_SPOTS.tooth.x, LOBBY_SPOTS.tooth.y)
   toothSprite.eventMode = 'static'
   toothSprite.cursor = 'pointer'
   toothSprite.on('pointertap', pickUpTooth)
   toothL.addChild(toothSprite)
 
-  // its sparkle
   sparkle = new Graphics()
-  const star = (g, r) => g.poly([0, -r, r * 0.3, -r * 0.3, r, 0, r * 0.3, r * 0.3, 0, r, -r * 0.3, r * 0.3, -r, 0, -r * 0.3, -r * 0.3]).fill({ color: 0xffe9b0 })
-  star(sparkle, 16)
+    .poly([0, -16, 5, -5, 16, 0, 5, 5, 0, 16, -5, 5, -16, 0, -5, -5])
+    .fill({ color: 0xffe9b0 })
   sparkle.blendMode = 'add'
-  placeAt(sparkle, 1505, 950)
+  placeAt(sparkle, LOBBY_SPOTS.tooth.x + 26, LOBBY_SPOTS.tooth.y - 36)
   gsap.to(sparkle, { alpha: 0.15, duration: 0.7, yoyo: true, repeat: -1, ease: 'sine.inOut' })
   gsap.to(sparkle.scale, { x: 1.5, y: 1.5, duration: 0.7, yoyo: true, repeat: -1, ease: 'sine.inOut' })
   toothL.addChild(sparkle)
 
-  // arch glow — wakes up once the tooth is collected
-  archGlow = new Graphics().ellipse(0, 0, 230, 60).fill({ color: 0xe8a948, alpha: 0.3 })
-  placeAt(archGlow, 710, 980)
-  archGlow.blendMode = 'add'
-  archGlow.alpha = 0
-  midL.addChild(archGlow)
+  const foreL = scrollLayer(1.4)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 3300 / 2, 540)
+  foreL.addChild(fore)
 
-  // archway → dinosaur hall
-  midL.addChild(hitRect(505, 320, 410, 660, enterHall))
-
-  lobby.addChild(backL, shaftL, midL, toothL, foreL)
-  lobby._layers = [backL, shaftL, midL, toothL, foreL]
-  makeDust(lobby, 26)
+  lobby.addChild(backL, mainL, toothL, foreL)
+  lobby._layers = [backL, mainL, toothL, foreL]
+  lobby._main = mainL
+  makeDust(lobby, 26, LOBBY_W)
 }
 
-/* ---------- build HALL ---------- */
-async function buildHall() {
-  const [back, fore] = await Promise.all([hallBack(), hallFore()].map(svgTexture))
-  const dioTexs = await Promise.all(DINOS.map((d) => svgTexture(dioramaSVG(d))))
+/* ---------- GROVE ---------- */
+async function buildGrove() {
+  const [cloudsT, mountainsT, midT, mainT, canopyT, bushT] = await Promise.all(
+    [groveCloudsSVG(), groveMountainsSVG(), groveMidSVG(), groveMainSVG(), canopySVG(), bushSVG()].map(svgTexture),
+  )
 
-  const backL = makeLayer(back, 0.06)
-  const dioL = new Container(); dioL._depth = 0.35
-  const foreL = makeLayer(fore, 0.82)
+  const cloudsL = scrollLayer(0.1)
+  const clouds = new Sprite(cloudsT)
+  clouds.anchor.set(0.5)
+  placeAt(clouds, 2150 / 2, 540)
+  cloudsL.addChild(clouds)
 
-  const xs = [330, 960, 1590]
-  DINOS.forEach((dino, i) => {
-    const c = new Container()
-    const s = new Sprite(dioTexs[i])
-    s.anchor.set(0.5)
-    c.addChild(s)
+  const mountainsL = scrollLayer(0.3)
+  const mountains = new Sprite(mountainsT)
+  mountains.anchor.set(0.5)
+  placeAt(mountains, 2520 / 2, 540)
+  mountainsL.addChild(mountains)
 
-    const glow = new Graphics()
-      .roundRect(-DIORAMA_W / 2 - 14, -DIORAMA_H / 2 - 8, DIORAMA_W + 28, DIORAMA_H + 16, 26)
-      .stroke({ color: 0xffd98a, width: 12, alpha: 0.9 })
-    glow.alpha = 0
-    glow.blendMode = 'add'
-    c.addChild(glow)
-    c._glow = glow
+  const midL = scrollLayer(0.5)
+  const mid = new Sprite(midT)
+  mid.anchor.set(0.5)
+  placeAt(mid, 1450, 540)
+  midL.addChild(mid)
 
-    placeAt(c, xs[i], 580)
-    c.eventMode = 'static'
-    c.cursor = 'pointer'
-    c.on('pointertap', () => tryDiorama(dino, c))
-    dioL.addChild(c)
-    dioramas[dino.id] = c
-  })
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, GROVE_W / 2, 540)
+  mainL.addChild(main)
 
-  hall.addChild(backL, dioL, foreL)
-  hall._layers = [backL, dioL, foreL]
-  makeDust(hall, 22, 0xbfe3ef)
+  const S = GROVE_SPOTS
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, backToLobby))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
+    sfx.tap()
+    toast('TRICERATOPS — “three-horned face”. A plant eater with a beak and hundreds of leaf-shaped teeth.')
+  }))
+  mainL.addChild(hitRect(S.skeleton.x - S.skeleton.w / 2, S.skeleton.y, S.skeleton.w, S.skeleton.h, () => {
+    sfx.tap()
+    toast('A skeleton guarding its nest… Which tooth card in the field guide matches YOUR find?')
+  }))
+  mainL.addChild(hitRect(S.bag.x - 60, S.bag.y - 60, 120, 120, () => { sfx.tap(); $('catalog').classList.remove('hidden') }))
+  mainL.addChild(hitRect(S.hint.x - 60, S.hint.y - 60, 120, 120, () => {
+    sfx.tap()
+    toast(state.solved
+      ? 'You solved it! Tap the skeleton to say goodbye.'
+      : state.hasTooth
+        ? 'Look at your tooth: wide, with a broad flat edge. Find the card that says that…'
+        : 'You need a clue first — something glinted back in the lobby.')
+  }))
+  mainL.addChild(hitRect(S.tray.x, S.tray.y, 620, 110, () => {
+    sfx.tap()
+    if (state.hasTooth) toast('Your fossil tooth — wide and flat, with grinding ridges.')
+  }))
+
+  for (const card of GUIDE.cards) {
+    const fx = new Graphics()
+      .roundRect(0, 0, card.w, card.h, 12)
+      .stroke({ color: 0xffd98a, width: 7, alpha: 0.95 })
+    placeAt(fx, card.x, card.y)
+    fx.alpha = 0
+    fx.blendMode = 'add'
+    mainL.addChild(fx)
+    cardFx[card.name] = fx
+    mainL.addChild(hitRect(card.x, card.y, card.w, card.h, () => tryCard(card)))
+  }
+
+  skeletonGlow = new Graphics()
+    .roundRect(0, 0, S.skeleton.w, S.skeleton.h, 24)
+    .fill({ color: 0xffd98a, alpha: 0.14 })
+    .stroke({ color: 0xffd98a, width: 8, alpha: 0.8 })
+  placeAt(skeletonGlow, S.skeleton.x - S.skeleton.w / 2, S.skeleton.y)
+  skeletonGlow.alpha = 0
+  skeletonGlow.blendMode = 'add'
+  mainL.addChild(skeletonGlow)
+
+  trayGlow = new Graphics().roundRect(0, 0, 120, 74, 8).stroke({ color: 0xffd98a, width: 6, alpha: 0.9 })
+  placeAt(trayGlow, S.tray.x + 24, S.tray.y + 18)
+  trayGlow.alpha = 0
+  trayGlow.blendMode = 'add'
+  mainL.addChild(trayGlow)
+
+  // foreground: canopy hanging from the top, bushes along the bottom (fastest)
+  const foreL = scrollLayer(1.42)
+  for (const [wx, s, flip] of [[260, 1.4, false], [1500, 1.1, true], [2900, 1.5, false], [4350, 1.2, true]]) {
+    const c = new Sprite(canopyT)
+    c.anchor.set(0.5, 0)
+    c.scale.set(s * (flip ? -1 : 1), s)
+    placeAt(c, wx, -20)
+    foreL.addChild(c)
+  }
+  for (const [wx, s, flip] of [[700, 1.3, false], [2100, 1.6, true], [3550, 1.2, false], [4650, 1.5, true]]) {
+    const b = new Sprite(bushT)
+    b.anchor.set(0.5, 1)
+    b.scale.set(s * (flip ? -1 : 1), s)
+    placeAt(b, wx, 1110)
+    foreL.addChild(b)
+  }
+
+  grove.addChild(cloudsL, mountainsL, midL, mainL, foreL)
+  grove._layers = [cloudsL, mountainsL, midL, mainL, foreL]
+  grove._main = mainL
+  makeDust(grove, 32, GROVE_W, 0xd8f0a0)
 }
 
 /* ---------- game beats ---------- */
@@ -280,24 +375,23 @@ function pickUpTooth() {
   clearTimeout(lobbyHintTimer)
   sfx.pickup()
 
-  // fly a DOM clone of the tooth into the HUD slot
   const gp = toothSprite.getGlobalPosition()
   const slot = $('tooth-slot').getBoundingClientRect()
   const fly = document.createElement('div')
   fly.style.cssText = 'position:fixed;left:0;top:0;z-index:40;pointer-events:none;will-change:transform'
-  fly.innerHTML = floorToothSVG()
+  fly.innerHTML = toothSVG('leaf', 64, 83)
   document.body.appendChild(fly)
   gsap.fromTo(fly,
-    { x: gp.x - 60, y: gp.y - 60, scale: 1 },
+    { x: gp.x - 32, y: gp.y - 42, scale: 1, rotation: 23 },
     {
-      x: slot.left + slot.width / 2 - 60, y: slot.top + slot.height / 2 - 60, scale: 0.38,
+      x: slot.left + slot.width / 2 - 32, y: slot.top + slot.height / 2 - 42, scale: 0.5, rotation: 0,
       duration: 0.8, ease: 'power2.inOut',
       onComplete: () => {
         fly.remove()
         const slotEl = $('tooth-slot')
         slotEl.classList.remove('empty')
         slotEl.classList.add('filled')
-        slotEl.innerHTML = toothSVG('leaf', 32, 40)
+        slotEl.innerHTML = toothSVG('leaf', 30, 39)
         gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
       },
     })
@@ -306,33 +400,36 @@ function pickUpTooth() {
   gsap.to(sparkle, { alpha: 0, duration: 0.25, overwrite: true })
   toothSprite.eventMode = 'none'
 
-  // wake the archway
-  gsap.to(archGlow, { alpha: 0.65, duration: 1.2 })
-  gsap.to(archGlow, { alpha: 0.25, duration: 1.4, yoyo: true, repeat: -1, delay: 1.2 })
+  gsap.to(doorGlow, { alpha: 0.7, duration: 1.2 })
+  gsap.to(doorGlow, { alpha: 0.25, duration: 1.4, yoyo: true, repeat: -1, delay: 1.2 })
 
-  toast('A fossil tooth! It’s wide and flat. Open the 📖 Catalog to see whose it might be…', 6000)
-  $('catalog-btn').classList.add('pulse')
+  toast('A fossil tooth! It’s wide and flat. The DINOSAUR WING is at the end of the hall →', 6000)
 }
 
-function enterHall() {
+function enterGrove() {
   if (state.scene !== 'lobby') return
-  state.scene = 'hall'
+  state.scene = 'grove'
+  cams.grove.x = 0
+  cams.grove.vel = 0
   sfx.whoosh()
   $('back-btn').classList.remove('hidden')
-  switchScene(lobby, hall, -1)
+  $('walk-arrow').classList.remove('hidden')
+  switchScene(lobby, grove, -1)
+  if (state.hasTooth && !state.solved) gsap.to(trayGlow, { alpha: 0.8, duration: 1, delay: 1, yoyo: true, repeat: 3 })
   setTimeout(() => {
     toast(state.hasTooth
-      ? 'The Hall of Dinosaurs! Three dioramas… which dinosaur lost your tooth? Tap one to try.'
-      : 'Magnificent! But you feel like you missed a clue back in the lobby…', 6000)
+      ? 'A jungle trail! Walk right — drag, tilt, scroll, or arrow keys — and find out whose tooth you’re carrying.'
+      : 'A jungle trail! Walk right and explore… though you feel like you missed a clue back in the lobby.', 6500)
   }, 700)
 }
 
 function backToLobby() {
-  if (state.scene !== 'hall') return
+  if (state.scene !== 'grove') return
   state.scene = 'lobby'
   sfx.whoosh()
   $('back-btn').classList.add('hidden')
-  switchScene(hall, lobby, 1)
+  $('walk-arrow').classList.add('hidden')
+  switchScene(grove, lobby, 1)
 }
 
 function switchScene(from, to, dir) {
@@ -345,53 +442,55 @@ function switchScene(from, to, dir) {
   gsap.to(to.position, { x: 0, duration: 0.65, delay: 0.25, ease: 'power2.out' })
 }
 
-function tryDiorama(dino, container) {
+function tryCard(card) {
   if (state.solved) return
   if (!state.hasTooth) {
     sfx.tap()
-    toast('You’ll need a clue first… something glinted back in the lobby.')
+    toast('You’ll need a clue to compare first… something glinted back in the lobby.')
     return
   }
-  if (dino.correct) {
+  const fx = cardFx[card.name]
+  if (card.correct) {
     state.solved = true
     sfx.success()
-    gsap.to(container._glow, { alpha: 1, duration: 0.5 })
-    gsap.fromTo(container.scale, { x: 1, y: 1 }, { x: 1.04, y: 1.04, duration: 0.5, yoyo: true, repeat: 1, ease: 'sine.inOut' })
-    confetti(container)
+    gsap.to(fx, { alpha: 1, duration: 0.4 })
+    gsap.to(skeletonGlow, { alpha: 1, duration: 0.6, delay: 0.3 })
+    confetti(skeletonGlow)
     setTimeout(() => {
-      $('success-text').textContent = dino.successText
+      $('success-text').innerHTML =
+        'Broad &amp; flat — for grinding ferns and leaves. A <b>plant eater’s</b> tooth!<br>' +
+        'And the skeleton guarding the nest? <b>Triceratops</b> — it’s a perfect match.'
       $('success').classList.remove('hidden')
-    }, 1100)
+    }, 1400)
   } else {
     state.triedWrong++
     sfx.wrong()
-    const ox = container.position.x
+    gsap.fromTo(fx, { alpha: 0.9 }, { alpha: 0, duration: 0.9, ease: 'power2.out' })
+    const ox = grove._main.pivot.x
     gsap.timeline()
-      .to(container.position, { x: ox - 12, duration: 0.06 })
-      .to(container.position, { x: ox + 12, duration: 0.06, repeat: 3, yoyo: true })
-      .to(container.position, { x: ox, duration: 0.06 })
-    toast(dino.wrongHint, 5500)
-    if (state.triedWrong === 1) $('catalog-btn').classList.add('pulse')
+      .to(grove._main.pivot, { x: ox + 9, duration: 0.06 })
+      .to(grove._main.pivot, { x: ox - 9, duration: 0.06, repeat: 2, yoyo: true })
+      .to(grove._main.pivot, { x: ox, duration: 0.06 })
+    toast(card.hint, 5600)
   }
 }
 
 function confetti(fromContainer) {
   const gp = fromContainer.getGlobalPosition()
-  // convert screen → root space
   const lx = (gp.x - root.position.x) / root.scale.x
   const ly = (gp.y - root.position.y) / root.scale.y
-  const colors = [0xe8a948, 0xf4e6c8, 0x7fb6c9, 0xc9802e]
+  const colors = [0xe8a948, 0xf4e6c8, 0x7fb6c9, 0xc2d6e2]
   for (let i = 0; i < 70; i++) {
     const g = new Graphics()
     if (Math.random() > 0.5) g.rect(-4, -7, 8, 14).fill(colors[i % colors.length])
     else g.circle(0, 0, 5).fill(colors[i % colors.length])
-    g.position.set(lx, ly - 100)
+    g.position.set(lx + 320, ly + 230)
     root.addChild(g)
     const a = Math.random() * Math.PI * 2
     const v = 180 + Math.random() * 420
     gsap.to(g, {
-      x: lx + Math.cos(a) * v,
-      y: ly - 100 + Math.sin(a) * v * 0.7 + 260,
+      x: lx + 320 + Math.cos(a) * v,
+      y: ly + 230 + Math.sin(a) * v * 0.7 + 260,
       rotation: (Math.random() - 0.5) * 9,
       alpha: 0,
       duration: 1.3 + Math.random() * 0.9,
@@ -401,7 +500,7 @@ function confetti(fromContainer) {
   }
 }
 
-/* ---------- catalog ---------- */
+/* ---------- catalog (field notes modal — also opened by the BAG) ---------- */
 function buildCatalog() {
   $('catalog-cards').innerHTML = DINOS.map((d) => `
     <div class="dino-card">
@@ -422,7 +521,7 @@ function buildCatalog() {
   $('catalog-close').addEventListener('pointerdown', () => {
     $('catalog').classList.add('hidden')
     if (state.hasTooth && !state.solved && state.scene === 'lobby') {
-      toast('Wide and flat… a plant eater’s tooth! The Dinosaur Wing is through the big archway.', 5500)
+      toast('Wide and flat… a plant eater’s tooth! The DINOSAUR WING is at the end of the hall →', 5500)
     }
   })
 }
@@ -433,7 +532,7 @@ async function boot() {
   await app.init({
     preference: 'webgl',
     resizeTo: window,
-    background: '#120a04',
+    background: INK,
     antialias: true,
     resolution: Math.min(window.devicePixelRatio || 1, 2),
     autoDensity: true,
@@ -450,48 +549,57 @@ async function boot() {
   lobby._dust = []
   root.addChild(lobby)
 
-  hall = new Container()
-  hall._layers = []
-  hall._dust = []
-  hall.visible = false
-  hall.alpha = 0
-  root.addChild(hall)
+  grove = new Container()
+  grove._layers = []
+  grove._dust = []
+  grove.visible = false
+  grove.alpha = 0
+  root.addChild(grove)
 
   $('back-btn').addEventListener('pointerdown', backToLobby)
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
   setupInput()
   buildCatalog()
-  await Promise.all([buildLobby(), buildHall()])
+  await Promise.all([buildLobby(), buildGrove()])
 
-  // update loop
   let t = 0
   app.ticker.add((ticker) => {
-    t += ticker.deltaMS / 1000
-    // gentle ambient drift so the scene breathes even with no input
-    const ax = Math.sin(t * 0.25) * 0.07
-    const ay = Math.cos(t * 0.18) * 0.05
-    parallax.update()
-    const px = parallax.x + ax
-    const py = parallax.y + ay
+    const dt = ticker.deltaMS / 1000
+    t += dt
+    lens.x += (lens.tx - lens.x) * 0.055
+    lens.y += (lens.ty - lens.y) * 0.055
+    const px = lens.x + Math.sin(t * 0.25) * 0.07
+    const py = lens.y + Math.cos(t * 0.18) * 0.05
 
-    for (const scene of [lobby, hall]) {
-      if (!scene.visible) continue
-      for (const layer of scene._layers) {
-        layer.position.x = -px * MAX_X * layer._depth
-        layer.position.y = -py * MAX_Y * layer._depth
-      }
-      for (const d of scene._dust) {
-        const p = d._p
-        d.position.x = p.x + Math.sin(t * p.speed + p.phase) * p.amp - px * MAX_X * p.depth
-        d.position.y = p.y + Math.cos(t * p.speed * 0.8 + p.phase) * p.amp * 0.6 - py * MAX_Y * p.depth
-      }
+    const scene = state.scene === 'lobby' ? lobby : grove
+    if (!scene.visible) return
+    const c = cam()
+
+    // movement acceleration: velocity eases toward walk speed, so starting
+    // and stopping have weight (and the parallax slide reads clearly)
+    const target = keys.right ? 1100 : keys.left ? -1100 : 0
+    if (target !== 0) c.vel += (target - c.vel) * Math.min(1, 2.2 * dt)
+    else c.vel *= 0.93
+    c.x = Math.max(0, Math.min(camMax(), c.x + c.vel * dt))
+    if (c.x === 0 || c.x === camMax()) c.vel = 0
+    if (c.x > camMax() * 0.3) $('walk-arrow').classList.add('hidden')
+
+    for (const layer of scene._layers) {
+      layer.position.x = -c.x * layer._speed - px * 24 * layer._speed
+      layer.position.y = -py * 18 * layer._speed
+    }
+    for (const d of scene._dust) {
+      const p = d._p
+      d.position.x = p.x + Math.sin(t * p.speed + p.phase) * p.amp - c.x * p.depth - px * 24 * p.depth
+      d.position.y = p.y + Math.cos(t * p.speed * 0.8 + p.phase) * p.amp * 0.6 - py * 18 * p.depth
     }
   })
 
-  toast('You’re in the museum lobby. Something glints on the floor… tilt or move around to spot it!', 6500)
+  $('walk-arrow').classList.remove('hidden')
+  toast('You’re in the museum lobby — walk right (drag, scroll, tilt, or arrow keys). Something glints behind the planter…', 7000)
   lobbyHintTimer = setTimeout(() => {
-    if (!state.hasTooth) toast('Psst — check near the big plant on the right. Things hide behind things here…', 6000)
-  }, 12000)
+    if (!state.hasTooth) toast('Psst — walk slowly past the PLANTER and watch behind it. Layers move at different speeds…', 6000)
+  }, 14000)
 }
 
 boot()

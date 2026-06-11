@@ -343,7 +343,7 @@ function spinoSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
   </g>`
 }
 
-const SILHOUETTES = { trike: trikeSilhouette, allo: alloSilhouette, spino: spinoSilhouette }
+export const SILHOUETTES = { trike: trikeSilhouette, allo: alloSilhouette, spino: spinoSilhouette }
 
 /* ============================== TEETH ============================== */
 
