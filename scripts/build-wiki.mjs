@@ -699,44 +699,6 @@ console.log(`[gazette] ${gazetteHistory.length}/${history.length} commits become
 // otherwise a relevant photo from Wikipedia. siteImages = [absSource, destName].
 const siteImages = [];
 const seenLocal = new Map();
-
-// Read an image's pixel dimensions straight from its header (no deps) so the
-// gazette can crop covers intelligently: landscape art fills the slot, but a
-// portrait/square image is shown whole on a blurred backdrop instead of being
-// sliced into a weird band. Supports PNG / JPEG / GIF / WebP; null if unknown.
-function imageDims(file) {
-  try {
-    const b = readFileSync(file);
-    if (b.length > 24 && b[0] === 0x89 && b[1] === 0x50)                      // PNG
-      return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
-    if (b.length > 10 && b[0] === 0x47 && b[1] === 0x49)                      // GIF
-      return { w: b.readUInt16LE(6), h: b.readUInt16LE(8) };
-    if (b.length > 30 && b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP") {
-      const fmt = b.toString("ascii", 12, 16);                               // WebP
-      if (fmt === "VP8 ") return { w: b.readUInt16LE(26) & 0x3fff, h: b.readUInt16LE(28) & 0x3fff };
-      if (fmt === "VP8L") { const n = b.readUInt32LE(21); return { w: (n & 0x3fff) + 1, h: ((n >> 14) & 0x3fff) + 1 }; }
-      if (fmt === "VP8X") return { w: (b[24] | (b[25] << 8) | (b[26] << 16)) + 1, h: (b[27] | (b[28] << 8) | (b[29] << 16)) + 1 };
-    }
-    if (b.length > 4 && b[0] === 0xff && b[1] === 0xd8) {                     // JPEG
-      let o = 2;
-      while (o + 9 < b.length) {
-        if (b[o] !== 0xff) { o++; continue; }
-        const m = b[o + 1];
-        if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc)
-          return { h: b.readUInt16BE(o + 5), w: b.readUInt16BE(o + 7) };
-        o += 2 + b.readUInt16BE(o + 2);
-      }
-    }
-  } catch {}
-  return null;
-}
-// How a cover should fill its slot: true landscape art is cover-cropped; anything
-// near-square or portrait is shown whole (contain) so nothing is sliced oddly.
-function fitFor(absPath) {
-  const d = imageDims(absPath);
-  if (d && d.w && d.h) return { w: d.w, h: d.h, fit: d.w / d.h >= 1.3 ? "cover" : "contain" };
-  return { fit: "cover" };
-}
 // Register a repo image for copying into site/news; returns its image descriptor.
 const useLocal = (relPath, title, asset) => {
   const ext = relPath.split(".").pop();
@@ -746,7 +708,7 @@ const useLocal = (relPath, title, asset) => {
     seenLocal.set(relPath, dest);
     siteImages.push([join(ROOT, relPath), dest]);
   }
-  return { src: `news/${dest}`, title, credit: "From the brain", local: true, asset, ...fitFor(join(ROOT, relPath)) };
+  return { src: `news/${dest}`, title, credit: "From the brain", local: true, asset };
 };
 const IMG_RE = /\.(jpe?g|png|webp|gif|avif)$/i;
 mkdirSync(NEWS_CACHE, { recursive: true });
@@ -813,7 +775,7 @@ for (const item of gazetteHistory) {
     const img = await ensureImage(q, imgManifest);
     if (img) {
       siteImages.push([join(NEWS_CACHE, img.file), img.file]);
-      item.image = { src: `news/${img.file}`, title: img.title, credit: img.title, page: img.page, ...fitFor(join(NEWS_CACHE, img.file)) };
+      item.image = { src: `news/${img.file}`, title: img.title, credit: img.title, page: img.page };
       break;
     }
   }
@@ -1070,7 +1032,7 @@ function renderHtml(dataJson) {
   figcaption a { color: var(--faint); }
   figcaption a:hover { color: var(--ink); }
   .hero-photo { margin: 4px 0 14px; }
-  .hero-photo .cover-frame { height: 320px; border: 1px solid var(--line2); }
+  .hero-photo img { height: 240px; object-fit: cover; object-position: center 30%; border: 1px solid var(--line2); filter: saturate(.92) contrast(1.02); cursor: zoom-in; }
 
   /* ---- newspaper article grid (below hero) ---- */
   .news-day { margin: 0; }
@@ -1523,21 +1485,12 @@ function introHtml(c){
   if(!c.intro) return link ? '<p class="intro">'+link+'</p>' : '';
   return '<p class="intro">'+renderInline(c.intro)+link+'</p>';
 }
-// The image itself, wrapped in a frame that fills its slot by orientation:
-// landscape art covers the slot; portrait/square art is shown whole over a
-// blurred copy of itself (set as the frame background) so it's never sliced oddly.
-function coverFrame(c){
-  const fit = c.image.fit === 'contain' ? 'contain' : 'cover';
-  const bg = fit==='contain' ? ' style="background-image:url('+c.image.src+')"' : '';
-  return '<span class="cover-frame fit-'+fit+'"'+bg+'>'+
-    '<img loading="lazy" src="'+c.image.src+'" alt="'+escapeHtml(c.image.title||'')+'"></span>';
-}
 function figureHtml(c, cls){
   if(!c.image) return '';
   const cap = c.image.page
     ? '<a href="'+c.image.page+'" target="_blank" rel="noopener">'+escapeHtml(c.image.credit||c.image.title||'Wikipedia')+'</a>'
     : escapeHtml(c.image.credit||c.image.title||'');
-  return '<figure class="'+cls+'">'+coverFrame(c)+
+  return '<figure class="'+cls+'"><img loading="lazy" src="'+c.image.src+'" alt="'+escapeHtml(c.image.title||'')+'">'+
     '<figcaption>'+(c.image.local?'🗂 ':'📷 ')+cap+'</figcaption></figure>';
 }
 function flashCard(c, cls, style){
