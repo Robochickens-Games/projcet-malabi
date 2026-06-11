@@ -77,30 +77,38 @@ function setupInput() {
     lens.ty = (e.clientY / window.innerHeight) * 2 - 1
   })
 
-  // drag to walk (mouse + touch), with a fling on release
+  // drag to walk (mouse + touch): 1:1 grab while held, then the camera keeps
+  // the swipe's momentum and glides to a stop — accelerative, inertial feel.
+  // velocity is sampled DURING the swipe (a release delta is ~0 → no fling).
   let drag = null
-  const dragStart = (x) => { drag = { lastX: x, lastT: performance.now(), moved: 0 } }
+  const dragStart = (x) => { drag = { lastX: x, lastT: performance.now(), moved: 0, vel: 0 } }
   const dragMove = (x) => {
     if (!drag) return
+    const t = performance.now()
     const dx = x - drag.lastX
+    const dt = Math.max(8, t - drag.lastT)
     drag.moved += Math.abs(dx)
+    // camera velocity in px/s (world scrolls opposite the finger), smoothed
+    drag.vel = drag.vel * 0.55 + (-dx / (dt / 1000)) * 0.45
     drag.lastX = x
-    drag.lastT = performance.now()
-    nudgeCam(-dx * 1.5)
-    cam().vel = 0
+    drag.lastT = t
+    nudgeCam(-dx)            // grab the world 1:1 under the finger
+    cam().vel = 0            // engine momentum is paused while held
   }
-  const dragEnd = (x) => {
+  const dragEnd = () => {
     if (!drag) return
-    const dt = Math.max(16, performance.now() - drag.lastT)
-    if (drag.moved > 30) cam().vel = -((x - drag.lastX) / dt) * 800
+    // hand the swipe's momentum to the camera; it decays via friction
+    if (drag.moved > 16 && performance.now() - drag.lastT < 90) {
+      cam().vel = Math.max(-5000, Math.min(5000, drag.vel))
+    }
     drag = null
   }
   window.addEventListener('mousedown', (e) => dragStart(e.clientX))
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
-  window.addEventListener('mouseup', (e) => dragEnd(e.clientX))
+  window.addEventListener('mouseup', () => dragEnd())
   window.addEventListener('touchstart', (e) => dragStart(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
-  window.addEventListener('touchend', (e) => dragEnd(e.changedTouches[0].clientX), { passive: true })
+  window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
   window.addEventListener('wheel', (e) => {
     nudgeCam(Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY)
@@ -576,10 +584,13 @@ async function boot() {
     const c = cam()
 
     // movement acceleration: velocity eases toward walk speed, so starting
-    // and stopping have weight (and the parallax slide reads clearly)
+    // and stopping have weight (and the parallax slide reads clearly).
+    // when nothing's driving, momentum glides out via frame-rate-independent
+    // friction — a flung swipe coasts to a stop.
     const target = keys.right ? 1100 : keys.left ? -1100 : 0
     if (target !== 0) c.vel += (target - c.vel) * Math.min(1, 2.2 * dt)
-    else c.vel *= 0.93
+    else c.vel *= Math.pow(0.06, dt) // ≈0.955/frame @60fps, but dt-correct
+    if (Math.abs(c.vel) < 2) c.vel = 0
     c.x = Math.max(0, Math.min(camMax(), c.x + c.vel * dt))
     if (c.x === 0 || c.x === camMax()) c.vel = 0
     if (c.x > camMax() * 0.3) $('walk-arrow').classList.add('hidden')
@@ -594,6 +605,9 @@ async function boot() {
       d.position.y = p.y + Math.cos(t * p.speed * 0.8 + p.phase) * p.amp * 0.6 - py * 18 * p.depth
     }
   })
+
+  // read-only debug hook (used by the prototype's headless feel-tests)
+  window.__cam = () => ({ scene: state.scene, x: cam().x, vel: cam().vel })
 
   $('walk-arrow').classList.remove('hidden')
   toast('You’re in the museum lobby — walk right (drag, scroll, tilt, or arrow keys). Something glints behind the planter…', 7000)
