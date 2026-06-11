@@ -38,6 +38,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [aso-research-findings](shared/aso-research-findings.md) — ASO keyword research results: dinosaurs are the strongest launch theme; full report in brain/research/
 - [project-gazette](shared/project-gazette.md) — the newspaper-style wiki auto-published to GitHub Pages; visualizes the brain + what changed when
 - [click-to-play-engagement-concern](shared/click-to-play-engagement-concern.md) — open design concern: will the click-to-play exploration loop create the engagement we want (kids/touch)? + mitigations + prototype-to-resolve
+- [gameplay-principles](shared/gameplay-principles.md) — the six gameplay principles we design toward (every tap rewards, drip of aha, obvious-tappable, no dead ends, collection layer, soft guidance)
 
 ## Members
 ### Dor
