@@ -1403,6 +1403,27 @@ function renderHtml(dataJson) {
   /* Gazette masthead toggle — compact to fit the gaz-mast-top bar */
   .gaz-mast-toggle .vtb-btn { padding: 2px 8px; font-size: 9px; }
 
+  /* Letters to the Editor — recolour the white cards to the aged-paper palette */
+  body.mode-gazette .letter { background: var(--gaz-light); border-color: var(--gaz-rule);
+    border-left-color: var(--gaz-gold); box-shadow: 0 1px 0 rgba(120,90,30,.08); }
+  body.mode-gazette .letter.addressed { border-left-color: #6b7d3a; }
+  body.mode-gazette .letter-meta { color: var(--gaz-gold); }
+  body.mode-gazette .letter-meta img { border-color: var(--gaz-rule); }
+  body.mode-gazette .letter-meta .who { color: var(--gaz-body); }
+  body.mode-gazette .letter-meta .thread { color: var(--gaz-gold); }
+  body.mode-gazette .letter-meta .thread:hover { color: var(--gaz-ink); }
+  body.mode-gazette .letter-subject { color: var(--gaz-ink); font-family: 'Source Serif 4', Georgia, serif; }
+  body.mode-gazette .letter-body { color: var(--gaz-body); }
+  body.mode-gazette .letters-blurb,
+  body.mode-gazette .letters-hint,
+  body.mode-gazette .letters-empty { color: var(--gaz-gold); }
+  body.mode-gazette .letter .asset { background: var(--gaz-paper); border-color: var(--gaz-rule); color: var(--gaz-gold); }
+  body.mode-gazette .letter .asset:hover { background: var(--gaz-light); border-color: var(--gaz-ink); }
+  /* The utterances comment box is a third-party iframe (github-light); frame it on
+     paper so the white panel reads as an intentional inset rather than floating. */
+  body.mode-gazette .letters-general { background: var(--gaz-light); border: 1px solid var(--gaz-rule);
+    border-radius: 10px; padding: 14px 16px; }
+
   /* Gazette page wrapper — double-rule border */
   .gazette-front {
     border: 1px solid var(--gaz-rule);
