@@ -963,11 +963,13 @@ function renderHtml(dataJson) {
   .mast-view-toggle { display: flex; align-items: center; }
   /* Buttons slightly smaller than the standalone toggle so they fit in the mast-top bar */
   .mast-view-toggle .vtb-btn { padding: 2px 9px; font-size: 10px; letter-spacing: .08em; }
-  /* On phones the mast-top row is too narrow for the toggle inline — let it wrap
-     and drop the date+toggle onto its own centered line so it stays reachable. */
+  /* On phones the mast-top row is too narrow for the toggle inline — let it wrap.
+     display:contents lifts the date out of its wrapper so it stays on the top row
+     with the other masthead items, and only the toggle drops to its own row below. */
   @media (max-width: 640px) {
     .mast-top { flex-wrap: wrap; justify-content: center; gap: 6px 14px; }
-    .mast-date-toggle { flex-basis: 100%; justify-content: center; flex-wrap: wrap; gap: 8px; }
+    .mast-date-toggle { display: contents; }
+    .mast-view-toggle { flex-basis: 100%; justify-content: center; margin-top: 3px; }
   }
 
   section.view { display: none; }
@@ -1557,9 +1559,10 @@ function renderHtml(dataJson) {
     .gaz-body-2col { column-count: 1; }
     .gaz-mast-title { letter-spacing: -2px; }
     .gaz-mast-top span:nth-child(2) { display: none; }
-    /* Wrap the gazette mast bar so the date+toggle drops to its own centered line. */
+    /* Keep the date on the top row, drop only the toggle to its own line below. */
     .gaz-mast-top { flex-wrap: wrap; justify-content: center; gap: 6px 12px; }
-    .gaz-mast-top > div:last-child { flex-basis: 100%; justify-content: center; flex-wrap: wrap; }
+    .gaz-mast-top > div:last-child { display: contents; }
+    .gaz-mast-toggle { flex-basis: 100%; justify-content: center; margin-top: 3px; }
   }
 </style>
 </head>
