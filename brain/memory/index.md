@@ -43,6 +43,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [gameplay-principles](shared/gameplay-principles.md) — the six gameplay principles we design toward (every tap rewards, drip of aha, obvious-tappable, no dead ends, collection layer, soft guidance)
 - [game-concepts](shared/game-concepts.md) — current concept: Science Museum Mystery, three wings (Dinosaurs/Space/Inventions), tap-and-explore, ages 5–10, no ads
 - [art-direction](shared/art-direction.md) — visual direction: warm illustrated museum, Art Deco, amber/gold + teal/space palette, back-facing child protagonist with magnifying glass
+- [art-scientific-realism](shared/art-scientific-realism.md) — all imagery depicts REAL, scientifically accurate subjects (actual spacecraft, real devices, true specimens); painterly style stays, no toy/fantasy/made-up objects
 - [status-board-reconcile](shared/status-board-reconcile.md) — the status board self-corrects at build: done Next-up items auto-move to Done via resolved-when markers
 - [prototype-parallax-first-slice](shared/prototype-parallax-first-slice.md) — first playable feel-prototype (parallax lobby → tooth → dino hall → catalog match) is built + live on Vercel (malabi-museum-parallax.vercel.app, linked from the gazette masthead); stack = Vite + Pixi.js + GSAP, in product/prototypes/museum-parallax
 - [daily-dispatch-2026-06-11](shared/daily-dispatch-2026-06-11.md) — special-edition roundup of June 11: dinosaurs confirmed, Science Museum Mystery named, 15 dino mechanics, first playable prototype, gazette glow-up
@@ -58,6 +59,7 @@ After writing a memory, add a one-line pointer below under the right section.
 ## Proposals (under review)
 - [dinosaur-section-mechanics](../proposals/dinosaur-section-mechanics.md) — 15 mechanic ideas for the dino wing; recommended trio: Time Lens + Fossil Detective Board + Living Diorama
 - [puzzle-brush-away-the-dust](../proposals/puzzle-brush-away-the-dust.md) — first dino puzzle: find brush → brush rock in layers → reveal out-of-place ammonite
+- [asset-generation-pipeline](../proposals/asset-generation-pipeline.md) — manifest-driven AI pipeline for style-consistent transparent-PNG assets at scale; free ComfyUI primary, scaffold built in product/asset-pipeline/
 
 ## Decisions
 - [0003-first-product-direction-science-games-for-kids](../decisions/0003-first-product-direction-science-games-for-kids.md) — proposed: kids science games niche, ASO topic research, Apple feature design bar, click-to-play gameplay held to six engagement principles (Ohad review pending)
