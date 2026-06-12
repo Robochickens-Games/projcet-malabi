@@ -984,14 +984,6 @@ function renderHtml(dataJson) {
   .index-bar .l { font-family: var(--sans); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-top: 5px; }
   @media (max-width: 720px) { .index-bar { grid-template-columns: repeat(2, 1fr); } .index-bar .box:nth-child(2){border-right:0;} }
 
-  /* ---- edition toggle: two-state pill in the masthead, beside "Play" ---- */
-  .edition-toggle { display: inline-flex; align-items: center; gap: .4em; font-family: var(--sans); font-weight: 700;
-    font-size: 12px; line-height: 1.6; letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
-    background: var(--card); border: 1px solid var(--line2); border-radius: 999px; padding: 3px 13px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
-  .edition-toggle:hover { border-color: var(--ink); }
-  .edition-toggle[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .edition-toggle .et-icon { font-size: .95em; }
-
   /* ---- "Newspaper" front (NYT-style) ---- */
   #front-times .nyt-top { display: grid; grid-template-columns: 1fr 1.55fr 1fr; gap: 0; border-top: 2px solid var(--rule); }
   #front-times .nyt-col { padding: 20px 22px 8px; min-width: 0; }
@@ -1393,7 +1385,7 @@ function renderHtml(dataJson) {
     background-size: 256px 256px; background-repeat: repeat;
   }
   body.mode-gazette .masthead          { display: none; }
-  body.mode-gazette nav.tabs           { background: var(--gaz-paper); border-color: var(--gaz-rule); }
+  body.mode-gazette nav.tabs           { display: none; }
   body.mode-gazette nav.tabs button[data-tab]         { color: var(--gaz-gold); font-family: 'Source Serif 4', Georgia, serif; font-size: 13px; letter-spacing: .04em; }
   body.mode-gazette nav.tabs button[data-tab].active  { color: var(--gaz-ink); border-bottom-color: var(--gaz-ink); }
   body.mode-gazette nav.tabs button[data-tab]:hover   { color: var(--gaz-ink); }
@@ -1584,7 +1576,6 @@ function renderHtml(dataJson) {
       <span>“<b>Make us money. Make it fun.</b>” 🌟</span>
       <span><a id="repo-link" href="#">All the knowledge that's fit to commit</a></span>
       <span><a class="play-link" href="https://malabi-museum-parallax.vercel.app" target="_blank" rel="noopener"><span class="play-tri">▶</span> Play the prototype</a></span>
-      <span><button class="edition-toggle" id="layout-toggle" aria-pressed="false" title="Switch front-page layout"><span class="et-icon">⇄</span> <span id="et-label">Classic</span></button></span>
     </div>
   </header>
 
@@ -1970,60 +1961,6 @@ function nytArt(c, cls, opts){
     nytByline(c)+
     '</article>';
 }
-function buildTimesFront(){
-  const ft = document.getElementById('front-times');
-  const used = new Set();
-  const take = c => { if(c) used.add(c.hash); return c; };
-  const all = DATA.history.slice();
-  if(!all.length){ ft.innerHTML = '<p class="standfirst">No dispatches yet.</p>'; return; }
-  const nextImg = () => all.find(c => c.image && !used.has(c.hash));
-  // Center = the strongest image-led dispatch; right feature = the next one.
-  const center  = take(nextImg() || all[0]);
-  const feature = take(nextImg());
-  const rest    = all.filter(c => !used.has(c.hash));
-  const lead     = rest.shift();          // big text lead, top-left
-  const leftMore = rest.splice(0, 3);     // stacked under the lead
-  const rightMore= rest.splice(0, 2);     // under the feature
-  const bottom   = rest.slice(0, 8);      // lower-fold grid
-
-  const left = '<div class="nyt-col left">'+
-    (lead ? nytArt(lead, 'nyt-lead', {live:true}) : '')+
-    leftMore.map(c => nytArt(c, '')).join('')+'</div>';
-  const mid = '<div class="nyt-col center">'+
-    nytArt(center, 'nyt-center', {image:true, wide:true})+'</div>';
-  const right = '<div class="nyt-col right">'+
-    (feature ? nytArt(feature, 'nyt-feature', {image:true}) : '')+
-    rightMore.map(c => nytArt(c, '')).join('')+'</div>';
-  const grid = bottom.length
-    ? '<div class="nyt-more-rule"></div><div class="nyt-grid">'+bottom.map(c => nytArt(c, '', {sum:false})).join('')+'</div>'
-    : '';
-  ft.innerHTML = '<div class="nyt-top">'+left+mid+right+'</div>'+grid;
-  wireWikilinks(ft);
-}
-
-// ---- edition toggle (two-state, persisted in localStorage) ----
-(function(){
-  const btn = document.getElementById('layout-toggle');
-  const label = document.getElementById('et-label');
-  const classic = document.getElementById('front-classic');
-  const times = document.getElementById('front-times');
-  const NAME = { classic: 'Classic', times: 'Paper' };
-  let built = false, mode = 'classic';
-  function apply(m){
-    mode = m;
-    const isTimes = m === 'times';
-    if(isTimes && !built){ buildTimesFront(); built = true; }
-    classic.hidden = isTimes;
-    times.hidden = !isTimes;
-    label.textContent = NAME[m];
-    btn.setAttribute('aria-pressed', String(isTimes));
-    try { localStorage.setItem('malabi-front-layout', m); } catch(e){}
-  }
-  btn.addEventListener('click', () => apply(mode === 'times' ? 'classic' : 'times'));
-  let saved = 'classic';
-  try { saved = localStorage.getItem('malabi-front-layout') || 'classic'; } catch(e){}
-  apply(saved);
-})();
 
 // ---- image lightbox: tap any cover / hero photo / in-article image to see it
 // large and clear (concept art, screenshots) — covers are cropped, this isn't. ----
