@@ -52,6 +52,9 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
 
 #hud-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
+#fs-btn { font-size: 17px; line-height: 1; padding: 7px 12px; }
+#fs-btn.hidden { display: none; }
+
 #tooth-slot {
   width: 44px; height: 44px; border-radius: 12px;
   border: 1.5px dashed var(--gold-deep); background: rgba(20, 12, 4, 0.55);
@@ -179,4 +182,22 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
 @media (max-width: 640px) {
   #hud-title { display: none; }
   #catalog-cards { padding: 12px; }
+}
+
+/* ---------- rotate-to-landscape (phones held in portrait) ---------- */
+#rotate-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; text-align: center;
+  background: rgba(8, 4, 0, 0.94);
+}
+#rotate-overlay .phone { font-size: 56px; animation: rotate-nudge 1.6s ease-in-out infinite; }
+#rotate-overlay p { font-size: 18px; line-height: 1.5; letter-spacing: .06em; color: var(--cream); }
+@keyframes rotate-nudge {
+  0%, 20% { transform: rotate(0deg); }
+  55%, 80% { transform: rotate(90deg); }
+  100% { transform: rotate(90deg); }
+}
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 920px) {
+  #rotate-overlay { display: flex; }
 }

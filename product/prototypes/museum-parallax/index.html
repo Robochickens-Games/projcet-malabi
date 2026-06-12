@@ -18,11 +18,18 @@
     <div id="hud-right">
       <div id="tooth-slot" class="empty" title="Your find"></div>
       <button id="catalog-btn" class="hud-btn">📖 Catalog</button>
+      <button id="fs-btn" class="hud-btn" aria-label="Full screen">⛶</button>
     </div>
   </header>
 
   <!-- toast -->
   <div id="toast" class="hidden"></div>
+
+  <!-- portrait nudge (phones) -->
+  <div id="rotate-overlay">
+    <div class="phone">📱</div>
+    <p>Rotate your phone —<br>the museum is wide!</p>
+  </div>
 
   <!-- tilt permission (iOS) -->
   <button id="tilt-btn" class="hidden">✦ Enable tilt to look around</button>

@@ -30,6 +30,11 @@ Open the printed URL (works on a phone over the same Wi-Fi).
 **Controls:** drag / fling, scroll wheel, arrow keys (with acceleration), or
 device tilt. BAG opens the dino field-notes; HINT nudges.
 
+**Mobile:** the game is landscape — phones held in portrait get a
+rotate-your-phone overlay. The ⛶ HUD button enters fullscreen and (on Android)
+locks landscape. iPhone Safari has no fullscreen API, so the button hides
+there; "Add to Home Screen" gives true fullscreen instead.
+
 ## Structure (for the art handoff)
 
 - `src/wireframe.js` — all blockout art + the world layout constants

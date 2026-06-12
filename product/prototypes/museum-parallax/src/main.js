@@ -123,13 +123,22 @@ function setupInput() {
     if (e.key === 'ArrowRight') keys.right = false
   })
 
-  // tilt to walk
+  // tilt to walk — read the axis that means "lean left/right" for how the
+  // phone is HELD: gamma in portrait, ±beta in landscape
   let base = null
-  const onTilt = (e) => {
-    if (e.gamma == null) return
-    base ??= e.gamma
-    cam().vel += Math.max(-1, Math.min(1, (e.gamma - base) / 22)) * 30
+  const tiltValue = (e) => {
+    const a = screen.orientation?.angle ?? window.orientation ?? 0
+    if (a === 90) return e.beta
+    if (a === 270 || a === -90) return e.beta == null ? null : -e.beta
+    return e.gamma
   }
+  const onTilt = (e) => {
+    const v = tiltValue(e)
+    if (v == null) return
+    base ??= v
+    cam().vel += Math.max(-1, Math.min(1, (v - base) / 22)) * 30
+  }
+  window.addEventListener('orientationchange', () => { base = null })
   const needsPermission =
     typeof DeviceOrientationEvent !== 'undefined' &&
     typeof DeviceOrientationEvent.requestPermission === 'function'
@@ -145,6 +154,42 @@ function setupInput() {
     })
   } else if ('ontouchstart' in window) {
     window.addEventListener('deviceorientation', onTilt)
+  }
+}
+
+/* ---------- fullscreen + landscape lock ---------- */
+function setupFullscreen() {
+  const btn = $('fs-btn')
+  const el = document.documentElement
+  const request = el.requestFullscreen || el.webkitRequestFullscreen
+  if (!request) {
+    // iPhone Safari has no fullscreen API; the rotate overlay still nudges
+    // landscape, and "Add to Home Screen" gives true fullscreen via the meta tag
+    btn.classList.add('hidden')
+    return
+  }
+  const inFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement)
+
+  btn.addEventListener('pointerdown', async () => {
+    sfx.tap()
+    try {
+      if (inFs()) {
+        await (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+      } else {
+        await request.call(el)
+        // Android Chrome: snaps the page horizontal; elsewhere lock is
+        // unsupported and the rotate overlay carries the nudge instead
+        await screen.orientation?.lock?.('landscape')
+      }
+    } catch { /* fullscreen is a nicety — never block on it */ }
+  })
+
+  for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) {
+    document.addEventListener(ev, () => {
+      btn.textContent = inFs() ? '⤡' : '⛶'
+      btn.setAttribute('aria-label', inFs() ? 'Exit full screen' : 'Full screen')
+      if (!inFs()) { try { screen.orientation?.unlock?.() } catch { /* not locked */ } }
+    })
   }
 }
 
@@ -567,6 +612,7 @@ async function boot() {
   $('back-btn').addEventListener('pointerdown', backToLobby)
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
   setupInput()
+  setupFullscreen()
   buildCatalog()
   await Promise.all([buildLobby(), buildGrove()])
 
