@@ -1,0 +1,62 @@
+# style.yaml — the LOCKED style DNA shared by every generated asset.
+# This is the single thing that keeps 100 assets looking like one artist made
+# them. Distilled from brain/memory/shared/art-direction.md. Change it rarely;
+# when you do, regenerate everything so the set stays coherent.
+
+engine: comfyui            # comfyui (free/local) | openai (paid) — generate.mjs reads this
+
+# per-wing STYLE ANCHORS — every generation is style-transferred from its wing's
+# hall panorama unless the asset overrides. This is what keeps 100 assets coherent.
+stylerefs:
+  lobby: demo/img/lobby-bg-wide.png
+  dinosaurs: demo/img/dino-hall.png
+  space: demo/img/space-hall.png
+  inventions: demo/img/inventions-hall.png
+default_sprite_workflow: workflows/styleref.json
+host: http://127.0.0.1:8188   # ComfyUI server (default when you run it locally)
+workflow: workflows/transparent-painterly.json
+
+# --- the prompt contract ---------------------------------------------------
+# Every asset's prompt is built as:  style_prefix + ", " + asset.prompt + ", " + style_suffix
+# The canonical object-style: mirrors the scene style (assets.yaml &aaa) so props
+# and panoramas read as one hand. Pure visual vocabulary — no franchise or place
+# names (SDXL reads those literally: "Monkey Island" = monkeys + ships).
+#
+# SCIENTIFIC REALISM (team rule, see brain/memory/shared/art-scientific-realism.md):
+# every SUBJECT must be a real, scientifically accurate thing — actual spacecraft,
+# real devices, true-to-science specimens. The painterly STYLE stays; the depicted
+# object must exist (or have existed). No toy/fantasy/made-up versions.
+style_prefix: >-
+  rich hand-painted illustration for a children's science adventure game, textured
+  painterly brushwork, a real scientifically accurate subject with true proportions,
+  single centered subject, warm amber and gold tones with deep teal accents,
+  soft cinematic lighting, premium quality
+style_suffix: clean, isolated subject
+
+# applied to EVERY asset — keeps the look on-model
+negative: >-
+  fantasy, fictional, whimsical, magical, toy, toy-like, sci-fi concept, made-up
+  invention, background, scene, room, wall, floor, ground, environment, landscape,
+  scenery, architecture, building, multiple subjects, people, monkey, 3d render,
+  photo, flat vector, text, watermark, blurry, lowres
+
+palette: [amber, gold, teal, navy]   # documentation; reinforce in prompts as needed
+
+# --- generation defaults (per-asset entries may override) ------------------
+defaults:
+  size: 1024x1024
+  variants: 3            # how many candidates per asset to choose from
+  steps: 30
+  cfg: 6.5
+  sampler: dpmpp_2m
+  scheduler: karras
+  seed: per-asset        # deterministic: seed derived from asset id -> reproducible reruns
+
+# --- transparency ----------------------------------------------------------
+# Day-1 path: generate on a flat grey bg, then strip it in postprocess (rembg).
+# Upgrade path: add LayerDiffuse nodes to the workflow for native alpha (then
+# set transparency.native: true and postprocess only trims).
+transparency:
+  native: false          # true once LayerDiffuse is wired into the workflow
+  bg_removal: true        # rembg / @imgly strips the flat bg -> alpha PNG
+  trim: true              # crop transparent margins tight to the subject

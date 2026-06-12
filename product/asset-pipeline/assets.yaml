@@ -1,0 +1,693 @@
+# assets.yaml — the work-list. One entry = one asset. Add a line, run `npm run
+# generate`, get style-consistent candidates. This is the scalable surface:
+# growing the game = growing this file, not rewriting code.
+#
+# Fields:
+#   id        unique slug -> output filename + deterministic seed
+#   wing      dinosaurs | space | inventions | lobby | ui   (organizes output)
+#   kind      sprite (transparent, isolated object) | prop | character
+#             NOTE: full-bleed parallax BACKDROPS are not generated here — those
+#             are painted scenes that generate-assets.mjs (the slicer) cuts into
+#             layers. This pipeline makes the isolated, transparent pieces.
+#   prompt    the subject only — style is added automatically from style.yaml
+#   variants  (optional) overrides default count of candidates
+#   size      (optional) overrides default 1024x1024
+#
+# SCIENTIFIC REALISM RULE (brain/memory/shared/art-scientific-realism.md):
+# every subject must be a REAL, scientifically accurate thing — actual named
+# spacecraft, real instruments and devices, true-to-science specimens. Painterly
+# rendering, but the depicted object must exist (or have existed). No toys,
+# no fantasy gadgets, no made-up sci-fi.
+
+assets:
+  # --- already in the prototype as blockout / sliced; regenerate clean here ---
+  - id: clue-tooth
+    wing: dinosaurs
+    kind: sprite
+    prompt: >-
+      a single fossilized T-Rex tooth, gold-brown ancient bone, serrated edge,
+      glinting highlight, a collectible museum specimen
+
+  # --- dinosaur wing: collectibles & props (from the dino-mechanics proposal) ---
+  - id: fossil-fragment
+    wing: dinosaurs
+    kind: sprite
+    prompt: >-
+      a chipped fossil bone fragment, gold-brown petrified bone, one puzzle piece
+      of a larger skeleton, museum specimen
+
+  - id: brush-tool
+    wing: dinosaurs
+    kind: prop
+    prompt: >-
+      a small archaeologist's excavation brush, worn wooden handle, soft bristles,
+      a detective tool
+
+  - id: ammonite-shell
+    wing: dinosaurs
+    kind: sprite
+    prompt: >-
+      a spiral ammonite fossil shell, amber and stone tones, intricate ridged
+      coil, a prehistoric sea-creature specimen
+
+  - id: triceratops-friendly
+    wing: dinosaurs
+    kind: character
+    prompt: >-
+      a friendly young triceratops peeking around a corner, curious and warm,
+      not scary, warm friendly charm, rounded gentle shapes
+
+  # --- space wing ---
+  - id: moon-rock
+    variants: 1
+    checkpoint: juggernautXL_v9.safetensors
+    wing: space
+    kind: sprite
+    styleref: ../../brain/images/landscape dino.png
+    styleweight: 0.7
+    prompt: >-
+      an Apollo lunar sample, real grey basalt moon rock with vesicles, displayed
+      in a simple glass museum case on a dark stand, historically accurate
+    negative_extra: futuristic, spaceship, glowing, alien, fantasy, ornate, jeweled, orb, crystal
+
+  - id: red-rocket
+    variants: 1
+    checkpoint: juggernautXL_v9.safetensors
+    wing: space
+    kind: prop
+    styleref: ../../brain/images/landscape dino.png
+    styleweight: 0.7
+    prompt: >-
+      an early NASA rocket like the Mercury-Redstone, slender white cylindrical
+      booster with black vertical roll stripes, riveted aluminum panels, escape
+      tower on top, standing on a museum display stand, historically accurate
+    negative_extra: futuristic, spaceship, sci-fi, glass dome, glowing, alien, fantasy, ornate, fins everywhere
+
+  # --- inventions wing ---
+  - id: brass-gear
+    wing: inventions
+    kind: prop
+    prompt: >-
+      a single brass clockwork gear from a real 19th-century machine, warm copper
+      and brass tones, accurate machined teeth, historical engineering specimen
+    negative_extra: steampunk, fantasy contraption, futuristic, sci-fi, glowing
+
+  - id: blueprint-scroll
+    variants: 1
+    checkpoint: juggernautXL_v9.safetensors
+    wing: inventions
+    kind: prop
+    styleref: ../../brain/images/landscape dino.png
+    styleweight: 0.7
+    prompt: >-
+      the Wright brothers' aircraft engineering blueprint, precise technical line
+      drawing of an early biplane on aged paper, displayed flat on a wooden museum
+      lectern, historically accurate
+    negative_extra: futuristic, sci-fi, fantasy, ornate machine, brass contraption, glowing
+
+  # --- experiment: full lobby scene in PIXEL ART (parked — not wired into the game) ---
+  # Layout from the vector source product/prototypes/museum-parallax/src/art.js
+  # (lobbyBack/lobbyMid): three glowing arched windows on the back wall, a grand
+  # central archway to the Dinosaur Wing, a roped-off Space Wing arch, gold
+  # cornice, flanking columns. This entry overrides the locked painterly style
+  # with pixel art + vivid colors; it's a SCENE (no transparency — skip postprocess).
+  - id: lobby-scene-pixel
+    wing: lobby
+    kind: scene
+    variants: 1
+    size: 1344x768                         # 16:9, matches the SVG layout layers
+    workflow: workflows/controlnet-pixel.json   # SDXL + pixel-art LoRA + Canny ControlNet
+    control:
+      image: out/control/lobby-control.png  # rendered from art.js by render-control.mjs
+      strength: 0.8                          # layout adherence: 1.0 strict, ~0.5 loose
+    style:
+      prefix: >-
+        detailed pixel art, 16-bit retro adventure game scene, vivid saturated
+        colors, crisp clean pixels, bold readable shapes
+      suffix: >-
+        vibrant punchy palette, clean pixel shading, game background art,
+        wide establishing shot
+      negative: >-
+        blurry, smooth gradients, antialiased, photoreal, 3d render, painterly,
+        soft focus, text, watermark, lowres
+    prompt: >-
+      the grand entrance hall of a natural history museum, Art Deco architecture,
+      three tall arched windows along the back wall glowing warm golden light,
+      a grand central stone archway leading to the dinosaur wing with a towering
+      T-Rex skeleton silhouette inside, a roped-off side archway to the space wing
+      glowing starry blue, ornate gold cornice and dentil molding, warm amber and
+      gold tones with deep teal accents, tall flanking columns, polished tiled floor
+
+  # --- AAA painterly lobby, built asset-by-asset and composited at art.js coords ---
+  # Style: premium hand-painted 2.5D adventure-game environment. Layout fidelity
+  # comes from generating each piece separately + compositing by vector position,
+  # not from one-shot ControlNet. Shared style block:
+  - id: lobby-bg-aaa
+    wing: lobby
+    kind: scene
+    variants: 1
+    size: 1344x768
+    workflow: workflows/controlnet.json     # ControlNet from the shell, no LoRA
+    control:
+      image: out/control/lobby-shell.png    # room WITHOUT wing arches
+      strength: 0.85
+    style: &aaa
+      prefix: >-
+        premium hand-painted 2.5D adventure game environment art, highly detailed
+        digital painting, cinematic volumetric lighting, rich textures, painterly
+        brushwork, atmospheric depth, AAA game art quality, warm and inviting
+      suffix: >-
+        Art Deco museum, warm amber and gold lighting with deep teal accents,
+        dramatic light shafts, masterful composition, high detail
+      negative: >-
+        pixel art, flat vector, 3d render, photo, lowres, blurry, text, watermark,
+        childish doodle, cluttered, people, creatures
+    prompt: >-
+      the grand empty entrance hall of a natural history museum, Art Deco
+      architecture, three tall arched windows along the back wall glowing soft
+      golden daylight, ornate gold cornice and dentil molding, tall fluted stone
+      columns flanking, polished checkerboard tiled floor, no doorways, empty and
+      atmospheric, establishing wide shot
+
+  # Section elements — isolated painterly sprites, composited onto the bg at
+  # art.js coords. Same AAA style anchor; transparent (postprocess each one).
+  - id: lobby-arch-dino
+    wing: lobby
+    kind: sprite
+    variants: 1
+    size: 832x1216
+    workflow: workflows/layerdiffuse.json   # native RGBA — no bg removal needed
+    style: *aaa
+    prompt: >-
+      an ornate Art Deco museum archway doorway, tall rounded stone arch with
+      gold trim and a sunburst keystone, a dark inviting passage leading into the
+      dinosaur wing with a faint warm glow inside, a single isolated architectural
+      element, plain flat neutral background
+
+  - id: lobby-trex-skeleton
+    wing: lobby
+    kind: sprite
+    variants: 1
+    size: 1216x832
+    # working element recipe: object-only prompt + no-background negative -> @imgly cutout
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, warm gold-brown tones, cinematic lighting
+      suffix: clean, isolated subject
+      negative: >-
+        background, scene, room, wall, floor, ground, surface, shadow, environment,
+        photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      a full mounted T-Rex dinosaur skeleton fossil, gold-brown petrified bone,
+      dramatic standing pose, museum specimen
+
+  - id: test-magnifier
+    wing: lobby
+    kind: sprite
+    variants: 1
+    size: 1024x1024
+    workflow: workflows/layerdiffuse.json
+    style:
+      prefix: >-
+        premium hand-painted adventure-game prop, highly detailed digital painting,
+        single centered object, painterly, warm gold tones
+      suffix: clean, isolated object
+      negative: >-
+        background, scene, room, wall, floor, table, surface, ground, shadow,
+        environment, photo, 3d render, text, watermark, multiple objects
+    prompt: a detective's magnifying glass with a polished brass rim and wooden handle
+
+  - id: lobby-plant
+    wing: lobby
+    kind: sprite
+    variants: 1
+    size: 832x1216
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, warm tones, cinematic lighting
+      suffix: clean, isolated subject
+      negative: >-
+        background, scene, room, wall, floor, ground, surface, shadow, environment,
+        photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      a large potted palm plant in an ornate brass Art Deco planter, lush green
+      fronds, museum decor
+
+  - id: lobby-bg-wide
+    wing: lobby
+    kind: scene
+    variants: 1
+    size: 2816x640                         # true wide continuous panorama (no tiling)
+    style: *aaa
+    prompt: >-
+      a long wide grand museum entrance hall, Art Deco architecture, a row of tall
+      arched windows glowing soft golden light along the back wall, fluted stone
+      columns receding down the hall, ornate gold cornice and dentil molding,
+      polished checkerboard tiled floor, panoramic wide establishing shot, empty,
+      atmospheric depth
+
+  - id: lobby-bench
+    wing: lobby
+    kind: sprite
+    variants: 1
+    size: 1216x832
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, warm wood and brass tones, cinematic lighting
+      suffix: clean, isolated subject
+      negative: >-
+        background, scene, room, wall, floor, ground, surface, shadow, environment,
+        photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      an ornate Art Deco museum bench, curved polished wood seat with brass accents
+      and turned legs, side view
+
+  - id: lobby-column
+    wing: lobby
+    kind: sprite
+    variants: 1
+    size: 832x1216
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, warm amber and gold tones, cinematic lighting
+      suffix: clean, isolated subject, full height
+      negative: >-
+        background, scene, room, wall, floor, ceiling, ground, surface, shadow,
+        environment, photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      a single tall ornate Art Deco fluted stone column with a gilded capital and base,
+      full height, warm marble
+
+  # === WING BACKGROUNDS (wide panoramas; also used as the lobby doorway previews) ===
+  - id: dino-hall-wide
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 2816x640
+    style: *aaa
+    prompt: >-
+      a long wide natural-history dinosaur hall, Art Deco museum architecture with
+      lush prehistoric ferns and palms, towering fossil skeletons in the distance,
+      warm amber light shafts, jungle-green and gold tones, panoramic wide establishing
+      shot, atmospheric depth
+
+  - id: space-hall-wide
+    checkpoint: juggernautXL_v9.safetensors
+    wing: space
+    kind: scene
+    variants: 1
+    size: 2816x640
+    workflow: workflows/styleref.json
+    styleref: ../../brain/images/landscape dino.png
+    styleweight: 0.45
+    style:
+      prefix: >-
+        premium hand-painted adventure-game environment art, highly detailed digital
+        painting, cinematic volumetric lighting, painterly brushwork, atmospheric depth,
+        AAA game art quality, realistic museum gallery
+      suffix: >-
+        deep blue evening lighting with warm brass accents, Art Deco museum architecture,
+        wide establishing shot, historically and scientifically accurate exhibits
+      negative: >-
+        fantasy, gothic, cathedral, magic, portals, nebula windows, sci-fi spaceship
+        interior, alien, futuristic, pixel art, flat vector, 3d render, photo, lowres,
+        blurry, text, watermark, people, creatures
+    prompt: >-
+      a dark dramatic INDOOR space museum gallery at night, deep navy blue walls and
+      black ceiling with steel trusses, real NASA rockets and space capsules and
+      satellites on display under focused spotlights, a glowing planetarium dome,
+      railed visitor platforms, info placards, polished dark floor with reflections,
+      moody blue ambient light with warm spotlight accents, enclosed interior,
+      panoramic establishing shot
+    negative_extra: outdoor, sky, daylight, clouds, trees, plaza, airplanes, biplane, propeller aircraft, wooden barn, beige, bright daylight interior
+
+  - id: inventions-hall-wide
+    wing: inventions
+    kind: scene
+    variants: 1
+    size: 2816x640
+    style:
+      prefix: >-
+        premium hand-painted adventure-game environment art, highly detailed digital
+        painting, cinematic volumetric lighting, painterly brushwork, atmospheric depth,
+        AAA game art quality
+      suffix: >-
+        warm brass and copper palette with teal accents, real Victorian-era industrial
+        engineering, Art Deco museum, wide establishing shot, historically accurate exhibits
+      negative: >-
+        steampunk, fantasy contraption, futuristic, sci-fi, pixel art, flat vector,
+        3d render, photo, lowres, blurry, text, watermark, childish doodle, cluttered,
+        people, creatures
+    prompt: >-
+      a long wide inventions museum hall, Art Deco architecture, real historical
+      machines on display: brass clockwork, a printing press, an early telephone and
+      phonograph, the Wright brothers' biplane model hanging, blueprints on lecterns,
+      warm brass and copper glow, panoramic wide establishing shot
+
+  # === DOORWAY FRAME (rendered ornate arch; white opening is chroma-keyed out) ===
+  - id: door-frame
+    wing: lobby
+    kind: sprite
+    variants: 1
+    size: 832x1216
+    workflow: workflows/controlnet.json     # geometry locked to the demo's clip path
+    control:
+      image: out/control/door-control.png   # rendered by scripts/render-door-control.mjs
+      strength: 0.9
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        a grand open museum-section archway of warm carved oak wood, wide welcoming
+        arch entrance, warm honey-brown tones, polished brass Art Deco trim, soft
+        even lighting, painterly, front elevation, straight-on eye-level view,
+        symmetric, centered
+      suffix: >-
+        single isolated object, warm honey-brown oak wood, bright even exposure, the wide
+        arched opening is empty solid flat pure white with no door inside, plain pure
+        white background, no shadows
+      negative: >-
+        door panel, closed door, gate, black background, dark background, vignette, night,
+        marble, stone, Roman, Greek, classical temple, perspective, foreshortening,
+        top-down, tilted, 3/4 view, scene, interior view, landscape, people, text, watermark, photo
+    prompt: >-
+      a grand open wooden archway entrance to a museum section, rich dark walnut wood
+      with polished brass Art Deco trim, wide open arch with no door, a single
+      freestanding arch surround, the wide arched opening is empty solid pure white
+
+  # === FAR DEPTH PLANES (slow parallax behind the scene) ===
+  - id: dino-sky
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 2816x640
+    style: *aaa
+    prompt: >-
+      a wide serene prehistoric sky at golden hour, soft warm clouds, distant misty
+      jungle-covered hills and a faint domed museum silhouette on the far horizon,
+      hazy atmospheric depth, panoramic, no foreground, empty lower half
+
+  # === DINO PAPER-CUT DIORAMA LAYERS (crisp cropped transparency, stacked by depth) ===
+  - id: dino-hills
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1536x512
+    style: &diorama
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        painterly, warm jungle tones, crisp defined silhouette edges, cinematic lighting
+      suffix: clean isolated band, sharp cut-out edges, plain flat background
+      negative: >-
+        background fill, sky, gradient background, soft faded edges, blurry edges, vignette,
+        photo, 3d render, text, watermark, frame, border
+    prompt: >-
+      a horizontal band of distant misty jungle-covered hills with a faint domed museum
+      silhouette, prehistoric, layered ridgelines, nothing above the hills
+  - id: dino-treeline
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1536x640
+    style: *diorama
+    prompt: >-
+      a dense horizontal row of prehistoric jungle trees, palms and ferns forming a
+      treeline band, varied silhouette tops, nothing above the trees
+  - id: dino-foliage-fore
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1536x768
+    style: *diorama
+    prompt: >-
+      large lush foreground jungle ferns and broad palm leaves clustered along the
+      ground, a near foreground foliage band, big leaves
+  - id: dino-canopy
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1536x512
+    style: *diorama
+    prompt: >-
+      jungle canopy leaves, vines and palm fronds hanging down from above, a top
+      foreground band, nothing below the leaves
+
+  # === DINO DIORAMA LAYERS (ControlNet-locked to the wireframe.js vector shapes,
+  #     then cut with the SAME shape as alpha mask -> crisp paper-cut edges) ===
+  - id: grove-clouds
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1432x720
+    workflow: workflows/controlnet.json
+    control: { image: out/control/grove-clouds.png, strength: 0.85 }
+    style: &grovestyle
+      prefix: >-
+        premium hand-painted adventure-game environment art, highly detailed digital
+        painting, painterly brushwork, warm golden-hour prehistoric jungle palette,
+        cinematic lighting, AAA quality
+      suffix: flat diorama band, crisp shapes, no text
+      negative: >-
+        photo, 3d render, pixel art, flat vector, text, watermark, lowres, blurry,
+        people, frame, border
+    prompt: soft puffy golden clouds and a glowing warm sun in a golden-hour sky
+  - id: grove-mountains
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1680x720
+    workflow: workflows/controlnet.json
+    control: { image: out/control/grove-mountains.png, strength: 0.85 }
+    style: *grovestyle
+    prompt: layered misty mountain ridges on the horizon, hazy atmospheric blue-green silhouettes
+  - id: grove-treeline
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1936x720
+    workflow: workflows/controlnet.json
+    control: { image: out/control/grove-treeline.png, strength: 0.85 }
+    style: *grovestyle
+    prompt: a dense band of round-canopy prehistoric jungle trees, varied green crowns with slim trunks
+  - id: grove-ground
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1936x720
+    workflow: workflows/controlnet.json
+    control: { image: out/control/grove-ground.png, strength: 0.85 }
+    style: *grovestyle
+    prompt: a jungle dirt trail ground band, warm earth and scattered grass tufts, walkable path
+  - id: grove-canopy
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1024x712
+    workflow: workflows/controlnet.json
+    control: { image: out/control/grove-canopy.png, strength: 0.85 }
+    style: *grovestyle
+    prompt: a hanging cluster of lush jungle canopy palm fronds and leaves
+  - id: grove-bush
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1024x624
+    workflow: workflows/controlnet.json
+    control: { image: out/control/grove-bush.png, strength: 0.85 }
+    style: *grovestyle
+    prompt: a single lush rounded jungle bush with big leaves
+
+  # === DIORAMA ELEMENTS — single objects (proven cutout recipe), engine scatters
+  #     them into layers (clouds 0.12x · mountains 0.3x · trees 0.5x) over a bg ===
+  - id: el-cloud
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1024x640
+    workflow: workflows/styleref-controlnet.json
+    control: { image: out/control/el-cloud.png, strength: 0.72 }
+    styleref: demo/img/dino-vista.png
+    seed: r2
+    style: &elstyle
+      # the PROVEN plant/bench recipe, verbatim structure + palette + anti-watercolor
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        visible painterly brushstrokes, rich textured hand-painted detail, single
+        centered subject, warm amber and gold tones, cinematic lighting
+      suffix: clean, isolated subject
+      negative: >-
+        glossy, plastic, smooth 3d render, cgi, game icon, cartoon, flat vector, cel
+        shaded, background, scene, sky, landscape, vista, panorama, horizon, ground,
+        environment, room, multiple subjects, people, watercolor, pastel, sheet,
+        panels, photo, text, watermark
+    prompt: >-
+      one single puffy cumulus cloud, its soft billowing form fills the entire
+      frame, golden-white warm volume
+    negative_extra: sky, sunset, landscape, horizon, ground, scenery
+  - id: el-mountain
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1216x832
+    workflow: workflows/styleref-controlnet.json
+    control: { image: out/control/el-mountain.png, strength: 0.85 }
+    styleref: demo/img/styleref-mountain.png
+    styleweight: 0.65
+    style: *elstyle
+    seed: r2
+    prompt: >-
+      one single massive jungle-covered mountain seen up close, its rounded
+      silhouette fills the entire frame, dense green vegetation and rocky ridges
+      covering the slopes, warm amber light
+    negative_extra: valley, vista, plain, field, horizon, distant mountains, sky, clouds, landscape
+  - id: el-tree
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 832x1216
+    workflow: workflows/styleref-controlnet.json
+    control: { image: out/control/el-tree.png, strength: 0.72 }
+    styleref: demo/img/dino-vista.png
+    style: *elstyle
+    seed: r2
+    prompt: >-
+      one single prehistoric jungle tree filling the frame, a round dense leafy
+      canopy and a thick textured trunk, painterly greens
+    negative_extra: forest, grove, multiple trees, landscape, horizon, field, sky
+
+  - id: dino-vista
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 2816x640
+    style: *aaa
+    prompt: >-
+      a wide panoramic prehistoric vista at golden hour, distant misty jungle hills
+      and a warm glowing sky with soft clouds, lush greens with amber light, hazy
+      atmospheric depth, panoramic establishing shot, no foreground objects
+
+  - id: dino-ridgeband
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1680x720
+    workflow: workflows/styleref-controlnet.json
+    control: { image: out/control/grove-mountains.png, strength: 0.65 }
+    styleref: demo/img/dino-hall.png
+    styleweight: 0.75
+    style: *aaa
+    prompt: >-
+      a band of jungle-covered mountain ridges densely overgrown with green trees and
+      ferns, rough rocky texture, mist between the peaks, warm light, atmospheric depth
+    negative_extra: pyramids, desert, dunes, egypt, valley floor, river, lake, road, buildings
+
+  - id: dino-treeband
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 1936x720
+    workflow: workflows/styleref-controlnet.json
+    control: { image: out/control/dino-treeband.png, strength: 0.7 }
+    styleref: demo/img/dino-hall.png
+    styleweight: 0.75
+    style: *aaa
+    prompt: >-
+      a dense mass of prehistoric jungle canopy, lush layered leafy treetops packed
+      together, rich green foliage texture, warm light catching the leaves
+    negative_extra: arches, aqueduct, bridge, architecture, buildings, sky, clouds, mountains, single tree
+
+  - id: dino-groundband
+    wing: dinosaurs
+    kind: scene
+    variants: 1
+    size: 2816x512
+    workflow: workflows/styleref-controlnet.json
+    control: { image: out/control/dino-groundband.png, strength: 0.7 }
+    styleref: demo/img/dino-hall.png
+    styleweight: 0.75
+    style: *aaa
+    prompt: >-
+      a dirt trail ground strip filling the band, warm sunlit earth with scattered
+      grass tufts and small ferns along the top edge, painterly, walkable path
+    negative_extra: river, lake, water, swamp, sky, horizon, landscape vista
+
+  - id: el-fern
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1024x832
+    seed: r3
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, lush deep greens with warm light, cinematic lighting
+      suffix: clean, isolated subject
+      negative: >-
+        background, scene, room, wall, floor, ground, surface, shadow, environment,
+        photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      a large lush prehistoric fern bush, broad arching green fronds, dense and full
+
+  - id: el-boulder
+    wing: dinosaurs
+    kind: sprite
+    variants: 1
+    size: 1024x832
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, warm earthy tones with green moss, cinematic lighting
+      suffix: clean, isolated subject
+      negative: >-
+        background, scene, room, wall, floor, ground, surface, shadow, environment,
+        photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      a large mossy jungle boulder, weathered grey-brown rock with patches of green
+      moss and small ferns growing on it
+
+  # === WING HERO PROPS (transparent) ===
+  - id: space-planet
+    wing: space
+    kind: sprite
+    variants: 1
+    size: 1024x1024
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, glowing
+      suffix: clean, isolated subject
+      negative: >-
+        background, scene, room, wall, floor, ground, surface, shadow, environment,
+        starfield, photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      the planet Saturn, scientifically accurate cloud banding and ring structure
+      with the Cassini division visible, realistic astronomy museum exhibit model
+
+  - id: inventions-gear
+    wing: inventions
+    kind: sprite
+    variants: 1
+    size: 1024x1024
+    style:
+      prefix: >-
+        premium hand-painted adventure-game asset, highly detailed digital painting,
+        single centered subject, painterly, warm brass and copper tones
+      suffix: clean, isolated subject
+      negative: >-
+        background, scene, room, wall, floor, ground, surface, shadow, environment,
+        photo, 3d render, text, watermark, multiple subjects
+    prompt: >-
+      a large brass clockwork gear assembly from a real Victorian-era machine,
+      historically accurate interlocking cogs, precision engineering exhibit
+    negative_extra: steampunk, fantasy contraption, futuristic, sci-fi, glowing
+
+  # --- ui / collection layer ---
+  - id: magnifying-glass
+    wing: ui
+    kind: prop
+    prompt: >-
+      a detective's magnifying glass, brass rim, wooden handle, the player's core
+      tool, clean icon-ready

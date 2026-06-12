@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Science Museum Mystery — parallax concept</title>
+<style>
+  :root { color-scheme: dark; --gold:#e8a948; --cream:#f4e6c8; --ink:#160f09; }
+  * { -webkit-user-select:none; user-select:none; }
+  img { -webkit-user-drag:none; user-drag:none; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#0c0a08;
+    font-family:Iowan Old Style,Palatino,Georgia,serif;
+    -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body { touch-action:none; }   /* iOS ignores user-scalable=no — kill browser pan/zoom gestures */
+
+  /* the whole experience lives in #frame: full-viewport on phones, letterboxed
+     to a phone-landscape window on large screens (this is a mobile experience) */
+  #frame { position:fixed; inset:0; overflow:hidden; background:var(--ink); }
+  @media (min-width:920px) and (min-height:540px) {
+    body { display:grid; place-items:center;
+      background:radial-gradient(ellipse at 50% 40%, #1a120a, #070503 75%); }
+    #frame { position:relative; inset:auto;
+      width:min(932px, 100vw - 64px); height:min(430px, 100vh - 64px);
+      border-radius:22px; border:1px solid #6e4a25;
+      box-shadow:0 40px 100px rgba(0,0,0,.85), 0 0 0 8px #120c07; }
+  }
+
+  #stage { position:absolute; inset:0; overflow:hidden; cursor:grab; touch-action:none; background:var(--ink); }
+  #stage.grabbing { cursor:grabbing; }
+  .scene { position:absolute; inset:0; overflow:hidden; opacity:0; visibility:hidden; transition:opacity .5s ease; }
+  .scene.active { opacity:1; visibility:visible; }
+  .layer { position:absolute; top:0; left:0; height:100%; will-change:transform; }
+  .layer > img.bg { position:absolute; bottom:0; height:100%; display:block; }
+  .el { position:absolute; will-change:transform; }
+  .el img { display:block; filter:drop-shadow(0 10px 14px rgba(0,0,0,.4)); }
+  .shadow { position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width:74%; height:4.5%; background:radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,0) 70%);
+    filter:blur(3px); pointer-events:none; }
+
+  /* ornate doorway */
+  .door { position:absolute; cursor:pointer; transition:transform .18s ease; filter:drop-shadow(0 20px 28px rgba(0,0,0,.6)); }
+  /* hover: no movement — just a subtle glare */
+  
+  .door .glow { transition:opacity .35s ease; opacity:.45; }
+  .door:hover .glow { opacity:.8; }
+  /* door-zoom transition: scale into the doorway while the scene hands off */
+  .door.zooming { transform:scale(2.6); opacity:0; transition:transform .55s ease-in, opacity .5s ease-in .1s; pointer-events:none; }
+  .scene.dolly { transform:scale(1.45); transition:transform .55s ease-in; }
+  .door .peek { position:absolute; left:0; top:0; background-position:center 62%;
+    filter:brightness(.84) saturate(.95) contrast(1.03) blur(0.7px); }   /* the room beyond is dimmer than the lobby */
+  .door .doorshadow { position:absolute; left:0; top:0; pointer-events:none;
+    /* doorway reveal: hard jamb band at the edge, heavy dark above, deep sides, threshold */
+    box-shadow:
+      inset 0 0 0 7px rgba(8,5,3,.65),
+      inset 0 70px 70px -14px rgba(0,0,0,.8),
+      inset 40px 0 56px -12px rgba(0,0,0,.65),
+      inset -40px 0 56px -12px rgba(0,0,0,.65),
+      inset 0 -52px 64px -8px rgba(0,0,0,.85),
+      inset 0 0 110px rgba(0,0,0,.5);
+    background:
+      radial-gradient(ellipse 95% 80% at 50% 58%, rgba(0,0,0,0) 42%, rgba(0,0,0,.55) 100%),
+      linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,0) 36%, rgba(0,0,0,0) 70%, rgba(0,0,0,.45)); }
+  .door .frameimg { position:absolute; left:0; top:0; display:block; pointer-events:none; filter:brightness(1.28) saturate(1.1) contrast(.97); }
+  .door::after { content:''; position:absolute; left:6%; right:6%; bottom:-1.2%; height:5%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,0) 70%); filter:blur(4px); pointer-events:none; }
+  .door .glow { position:absolute; inset:-14%; border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(232,169,72,.30), rgba(232,169,72,0) 64%); pointer-events:none; }
+  /* rendered Art-Deco sign plaque, sits ABOVE the doorway */
+  .door .sign { position:absolute; bottom:calc(100% + .875rem); left:50%; transform:translateX(-50%);
+    padding:.56rem 1.4rem; border-radius:.5rem; white-space:nowrap;
+    background:linear-gradient(#f6d495 0%, #d29f4b 52%, #8a5a23 100%);
+    border:2px solid #5b3a1e; color:#3a2410; font-weight:700; letter-spacing:.2em; font-size:.94rem;
+    box-shadow:0 7px 18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,247,214,.85), inset 0 -4px 7px rgba(0,0,0,.35);
+    text-shadow:0 1px 0 rgba(255,247,214,.7); }
+  .door .sign::before, .door .sign::after { content:''; position:absolute; top:50%; width:7px; height:7px;
+    border-radius:50%; background:#3a2410; box-shadow:inset 0 1px 1px rgba(255,247,214,.4); transform:translateY(-50%); }
+  .door .sign::before { left:7px; } .door .sign::after { right:7px; }
+
+  /* ---- chrome / UI ---- */
+  .panel { background:linear-gradient(#241913f2,#140d08f2); border:1px solid #6e4a25;
+    box-shadow:0 14px 40px rgba(0,0,0,.6), inset 0 1px 0 rgba(232,169,72,.35); border-radius:14px; }
+  #topbar { position:absolute; top:.75rem; left:0; right:0; z-index:30; display:flex; align-items:center;
+    justify-content:space-between; padding:0 .875rem; pointer-events:none; }
+  #topbar > * { pointer-events:auto; }
+  #brand { color:var(--gold); letter-spacing:.2em; font-size:.875rem; text-shadow:0 2px 10px #000; display:flex; gap:.625rem; align-items:center; }
+  #back { display:none; cursor:pointer; color:var(--ink); background:var(--gold); border:none;
+    border-radius:.56rem; padding:.44rem .75rem; font-size:.8rem; letter-spacing:.06em; box-shadow:0 4px 12px rgba(0,0,0,.5); }
+
+  /* minimap */
+  #minimap { z-index:30; width:min(38vw,20rem); }
+  #mm-track { position:relative; height:2.5rem; border-radius:.56rem; overflow:hidden;
+    background-size:cover; background-position:center; border:1px solid #6e4a25; box-shadow:inset 0 0 18px rgba(0,0,0,.7); }
+  #mm-view { position:absolute; top:0; height:100%; border:2px solid var(--gold);
+    background:rgba(232,169,72,.16); box-shadow:0 0 12px rgba(232,169,72,.5); border-radius:4px; }
+  #mm-label { text-align:center; color:#caa86a; font-size:.625rem; letter-spacing:.22em; margin-top:.25rem; }
+
+  /* round buttons */
+  .btns { display:flex; gap:.56rem; }
+  .iconbtn { width:2.6rem; height:2.6rem; border-radius:.7rem; cursor:pointer; font-size:1.2rem;
+    display:grid; place-items:center; color:var(--cream); }
+  .iconbtn:hover { transform:translateY(-2px); color:#fff; }
+
+  /* inventory bar */
+  #inv { position:absolute; left:50%; bottom:.875rem; transform:translateX(-50%); z-index:30;
+    display:none; gap:.5rem; padding:.625rem .75rem; }
+  #inv.show { display:flex; }
+  .slot { width:3.25rem; height:3.25rem; border-radius:.625rem; background:rgba(0,0,0,.35);
+    border:1px solid #6e4a25; box-shadow:inset 0 2px 8px rgba(0,0,0,.6); display:grid; place-items:center; font-size:1.5rem; }
+  .slot.filled { background:radial-gradient(circle at 50% 35%, #3a2a16, #1a120a); border-color:var(--gold); }
+
+  /* menu drawer */
+  #menu { position:absolute; top:0; right:0; height:100%; width:min(82vw,18.75rem); z-index:40;
+    transform:translateX(105%); transition:transform .3s ease; border-radius:14px 0 0 14px; padding:3.4rem 1.4rem; }
+  #menu.show { transform:translateX(0); }
+  #menu h2 { color:var(--gold); letter-spacing:.18em; font-size:1rem; margin:0 0 1.1rem; }
+  #menu .item { color:var(--cream); padding:.8rem .75rem; border-radius:.56rem; cursor:pointer; font-size:.94rem;
+    letter-spacing:.06em; border-bottom:1px solid #3a2a16; }
+  #menu .item:hover { background:rgba(232,169,72,.12); color:#fff; }
+  #menu .close { position:absolute; top:.875rem; right:1rem; cursor:pointer; color:#caa86a; font-size:1.4rem; }
+  #scrim { position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:35; opacity:0; visibility:hidden; transition:.3s; }
+  #scrim.show { opacity:1; visibility:visible; }
+
+  /* rotate-to-landscape nudge (phones held in portrait) */
+  #rotate-overlay { position:fixed; inset:0; z-index:60; display:none; flex-direction:column;
+    align-items:center; justify-content:center; gap:18px; text-align:center; background:rgba(10,7,4,.95); }
+  #rotate-overlay .phone { font-size:56px; animation:rotnudge 1.6s ease-in-out infinite; }
+  #rotate-overlay p { color:var(--cream); font-size:17px; line-height:1.5; letter-spacing:.06em; margin:0; }
+  @keyframes rotnudge { 0%,20%{transform:rotate(0)} 55%,100%{transform:rotate(90deg)} }
+  @media (orientation:portrait) and (pointer:coarse) and (max-width:920px) { #rotate-overlay { display:flex; } }
+
+  .hint { position:absolute; left:50%; bottom:4.9rem; transform:translateX(-50%); z-index:25;
+    color:#d8c79c; font-size:.75rem; letter-spacing:.05em; text-align:center; pointer-events:none;
+    background:linear-gradient(#241913e6,#140d08e6); border:1px solid #6e4a25; border-radius:999px;
+    padding:8px 18px; box-shadow:0 8px 22px rgba(0,0,0,.5); opacity:.92; white-space:nowrap; }
+  .hint { transition:opacity .6s ease; } .hint.gone { opacity:0; }
+  .hint b { color:var(--gold); }
+  .arrow { position:absolute; right:1.5rem; top:52%; z-index:25; color:var(--gold); font-size:2.4rem;
+    opacity:0; animation:pulse 1.6s ease-in-out infinite; text-shadow:0 2px 10px #000; }
+  @keyframes pulse { 0%,100%{opacity:.25;transform:translate(0,-50%)} 50%{opacity:.9;transform:translate(8px,-50%)} }
+
+  /* ---- cinematic light fx (overlays, no art needed) ---- */
+  .fx { position:absolute; inset:0; pointer-events:none; z-index:14; }
+  .fx-grade { background:linear-gradient(rgba(46,28,12,.10), rgba(8,14,28,.20)); mix-blend-mode:multiply; }
+  .fx-rays { mix-blend-mode:screen; opacity:.75; animation:rays 16s ease-in-out infinite alternate;
+    background:
+      linear-gradient(102deg, transparent 28%, rgba(255,226,160,.12) 40%, transparent 45%),
+      linear-gradient(98deg,  transparent 52%, rgba(255,232,175,.09) 62%, transparent 67%),
+      linear-gradient(108deg, transparent 70%, rgba(255,220,150,.07) 80%, transparent 85%); }
+  @keyframes rays { from{transform:translateX(-2.5%) skewX(-1deg)} to{transform:translateX(2.5%) skewX(1deg)} }
+  .fx-glare { mix-blend-mode:screen; animation:glare 7s ease-in-out infinite;
+    background:radial-gradient(circle at 74% 12%, rgba(255,238,196,.34), rgba(255,238,196,0) 24%); }
+  @keyframes glare { 0%,100%{opacity:.45} 50%{opacity:.95} }
+  .fx-vignette { box-shadow: inset 0 0 200px 70px rgba(0,0,0,.55); }
+  .mote { position:absolute; border-radius:50%; background:radial-gradient(circle, #fff7e0, rgba(255,247,224,0) 70%);
+    box-shadow:0 0 6px rgba(255,240,200,.6); }
+
+  /* per-scene light: FX colors + sprite light-matching */
+  body[data-scene="dinosaurs"] .fx-rays { background:
+      linear-gradient(102deg, transparent 28%, rgba(214,255,170,.13) 40%, transparent 45%),
+      linear-gradient(98deg,  transparent 52%, rgba(230,255,185,.09) 62%, transparent 67%),
+      linear-gradient(108deg, transparent 70%, rgba(205,245,160,.07) 80%, transparent 85%); }
+  body[data-scene="dinosaurs"] .fx-glare { background:radial-gradient(circle at 60% 8%, rgba(235,255,200,.30), rgba(235,255,200,0) 26%); }
+  body[data-scene="dinosaurs"] .el img { filter:brightness(.97) saturate(1.06) sepia(.06) drop-shadow(0 10px 14px rgba(20,30,10,.5)); }
+  body[data-scene="space"] .fx-rays { background:
+      linear-gradient(102deg, transparent 28%, rgba(160,205,255,.10) 40%, transparent 45%),
+      linear-gradient(98deg,  transparent 52%, rgba(150,195,255,.08) 62%, transparent 67%),
+      linear-gradient(108deg, transparent 70%, rgba(140,185,255,.06) 80%, transparent 85%); }
+  body[data-scene="space"] .fx-glare { background:radial-gradient(circle at 70% 14%, rgba(175,215,255,.28), rgba(175,215,255,0) 25%); }
+  body[data-scene="space"] .fx-grade { background:linear-gradient(rgba(8,16,34,.16), rgba(4,10,26,.26)); }
+  body[data-scene="space"] .el img { filter:brightness(.86) saturate(.85) hue-rotate(-8deg) drop-shadow(0 10px 16px rgba(0,8,24,.6)); }
+  body[data-scene="space"] .mote { background:radial-gradient(circle, #dceaff, rgba(220,234,255,0) 70%); box-shadow:0 0 6px rgba(190,215,255,.6); }
+  body[data-scene="inventions"] .el img { filter:brightness(.98) saturate(1.04) sepia(.10) drop-shadow(0 10px 14px rgba(35,22,8,.5)); }
+</style>
+</head>
+<body>
+  <svg id="doorclips" width="0" height="0" style="position:absolute"></svg>
+
+  <!-- mobile-like window: fills the screen on phones, letterboxed on desktop -->
+  <div id="frame">
+  <div id="stage"></div>
+
+  <!-- cinematic light overlays -->
+  <div class="fx fx-grade"></div>
+  <div class="fx" id="motes"></div>
+  <div class="fx fx-rays"></div>
+  <div class="fx fx-glare"></div>
+  <div class="fx fx-vignette"></div>
+
+  <!-- top bar: brand/back · minimap · buttons -->
+  <div id="topbar">
+    <div id="brand"><button id="back">← lobby</button><span id="brandtxt">SCIENCE MUSEUM MYSTERY</span></div>
+    <div id="minimap" class="panel" style="padding:.375rem .44rem .19rem;"><div id="mm-track"><div id="mm-view"></div></div><div id="mm-label">LOBBY</div></div>
+    <div class="btns">
+      <div class="iconbtn panel" id="btn-bag" title="Inventory">🎒</div>
+      <div class="iconbtn panel" id="btn-fs" title="Full screen">⛶</div>
+      <div class="iconbtn panel" id="btn-menu" title="Menu">☰</div>
+    </div>
+  </div>
+
+  <!-- dummy inventory -->
+  <div id="inv" class="panel">
+    <div class="slot filled">🦴</div><div class="slot filled">🔍</div><div class="slot">+</div>
+    <div class="slot">+</div><div class="slot">+</div><div class="slot">+</div>
+  </div>
+
+  <!-- dummy menu drawer -->
+  <div id="scrim"></div>
+  <div id="menu" class="panel">
+    <div class="close" id="menu-close">✕</div>
+    <h2>MUSEUM MENU</h2>
+    <div class="item">▶  Resume</div>
+    <div class="item">🗺  Map</div>
+    <div class="item">📖  Field Notes</div>
+    <div class="item">🔊  Sound: On</div>
+    <div class="item">⚙  Settings</div>
+    <div class="item">✦  Credits</div>
+  </div>
+
+  <div class="arrow" id="arrow">➜</div>
+  <div class="hint"><b>drag</b>, scroll, or <b>← →</b> to explore · tap a doorway to enter a wing</div>
+  </div><!-- /frame -->
+
+  <div id="rotate-overlay"><div class="phone">📱</div><p>Rotate your phone —<br>the museum is wide!</p></div>
+
+<script>
+const V='?v=8'  // cache-bust so updated PNGs always load
+const BG_COPIES = 1  // single continuous panorama (no mirror-tiling)
+const WING_BG = { dinosaurs:'img/dino-hall.png'+V, space:'img/space-hall.png'+V, inventions:'img/inventions-hall.png'+V }
+
+const SCENES = {
+  lobby: {
+    bg:'img/lobby-bg-wide.png'+V,
+    doors:[
+      { to:'dinosaurs', label:'DINOSAURS', atFrac:0.22, peek:{x:38,y:46,zoom:114} },
+      { to:'space',     label:'SPACE',     atFrac:0.50, peek:{x:46,y:42,zoom:110} },
+      { to:'inventions',label:'INVENTIONS',atFrac:0.78, peek:{x:56,y:46,zoom:114} },
+    ],
+    items:[
+      { src:'img/bench.png'+V,  speed:1.0, atFrac:0.34, hFrac:0.22, bottomFrac:-0.01 },
+      { src:'img/bench.png'+V,  speed:1.0, atFrac:0.63, hFrac:0.22, bottomFrac:-0.01, flip:true },
+      { src:'img/bench.png'+V,  speed:1.0, atFrac:0.90, hFrac:0.20, bottomFrac:0 },
+      { src:'img/plant.png'+V,  speed:1.2, atFrac:0.27, hFrac:0.18, bottomFrac:-0.02 },
+      { src:'img/plant.png'+V,  speed:1.2, atFrac:0.70, hFrac:0.16, bottomFrac:-0.02, flip:true },
+      { front:true, src:'img/plant.png'+V, speed:1.42, atFrac:0.10, hFrac:0.34, bottomFrac:-0.06 },
+      { front:true, src:'img/plant.png'+V, speed:1.42, atFrac:0.125, hFrac:0.24, bottomFrac:-0.07, flip:true },
+      { front:true, src:'img/plant.png'+V, speed:1.42, atFrac:0.45, hFrac:0.30, bottomFrac:-0.05, flip:true },
+      { front:true, src:'img/plant.png'+V, speed:1.42, atFrac:0.78, hFrac:0.32, bottomFrac:-0.06 },
+      { repeat:true, front:true, src:'img/column.png'+V, speed:1.7, hFrac:1.06, everyVW:1.8 },
+    ],
+  },
+  dinosaurs: { bg:'img/dino-hall.png'+V, items:[   // panorama + grouped sprites across depths
+      // hero exhibit — close to the glass, almost still
+      { src:'img/skeleton.png'+V, speed:0.94, atFrac:0.55, hFrac:0.64, bottomFrac:0.02 },
+      // mid plane (1.0x): boulders on the trail
+      { src:'img/el-boulder.png'+V, speed:1.0, atFrac:0.22, hFrac:0.24, bottomFrac:-0.03 },
+      { src:'img/el-boulder.png'+V, speed:1.0, atFrac:0.66, hFrac:0.13, bottomFrac:0.0, flip:true },
+      // mid-front plants (1.2x): smaller, some grouped
+      { src:'img/plant.png'+V, speed:1.2, atFrac:0.30, hFrac:0.20, bottomFrac:-0.02 },
+      { src:'img/plant.png'+V, speed:1.2, atFrac:0.325, hFrac:0.15, bottomFrac:-0.03, flip:true },
+      { src:'img/plant.png'+V, speed:1.2, atFrac:0.74, hFrac:0.18, bottomFrac:-0.02, flip:true },
+      // foreground (1.5x): big clusters cropping below the frame
+      { front:true, src:'img/plant.png'+V, speed:1.5, atFrac:0.10, hFrac:0.44, bottomFrac:-0.08 },
+      { front:true, src:'img/plant.png'+V, speed:1.5, atFrac:0.13, hFrac:0.30, bottomFrac:-0.10, flip:true },
+      { front:true, src:'img/plant.png'+V, speed:1.5, atFrac:0.52, hFrac:0.40, bottomFrac:-0.07, flip:true },
+      { front:true, src:'img/el-boulder.png'+V, speed:1.5, atFrac:0.56, hFrac:0.22, bottomFrac:-0.08 },
+      { front:true, src:'img/plant.png'+V, speed:1.5, atFrac:0.88, hFrac:0.36, bottomFrac:-0.09 },
+      { repeat:true, front:true, src:'img/column.png'+V, speed:1.7, hFrac:1.06, everyVW:1.9 },
+  ]},
+  space: { bg:'img/space-hall.png'+V, items:[
+      { src:'img/planet.png'+V, speed:1.18, atFrac:0.46, topFrac:0.10, hFrac:0.38 },
+      { src:'img/moon-rock.png'+V, speed:1.0, atFrac:0.26, hFrac:0.20, bottomFrac:-0.01 },
+      { src:'img/rocket.png'+V, speed:1.0, atFrac:0.62, hFrac:0.82, bottomFrac:0 },
+      { front:true, src:'img/moon-rock.png'+V, speed:1.5, atFrac:0.88, hFrac:0.16, bottomFrac:-0.05, flip:true },
+      { repeat:true, front:true, src:'img/column.png'+V, speed:1.7, hFrac:1.06, everyVW:2.6 },
+  ]},
+  inventions: { bg:'img/inventions-hall.png'+V, items:[
+      { src:'img/gear.png'+V, speed:1.0, atFrac:0.30, hFrac:0.34, bottomFrac:-0.02 },
+      { src:'img/blueprint.png'+V, speed:1.0, atFrac:0.55, topFrac:0.06, hFrac:0.48 },
+      { src:'img/bench.png'+V, speed:1.0, atFrac:0.78, hFrac:0.20, bottomFrac:0 },
+      { front:true, src:'img/gear.png'+V, speed:1.5, atFrac:0.86, hFrac:0.30, bottomFrac:-0.08, flip:true },
+      { repeat:true, front:true, src:'img/column.png'+V, speed:1.7, hFrac:1.06, everyVW:2.2 },
+  ]},
+}
+
+// ---- ornate Art-Deco arch frame (SVG): transparent opening + 3D gold molding + keystone ----
+function archGeom(w,h){
+  const ft=w*0.14, rx=(w-2*ft)/2, spring=ft+rx
+  const opening=`M${ft},${h} L${ft},${spring} A${rx},${rx} 0 0 1 ${w-ft},${spring} L${w-ft},${h} Z`
+  return {ft,rx,spring,opening}
+}
+function archFrameSVG(w,h){
+  const g=archGeom(w,h), {ft,rx,spring,opening}=g
+  const ORx=w/2, outer=`M0,${h} L0,${ORx} A${ORx},${ORx} 0 0 1 ${w},${ORx} L${w},${h} Z`
+  const ks=ft*1.5  // keystone half-width
+  const sun=Array.from({length:9},(_,i)=>{const a=(-90+(i-4)*15)*Math.PI/180;return `<line x1="${w/2}" y1="${ft*0.5}" x2="${w/2+Math.cos(a)*ft*1.3}" y2="${ft*0.5+Math.sin(a)*ft*1.3}" stroke="#fff3d0" stroke-width="${Math.max(1.5,w*0.006)}" opacity=".55"/>`}).join('')
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="mold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f6d495"/><stop offset=".45" stop-color="#cf9a44"/>
+        <stop offset="1" stop-color="#7d521f"/></linearGradient>
+      <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#6e4a26"/><stop offset="1" stop-color="#2c1c0e"/></linearGradient>
+    </defs>
+    <!-- stone outer surround -->
+    <path d="${outer} ${opening}" fill-rule="evenodd" fill="url(#stone)"/>
+    <!-- gold molding band (inner step) -->
+    <path d="${outer} ${opening}" fill-rule="evenodd" fill="url(#mold)" transform="translate(${ft*0.34},${ft*0.30}) scale(${(w-ft*0.68)/w},${(h-ft*0.30)/h})" opacity=".9"/>
+    <!-- crisp gold ring around the opening -->
+    <path d="${opening}" fill="none" stroke="#e8a948" stroke-width="${Math.max(2,w*0.012)}"/>
+    <path d="${opening}" fill="none" stroke="#000" stroke-width="${Math.max(1,w*0.006)}" opacity=".4" transform="translate(0,${w*0.01})"/>
+    <!-- keystone -->
+    <path d="M${w/2-ks},${ft*1.4} L${w/2-ks*0.6},0 L${w/2+ks*0.6},0 L${w/2+ks},${ft*1.4} Z" fill="url(#mold)" stroke="#7d521f" stroke-width="1.5"/>
+    ${sun}
+    <!-- impost blocks where the arch springs -->
+    <rect x="${ft*0.2}" y="${spring-ft*0.3}" width="${ft*1.3}" height="${ft*0.6}" fill="url(#mold)" stroke="#7d521f" stroke-width="1"/>
+    <rect x="${w-ft*1.5}" y="${spring-ft*0.3}" width="${ft*1.3}" height="${ft*0.6}" fill="url(#mold)" stroke="#7d521f" stroke-width="1"/>
+  </svg>`
+}
+
+// clip paths shared by all doorways: cpOpen = the interior opening, cpRing = the
+// frame border (rect minus opening) so the rendered frame's painted centre is cut away
+function ensureDoorClips(dw,dh){
+  // LARGE open section archway — wide opening, generous arch (matches door-control geometry)
+  const ox1=dw*0.12, ox2=dw*0.88, rx=(ox2-ox1)/2, ry=rx*0.75, spring=dh*0.30
+  // the interior is clipped slightly INSET from the true opening, so the frame's
+  // painted wood edge (in front) always overlaps the image — no seams or spill
+  const inX=dw*0.035, inY=dh*0.025
+  const ix1=ox1+inX, ix2=ox2-inX, irx=(ix2-ix1)/2, iry=irx*0.75, ispring=spring+inY
+  const openIn=`M${ix1},${dh} L${ix1},${ispring} A${irx},${iry} 0 0 1 ${ix2},${ispring} L${ix2},${dh} Z`
+  const outer=`M0,0 H${dw} V${dh} H0 Z`   // keyed frame png has transparent bg already
+  document.getElementById('doorclips').innerHTML =
+    `<defs>`+
+    `<clipPath id="cpOpen" clipPathUnits="userSpaceOnUse"><path d="${openIn}"/></clipPath>`+
+    `<clipPath id="cpRing" clipPathUnits="userSpaceOnUse"><path d="${outer} ${openIn}" clip-rule="evenodd"/></clipPath>`+
+    `</defs>`
+}
+
+const frameEl=document.getElementById('frame')
+const vv=window.visualViewport
+
+// snap a stuck Safari zoom back to 1 — rotation and restored tabs leave the
+// page scaled (standalone/home-screen mode never does this). Pinning
+// min+max scale for a beat forces scale=1, then bounds are restored.
+function unzoom(){
+  if(!vv || Math.abs(vv.scale-1)<0.02) return
+  const m=document.querySelector('meta[name=viewport]'), c=m.content
+  m.content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
+  setTimeout(()=>{ m.content=c },80)
+}
+window.addEventListener('orientationchange',()=>setTimeout(unzoom,300))
+setTimeout(unzoom,400)   // heal a zoom restored with the tab
+
+// ?debug=1 — live viewport numbers for diagnosing device-specific sizing
+if(location.search.includes('debug')){
+  const d=document.createElement('div')
+  d.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99;background:rgba(0,0,0,.75);color:#7f7;font:11px/1.5 monospace;padding:6px 9px;border-radius:6px;pointer-events:none;white-space:pre'
+  document.body.appendChild(d)
+  ;(function upd(){
+    d.textContent=`win ${innerWidth}x${innerHeight}  scr ${screen.width}x${screen.height}  dpr ${devicePixelRatio}\n`+
+      (vv?`vv ${Math.round(vv.width)}x${Math.round(vv.height)} @${vv.offsetLeft},${vv.offsetTop}  scale ${vv.scale.toFixed(2)}`:'no visualViewport')
+    requestAnimationFrame(upd)
+  })()
+}
+
+// pin #frame to the VISIBLE viewport: on iOS the layout viewport ("100%")
+// overshoots past the toolbars, and a pinch-zoomed tab shifts it entirely —
+// the visualViewport is the only truthful measure of what's on screen
+const onDesktopFrame=()=>matchMedia('(min-width:920px) and (min-height:540px)').matches
+function fitFrame(){
+  if(!vv || onDesktopFrame()){ frameEl.removeAttribute('style'); return }
+  frameEl.style.width=vv.width+'px'; frameEl.style.height=vv.height+'px'
+  frameEl.style.left=vv.offsetLeft+'px'; frameEl.style.top=vv.offsetTop+'px'
+  frameEl.style.right='auto'; frameEl.style.bottom='auto'
+}
+
+const stage=document.getElementById('stage')
+const cams={}, scenes={}
+let current='lobby'
+
+function buildScene(name,def){
+  const root=document.createElement('div'); root.className='scene'; root.dataset.scene=name; stage.appendChild(root)
+  const layers=[]
+  const mk=speed=>{const el=document.createElement('div'); el.className='layer'; root.appendChild(el); const L={el,speed}; layers.push(L); return L}
+  if(def.skyCss) root.style.background=def.skyCss
+  if(def.far){ const farL=mk(0.30); farL.isBg=true; farL.bgSrc=def.far }   // distant plane (slow), behind everything
+  if(def.bg){ const bgL=mk(1.0); bgL.isBg=true; bgL.mainBg=true; bgL.bgSrc=def.bg; if(def.far) bgL.fadeTop=true }
+  for(const b of (def.bands||[])){ const L=mk(b.speed); L.isBand=true; L.bandSrc=b.src }   // transparent diorama bands, far→near
+  // z-order: bg → behind items (plants, bench) → doorways → front items (columns)
+  const behind=def.items.filter(it=>!it.front).map(it=>({L:mk(it.speed),it}))
+  const doorL=def.doors?mk(1.15):null
+  const front=def.items.filter(it=>it.front).map(it=>({L:mk(it.speed),it}))
+  const itemLayers=[...behind,...front]
+  scenes[name]={root,layers,def,doorL,itemLayers}; cams[name]={x:0,vel:0}
+}
+for(const [n,d] of Object.entries(SCENES)) buildScene(n,d)
+
+let H=0,VW=0,bgW=0,WORLD=0,camMax=0,frameL=0
+const probe=new Image(); probe.src=SCENES.lobby.bg
+function img(src,h,flip){const im=new Image(); im.draggable=false; im.style.height=h+'px'; if(flip) im.style.transform='scaleX(-1)'
+  im.style.opacity='0'; im.style.transition='opacity .45s ease'
+  im.onload=()=>{ im.style.opacity='1' }; im.src=src; if(im.complete) im.style.opacity='1'
+  return im}
+function metrics(){
+  H=frameEl.clientHeight; VW=frameEl.clientWidth; frameL=frameEl.getBoundingClientRect().left
+  // HUD scales with the window height: Safari's chrome leaves ~280px vs 390 on
+  // the home screen — fixed-px UI would eat the small window and read as zoomed
+  document.documentElement.style.fontSize=Math.max(10,Math.min(19,16*H/390))+'px'
+  const ar=(probe.naturalWidth||1536)/(probe.naturalHeight||640)
+  bgW=H*ar; WORLD=bgW*BG_COPIES; camMax=Math.max(1,WORLD-VW)
+  for(const name of Object.keys(scenes)){
+    const S=scenes[name]
+    for(const L of S.layers) if(L.isBg){ L.el.innerHTML=''
+      for(let i=0;i<BG_COPIES;i++){const im=img(L.bgSrc,H); im.className='bg'; im.style.left=(i*bgW)+'px'; if(i%2===1) im.style.transform='scaleX(-1)'
+        if(L.fadeTop){ const mask='linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.0) 8%, #000 38%)'; im.style.webkitMaskImage=mask; im.style.maskImage=mask }
+        L.el.appendChild(im)} }
+    else if(L.isBand){ L.el.innerHTML=''
+      // tile the transparent band to cover this layer's full travel
+      const probeB=new Image(); probeB.src=L.bandSrc
+      const tile=()=>{ const ar=(probeB.naturalWidth||1432)/(probeB.naturalHeight||720); const bw=H*ar
+        const reach=camMax*L.speed+VW; L.el.innerHTML=''
+        for(let x=0,k=0; x<reach+bw; x+=bw,k++){ const im=img(L.bandSrc,H); im.className='bg'; im.style.left=x+'px'; if(k%2===1) im.style.transform='scaleX(-1)'; L.el.appendChild(im) } }
+      probeB.complete?tile():probeB.addEventListener('load',tile) }
+    if(S.doorL){ S.doorL.el.innerHTML=''; S.doorPeeks=[]
+      const dw=H*0.52, dh=H*0.66; ensureDoorClips(dw,dh)   // large section-entrance archway
+      for(const d of S.def.doors){
+        const wrap=document.createElement('div'); wrap.className='door'
+        wrap.style.width=dw+'px'; wrap.style.height=dh+'px'
+        wrap.style.left=(d.atFrac*WORLD-dw/2)+'px'; wrap.style.bottom='0'   // from the floor up
+        const glow=document.createElement('div'); glow.className='glow'
+        const peek=document.createElement('div'); peek.className='peek'; peek.style.width=dw+'px'; peek.style.height=dh+'px'
+        const pk=d.peek||{x:50,y:45,zoom:150}
+        peek.style.backgroundImage=`url(${WING_BG[d.to]})`; peek.style.backgroundSize=`auto ${pk.zoom}%`
+        peek.style.clipPath='url(#cpOpen)'; peek.dataset.px=pk.x; peek.style.backgroundPositionY=pk.y+'%'
+        const ishadow=document.createElement('div'); ishadow.className='doorshadow'
+        ishadow.style.width=dw+'px'; ishadow.style.height=dh+'px'; ishadow.style.clipPath='url(#cpOpen)'
+        const frame=document.createElement('img'); frame.className='frameimg'; frame.src='img/door-frame.png'+V
+        frame.draggable=false; frame.style.width=dw+'px'; frame.style.height=dh+'px'; frame.style.clipPath='url(#cpRing)'
+        const sign=document.createElement('div'); sign.className='sign'; sign.textContent=d.label
+        wrap.append(glow,peek,ishadow,frame,sign)
+        wrap.addEventListener('click',e=>{e.stopPropagation(); enter(d.to)})
+        wrap.addEventListener('pointerdown',e=>e.stopPropagation())
+        S.doorL.el.appendChild(wrap)
+        S.doorPeeks.push({peek, atFrac:d.atFrac})   // for interior parallax
+      }
+    }
+    for(const {L,it} of S.itemLayers){ L.el.innerHTML=''
+      const place=(x,flip)=>{const w=document.createElement('div'); w.className='el'; w.appendChild(img(it.src,H*it.hFrac,flip))
+        if(it.topFrac!=null){ w.style.top=(H*it.topFrac)+'px' }
+        else { w.style.bottom=((it.bottomFrac!=null?it.bottomFrac:0)*H)+'px'; if(!it.full){const sh=document.createElement('div'); sh.className='shadow'; w.appendChild(sh)} }
+        w.style.left=x+'px'; L.el.appendChild(w)}
+      if(it.repeat){ const step=VW*it.everyVW, reach=camMax*it.speed+VW
+        for(let x=-step,k=0;x<reach;x+=step,k++) place(x, it.noflip?false:k%2===1)
+      } else { const span=camMax*it.speed+VW; place(it.atFrac*span,it.flip); L.el.lastChild.style.transform='translateX(-50%)' }
+    }
+  }
+  refreshMinimap(); applyTransforms()
+}
+fitFrame(); probe.complete?metrics():probe.addEventListener('load',metrics)
+// refit on any viewport change (rotation, iOS toolbars collapsing, pinch);
+// the world rebuild is debounced — fitFrame itself is cheap and immediate
+let refitT=null
+function refit(){ fitFrame(); clearTimeout(refitT); refitT=setTimeout(()=>{ unzoom(); metrics(); buildMotes() },120) }
+window.addEventListener('resize',refit)
+if(vv){ vv.addEventListener('resize',refit); vv.addEventListener('scroll',refit) }
+
+// ---- minimap ----
+const mmTrack=document.getElementById('mm-track'), mmView=document.getElementById('mm-view'), mmLabel=document.getElementById('mm-label')
+function refreshMinimap(){ const d=scenes[current].def; mmTrack.style.backgroundImage=`url(${d.bg||d.far||''})`; mmLabel.textContent=current.toUpperCase() }
+function updateMinimap(){ const mw=mmTrack.clientWidth, c=cams[current]
+  const vw=Math.max(14, mw*VW/WORLD); mmView.style.width=vw+'px'; mmView.style.left=(mw*c.x/WORLD)+'px' }
+
+// ---- scene switching ----
+function setActive(name){ for(const n of Object.keys(scenes)) scenes[n].root.classList.toggle('active',n===name); current=name; document.body.dataset.scene=name
+  document.getElementById('back').style.display=name==='lobby'?'none':'block'
+  document.getElementById('brandtxt').textContent=name==='lobby'?'SCIENCE MUSEUM MYSTERY':name.toUpperCase()+' WING'
+  refreshMinimap() }
+function enter(name){ cams[name].x=0; cams[name].vel=0; setActive(name) }
+document.getElementById('back').addEventListener('click',()=>enter('lobby'))
+setActive('lobby')
+
+// ---- dummy UI wiring (toggles only) ----
+const inv=document.getElementById('inv'), menu=document.getElementById('menu'), scrim=document.getElementById('scrim')
+document.getElementById('btn-bag').addEventListener('click',()=>inv.classList.toggle('show'))
+const openMenu=()=>{menu.classList.add('show'); scrim.classList.add('show')}
+const closeMenu=()=>{menu.classList.remove('show'); scrim.classList.remove('show')}
+document.getElementById('btn-menu').addEventListener('click',openMenu)
+document.getElementById('menu-close').addEventListener('click',closeMenu)
+scrim.addEventListener('click',closeMenu)
+
+// ---- fullscreen + landscape lock ----
+const fsBtn=document.getElementById('btn-fs')
+const fsReq=document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen
+if(!fsReq){ fsBtn.style.display='none' }   // iPhone Safari: no fullscreen API — Add to Home Screen instead
+else{
+  const inFs=()=>!!(document.fullscreenElement||document.webkitFullscreenElement)
+  fsBtn.addEventListener('click',async()=>{ try{
+    if(inFs()) await (document.exitFullscreen||document.webkitExitFullscreen).call(document)
+    else{ await fsReq.call(document.documentElement)
+      await screen.orientation?.lock?.('landscape') }   // Android: snaps horizontal; elsewhere the overlay nudges
+  }catch{} })
+  for(const ev of ['fullscreenchange','webkitfullscreenchange'])
+    document.addEventListener(ev,()=>{ const on=inFs()
+      fsBtn.textContent=on?'⤡':'⛶'; fsBtn.title=on?'Exit full screen':'Full screen'
+      if(!on){ try{ screen.orientation?.unlock?.() }catch{} } })
+}
+
+// ---- block pinch / double-tap zoom (iOS ignores user-scalable=no) ----
+// only block zooming IN — if the tab is already zoomed, pinching back out
+// must stay possible or the user is trapped
+const zoomedIn=()=>vv&&vv.scale>1.01
+for(const ev of ['gesturestart','gesturechange','gestureend'])
+  document.addEventListener(ev,e=>{ if(!zoomedIn()) e.preventDefault() })
+document.addEventListener('dblclick',e=>e.preventDefault())
+let lastTouchEnd=0
+document.addEventListener('touchend',e=>{ const now=performance.now()
+  if(now-lastTouchEnd<350 && !zoomedIn()) e.preventDefault(); lastTouchEnd=now },{passive:false})
+
+// ---- camera input (drag/fling/wheel/keys); native image-drag disabled ----
+const keys={left:false,right:false}, cam=()=>cams[current]
+const nudge=dx=>{const c=cam(); c.x=Math.max(0,Math.min(camMax,c.x+dx))}
+let drag=null, lookTX=0, lookX=0   // look-parallax: layers shift with pointer -> 3D depth
+stage.addEventListener('dragstart',e=>e.preventDefault())
+stage.addEventListener('pointerdown',e=>{ e.preventDefault(); drag={lastX:e.clientX,lastT:performance.now(),moved:0,vel:0}; stage.classList.add('grabbing'); stage.setPointerCapture(e.pointerId) })
+stage.addEventListener('pointermove',e=>{ lookTX=((e.clientX-frameL)/VW)*2-1; if(!drag)return; const t=performance.now(); const dx=e.clientX-drag.lastX; const dt=Math.max(8,t-drag.lastT)
+  drag.moved+=Math.abs(dx); drag.vel=drag.vel*0.55+(-dx/(dt/1000))*0.45; drag.lastX=e.clientX; drag.lastT=t; nudge(-dx); cam().vel=0 })
+const release=()=>{ if(!drag)return; if(drag.moved>14 && performance.now()-drag.lastT<100) cam().vel=Math.max(-6000,Math.min(6000,drag.vel)); drag=null; stage.classList.remove('grabbing') }
+stage.addEventListener('pointerup',release); stage.addEventListener('pointercancel',release); stage.addEventListener('lostpointercapture',release)
+stage.addEventListener('wheel',e=>{ nudge(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY) },{passive:true})
+window.addEventListener('keydown',e=>{ if(e.key==='ArrowLeft')keys.left=true; if(e.key==='ArrowRight')keys.right=true; if(e.key==='Escape'){closeMenu(); if(current!=='lobby')enter('lobby')} })
+window.addEventListener('keyup',e=>{ if(e.key==='ArrowLeft')keys.left=false; if(e.key==='ArrowRight')keys.right=false })
+// tilt to walk — read the axis that means "lean left/right" for how the phone
+// is HELD: gamma in portrait, ±beta in landscape
+window.addEventListener('deviceorientation',e=>{
+  const a=screen.orientation?.angle??window.orientation??0
+  const v=a===90?e.beta:(a===270||a===-90)?(e.beta==null?null:-e.beta):e.gamma
+  if(v==null)return; cam().vel+=Math.max(-1,Math.min(1,v/22))*30 })
+
+// ---- loop ----
+function applyTransforms(){ const S=scenes[current], c=cam(); const lk=lookX*20
+  for(const L of S.layers) L.el.style.transform=`translateX(${-c.x*L.speed + lk*L.speed*(L.mainBg?0.12:1)}px)`
+  if(S.doorL){ S.doorL.el.style.transform=`translateX(${-c.x*S.doorL.speed + lk*S.doorL.speed}px)`
+    // each doorway's interior pans with your position -> looking into a real hall
+    for(const dp of (S.doorPeeks||[])){
+      const screenC = dp.atFrac*WORLD - c.x*S.doorL.speed
+      const pan = Math.max(-5, Math.min(5, ((screenC - VW/2)/VW) * -5))   // very slow = deep distant interior
+      const base = Number(dp.peek.dataset.px || 50)
+      dp.peek.style.backgroundPositionX = (base + pan) + '%'
+    }
+  }
+  updateMinimap() }
+// drifting dust motes — atmosphere + extra depth (parallax by per-mote depth)
+const motesEl=document.getElementById('motes'); let motes=[]
+function buildMotes(){ motesEl.innerHTML=''; motes=[]
+  const N=Math.round(Math.min(46, frameEl.clientWidth/26))
+  for(let i=0;i<N;i++){ const el=document.createElement('div'); el.className='mote'
+    const sz=2+Math.random()*5; el.style.width=el.style.height=sz+'px'; el.style.opacity=(0.12+Math.random()*0.4).toFixed(2)
+    motesEl.appendChild(el)
+    motes.push({el, bx:Math.random(), by:Math.random(), sp:0.15+Math.random()*0.5, ph:Math.random()*6.28, amp:10+Math.random()*30, depth:0.3+Math.random()*1.3}) }
+}
+function updateMotes(t){ const c=cam(), Hh=frameEl.clientHeight
+  for(const m of motes){ const x=((m.bx*VW - c.x*m.depth*0.05) % (VW+60) + (VW+60)) % (VW+60) - 30
+    const y=m.by*Hh + Math.sin(t*m.sp+m.ph)*m.amp
+    m.el.style.left=x+'px'; m.el.style.top=y+'px' } }
+
+let last=performance.now(), T=0
+function frame(now){ const dt=Math.min(0.05,(now-last)/1000); last=now; T+=dt; const c=cam()
+  const target=keys.right?1100:keys.left?-1100:0
+  if(target!==0) c.vel+=(target-c.vel)*Math.min(1,2.2*dt)
+  else if(!drag) c.vel*=Math.pow(0.06,dt)
+  if(Math.abs(c.vel)<2 && !drag) c.vel=0
+  if(!drag){ c.x=Math.max(0,Math.min(camMax,c.x+c.vel*dt)); if(c.x===0||c.x===camMax) c.vel=0 }
+  lookX += (lookTX-lookX)*0.06
+  document.getElementById('arrow').style.opacity = c.x>camMax*0.12 ? '0' : ''
+  if(c.x>40) document.querySelector('.hint')?.classList.add('gone')
+  applyTransforms(); updateMotes(T); requestAnimationFrame(frame) }
+buildMotes()
+requestAnimationFrame(frame)
+</script>
+</body>
+</html>
