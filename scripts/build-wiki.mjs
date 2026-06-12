@@ -963,7 +963,12 @@ function renderHtml(dataJson) {
   .mast-view-toggle { display: flex; align-items: center; }
   /* Buttons slightly smaller than the standalone toggle so they fit in the mast-top bar */
   .mast-view-toggle .vtb-btn { padding: 2px 9px; font-size: 10px; letter-spacing: .08em; }
-  @media (max-width: 640px) { .mast-view-toggle { display: none; } }
+  /* On phones the mast-top row is too narrow for the toggle inline — let it wrap
+     and drop the date+toggle onto its own centered line so it stays reachable. */
+  @media (max-width: 640px) {
+    .mast-top { flex-wrap: wrap; justify-content: center; gap: 6px 14px; }
+    .mast-date-toggle { flex-basis: 100%; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  }
 
   section.view { display: none; }
   section.view.active { display: block; animation: fade .25s ease; }
@@ -1552,6 +1557,9 @@ function renderHtml(dataJson) {
     .gaz-body-2col { column-count: 1; }
     .gaz-mast-title { letter-spacing: -2px; }
     .gaz-mast-top span:nth-child(2) { display: none; }
+    /* Wrap the gazette mast bar so the date+toggle drops to its own centered line. */
+    .gaz-mast-top { flex-wrap: wrap; justify-content: center; gap: 6px 12px; }
+    .gaz-mast-top > div:last-child { flex-basis: 100%; justify-content: center; flex-wrap: wrap; }
   }
 </style>
 </head>
