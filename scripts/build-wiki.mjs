@@ -950,11 +950,20 @@ function renderHtml(dataJson) {
   .play-link .play-tri { font-size: .9em; }
 
   /* ---- nav ---- */
-  nav.tabs { display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--line); margin-bottom: 26px; position: sticky; top: 0; background: var(--paper); z-index: 20; }
+  nav.tabs { display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; padding: 8px 0;
+    border-bottom: 1px solid var(--line); margin-bottom: 26px; position: sticky; top: 0;
+    background: var(--paper); z-index: 20; }
   nav.tabs button { font-family: var(--sans); font-weight: 700; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase;
     background: none; border: 0; color: var(--muted); padding: 8px 14px; cursor: pointer; border-bottom: 2px solid transparent; }
   nav.tabs button:hover { color: var(--ink); }
   nav.tabs button.active { color: var(--ink); border-bottom-color: var(--rule); }
+
+  /* ---- view toggle in masthead ---- */
+  .mast-date-toggle { display: flex; align-items: center; gap: 10px; }
+  .mast-view-toggle { display: flex; align-items: center; }
+  /* Buttons slightly smaller than the standalone toggle so they fit in the mast-top bar */
+  .mast-view-toggle .vtb-btn { padding: 2px 9px; font-size: 10px; letter-spacing: .08em; }
+  @media (max-width: 640px) { .mast-view-toggle { display: none; } }
 
   section.view { display: none; }
   section.view.active { display: block; animation: fade .25s ease; }
@@ -1287,6 +1296,271 @@ function renderHtml(dataJson) {
   .lightbox-hint { font-family: var(--sans); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.5); }
 
   footer { font-family: var(--sans); color: var(--faint); font-size: 12px; text-align: center; margin-top: 56px; border-top: 1px solid var(--line); padding-top: 18px; }
+
+  /* ============================================================
+     VIEW MODE TOGGLE — Classic · Paper · Gazette
+  ============================================================ */
+  .vtb-btn {
+    font-family: var(--sans); font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    background: var(--card); border: 1px solid var(--line2);
+    color: var(--muted); padding: 5px 13px; cursor: pointer;
+    border-radius: 0; transition: color .12s, background .12s, border-color .12s;
+    position: relative;
+  }
+  .vtb-btn:first-of-type { border-radius: 3px 0 0 3px; }
+  .vtb-btn:last-of-type  { border-radius: 0 3px 3px 0; }
+  .vtb-btn + .vtb-btn    { margin-left: -1px; }
+  .vtb-btn:hover  { color: var(--ink); border-color: var(--ink); z-index: 1; }
+  .vtb-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); z-index: 2; }
+
+  /* ---- "Paper" front (NYT-style three-column layout) ---- */
+  #front-times .nyt-top { display: grid; grid-template-columns: 1fr 1.55fr 1fr; gap: 0; border-top: 2px solid var(--rule); }
+  #front-times .nyt-col { padding: 20px 22px 8px; min-width: 0; }
+  #front-times .nyt-col.left { padding-left: 0; border-right: 1px solid var(--line2); }
+  #front-times .nyt-col.right { padding-right: 0; border-left: 1px solid var(--line2); }
+  #front-times .nyt-art { padding: 15px 0; border-bottom: 1px solid var(--line); }
+  #front-times .nyt-col .nyt-art:first-child { padding-top: 0; }
+  #front-times .nyt-col .nyt-art:last-child { border-bottom: 0; }
+  #front-times .nyt-kicker { font-family: var(--sans); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
+  #front-times .nyt-kicker.live { color: #b91c1c; }
+  #front-times .nyt-kicker .live-dot { font-size: .85em; margin-right: 3px; }
+  #front-times .nyt-hl { font-family: var(--display); font-weight: 700; line-height: 1.13; letter-spacing: -.3px; margin: 0 0 8px; font-size: 20px; }
+  #front-times .nyt-hl a:hover { text-decoration: underline; }
+  #front-times .nyt-lead .nyt-hl { font-size: 29px; }
+  #front-times .nyt-center .nyt-hl { font-size: 33px; }
+  #front-times .nyt-feature .nyt-hl { font-size: 22px; }
+  #front-times .nyt-sum { font-family: var(--serif); font-size: 15px; line-height: 1.5; color: var(--ink2); margin: 0; }
+  #front-times .nyt-byline { display: flex; align-items: baseline; gap: 8px; margin-top: 9px;
+    font-family: var(--sans); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+  #front-times .nyt-author { font-weight: 700; color: var(--muted); }
+  #front-times .nyt-time { color: var(--faint); }
+  #front-times .nyt-time::before { content: "·"; margin-right: 8px; }
+  #front-times .nyt-commit { color: var(--faint); text-decoration: none; margin-left: auto; }
+  #front-times .nyt-commit:hover { color: var(--ink); }
+  #front-times .nyt-center .nyt-sum, #front-times .nyt-lead .nyt-sum { font-size: 16px; }
+  #front-times .nyt-figure { margin: 0 0 11px; }
+  #front-times .nyt-figure img { width: 100%; display: block; object-fit: cover; filter: saturate(.94) contrast(1.02); cursor: zoom-in; }
+  #front-times .nyt-center .nyt-figure img { aspect-ratio: 16/10; }
+  #front-times .nyt-feature .nyt-figure img { aspect-ratio: 4/3; }
+  #front-times .nyt-figure figcaption { font-family: var(--sans); font-size: 11px; color: var(--faint); margin-top: 5px; }
+  #front-times .nyt-more-rule { border-top: 2px solid var(--rule); margin: 6px 0 0; }
+  #front-times .nyt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  #front-times .nyt-grid .nyt-art { padding: 16px 20px; border-bottom: 0; border-right: 1px solid var(--line2); border-top: 1px solid var(--line); }
+  #front-times .nyt-grid .nyt-art:nth-child(4n) { border-right: 0; padding-right: 0; }
+  #front-times .nyt-grid .nyt-art:first-child { padding-left: 0; }
+  #front-times .nyt-grid .nyt-hl { font-size: 18px; }
+  @media (max-width: 860px) {
+    #front-times .nyt-top { grid-template-columns: 1fr; }
+    #front-times .nyt-col { padding: 16px 0 4px; border: 0 !important; border-top: 1px solid var(--line) !important; }
+    #front-times .nyt-col.left { border-top: 0 !important; }
+    #front-times .nyt-grid { grid-template-columns: 1fr 1fr; }
+    #front-times .nyt-grid .nyt-art { padding: 14px 14px; }
+    #front-times .nyt-grid .nyt-art:nth-child(4n) { border-right: 1px solid var(--line2); }
+    #front-times .nyt-grid .nyt-art:nth-child(2n) { border-right: 0; padding-right: 0; }
+    #front-times .nyt-grid .nyt-art:nth-child(-n+2) { border-top: 0; }
+  }
+  @media (max-width: 560px) {
+    #front-times .nyt-grid { grid-template-columns: 1fr; }
+    #front-times .nyt-grid .nyt-art { border-right: 0 !important; padding: 14px 0; }
+  }
+
+  /* ============================================================
+     GAZETTE MODE — antique broadsheet, sepia newsprint
+  ============================================================ */
+  :root {
+    --gaz-ink:   #18090c;
+    --gaz-rule:  #c0a060;
+    --gaz-gold:  #8b6410;
+    --gaz-paper: #ede5c6;
+    --gaz-light: #f4edd8;
+    --gaz-body:  #2c1800;
+  }
+
+  body.mode-gazette {
+    background: var(--gaz-paper);
+    background-image:
+      radial-gradient(ellipse at 18% 82%, rgba(150,110,40,.11) 0%, transparent 48%),
+      radial-gradient(ellipse at 82% 18%, rgba(130, 90,30,.08) 0%, transparent 48%),
+      radial-gradient(ellipse at 50% 50%, rgba(180,150,80,.05) 0%, transparent 68%);
+    color: var(--gaz-ink);
+  }
+  /* SVG feTurbulence grain overlay */
+  body.mode-gazette .wrap::after {
+    content: ''; position: fixed; inset: 0;
+    pointer-events: none; z-index: 9999; opacity: .042;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 256px 256px; background-repeat: repeat;
+  }
+  body.mode-gazette .masthead          { display: none; }
+  body.mode-gazette nav.tabs           { background: var(--gaz-paper); border-color: var(--gaz-rule); }
+  body.mode-gazette nav.tabs button[data-tab]         { color: var(--gaz-gold); font-family: 'Source Serif 4', Georgia, serif; font-size: 13px; letter-spacing: .04em; }
+  body.mode-gazette nav.tabs button[data-tab].active  { color: var(--gaz-ink); border-bottom-color: var(--gaz-ink); }
+  body.mode-gazette nav.tabs button[data-tab]:hover   { color: var(--gaz-ink); }
+  body.mode-gazette footer             { border-color: var(--gaz-rule); color: var(--gaz-gold); font-family: 'Source Serif 4', serif; font-style: italic; }
+  body.mode-gazette .vtb-btn           { background: var(--gaz-light); border-color: var(--gaz-rule); color: var(--gaz-gold); }
+  body.mode-gazette .vtb-btn.active    { background: var(--gaz-ink); color: var(--gaz-paper); border-color: var(--gaz-ink); }
+  body.mode-gazette .vtb-btn:hover     { color: var(--gaz-ink); border-color: var(--gaz-ink); }
+  /* Gazette masthead toggle — compact to fit the gaz-mast-top bar */
+  .gaz-mast-toggle .vtb-btn { padding: 2px 8px; font-size: 9px; }
+
+  /* Gazette page wrapper — double-rule border */
+  .gazette-front {
+    border: 1px solid var(--gaz-rule);
+    box-shadow: inset 0 0 0 3px var(--gaz-paper), inset 0 0 0 5px var(--gaz-rule);
+    padding: 4px 4px 24px;
+    margin-bottom: 0;
+  }
+  .gazette-inner { padding: 0 18px; }
+  @media (max-width: 600px) { .gazette-inner { padding: 0 10px; } }
+
+  /* ---- Gazette ornate masthead ---- */
+  .gaz-masthead {
+    text-align: center; padding: 22px 0 14px;
+    border-bottom: 4px double var(--gaz-ink);
+    margin-bottom: 6px;
+  }
+  .gaz-mast-top {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--sans); font-size: 9px; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--gaz-gold);
+    border-bottom: 1px solid var(--gaz-rule);
+    padding-bottom: 7px; margin-bottom: 12px;
+  }
+  .gaz-mast-title {
+    font-family: var(--display); font-weight: 900;
+    font-size: clamp(44px, 8vw, 86px); letter-spacing: -4px;
+    line-height: .9; color: var(--gaz-ink); margin: 0 0 6px;
+  }
+  .gaz-mast-icon { font-size: .68em; vertical-align: 5%; margin-right: .14em; letter-spacing: 0; }
+  .gaz-mast-rule { border: 0; height: 6px; border-top: 2px solid var(--gaz-ink); border-bottom: 2px solid var(--gaz-ink); margin: 8px 0; }
+  .gaz-mast-sub  { font-family: 'Source Serif 4', Georgia, serif; font-size: 13px; font-style: italic; color: var(--gaz-gold); letter-spacing: .02em; }
+
+  /* Date strip */
+  .gaz-date-strip {
+    display: flex; justify-content: space-between;
+    border-top: 1px solid var(--gaz-rule); border-bottom: 1px solid var(--gaz-rule);
+    padding: 4px 0; margin-bottom: 20px;
+    font-family: var(--sans); font-size: 9.5px; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--gaz-gold);
+  }
+  .gaz-date-strip a { color: var(--gaz-gold); }
+  .gaz-date-strip a:hover { color: var(--gaz-ink); }
+
+  /* ---- Gazette section heads + ornamental rules ---- */
+  .gaz-sec-head {
+    font-family: var(--sans); font-size: 8.5px; font-weight: 700;
+    letter-spacing: .24em; text-transform: uppercase; color: var(--gaz-gold);
+    border-top: 2px solid var(--gaz-gold); border-bottom: 1px solid var(--gaz-rule);
+    padding: 4px 0; margin-bottom: 14px;
+  }
+  .gaz-orn {
+    display: flex; align-items: center; gap: 12px;
+    margin: 22px 0; color: var(--gaz-gold); font-size: 12px; letter-spacing: .6em;
+  }
+  .gaz-orn::before, .gaz-orn::after { content: ''; flex: 1; border-top: 1px solid var(--gaz-rule); }
+  .gaz-orn span { white-space: nowrap; }
+
+  /* ---- Gazette lead + sidebar ---- */
+  .gaz-lead-wrap { display: grid; grid-template-columns: 1.65fr 1fr; gap: 0; margin-bottom: 0; }
+  .gaz-lead-col   { padding-right: 22px; border-right: 1px solid var(--gaz-rule); }
+  .gaz-sidebar-col { padding-left: 22px; }
+
+  /* ---- Article typography ---- */
+  .gaz-kicker {
+    font-family: var(--sans); font-size: 9px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--gaz-gold);
+    margin-bottom: 4px;
+  }
+  .gaz-hed {
+    font-family: var(--display); font-weight: 900; line-height: 1.06;
+    color: var(--gaz-ink); letter-spacing: -.5px; margin: 0 0 7px;
+  }
+  .gaz-hed a { color: var(--gaz-ink); cursor: pointer; }
+  .gaz-hed a:hover { text-decoration: underline; }
+  .gaz-hed.xl { font-size: clamp(24px, 4.2vw, 42px); }
+  .gaz-hed.lg { font-size: 25px; }
+  .gaz-hed.md { font-size: 20px; }
+  .gaz-hed.sm { font-size: 16px; }
+  .gaz-hed.xs { font-size: 14px; line-height: 1.2; }
+
+  .gaz-byline {
+    font-family: var(--sans); font-size: 9px; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--gaz-gold); margin-bottom: 7px;
+  }
+  .gaz-deck {
+    font-family: 'Source Serif 4', Georgia, serif; font-style: italic;
+    font-size: 14px; line-height: 1.5; color: #3d2200;
+    border-bottom: 1px solid var(--gaz-rule); padding-bottom: 7px; margin-bottom: 9px;
+  }
+  .gaz-body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 13.5px; line-height: 1.7; color: var(--gaz-body);
+  }
+  .gaz-body-2col  { column-count: 2; column-gap: 14px; column-rule: 1px solid var(--gaz-rule); }
+
+  /* Drop cap — lead article */
+  .gaz-dropcap::first-letter {
+    float: left; font-family: var(--display); font-size: 4.6em; font-weight: 900;
+    line-height: .73; margin: .05em .08em 0 0; color: var(--gaz-ink); padding-bottom: 3px;
+  }
+
+  /* ---- Gazette images (sepia, occasional tilt for scatter feel) ---- */
+  .gaz-fig { margin: 10px 0; }
+  .gaz-fig img {
+    display: block; width: 100%;
+    filter: sepia(42%) contrast(1.08) brightness(.96);
+    border: 1px solid var(--gaz-rule);
+  }
+  .gaz-fig figcaption {
+    font-family: var(--sans); font-size: 8.5px; letter-spacing: .04em;
+    font-style: italic; color: var(--gaz-gold); padding-top: 3px;
+    border-top: 1px solid var(--gaz-rule);
+  }
+  .gaz-fig.tilt-cw  { transform: rotate( 1.4deg); margin: 12px 0 12px  4px; }
+  .gaz-fig.tilt-ccw { transform: rotate(-1.2deg); margin: 12px 4px 12px 0;   }
+
+  /* ---- Sidebar briefs ---- */
+  .gaz-brief { border-top: 1px solid var(--gaz-rule); padding: 11px 0; }
+  .gaz-brief:first-child { border-top: 0; padding-top: 0; }
+
+  /* ---- 3-column row ---- */
+  .gaz-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
+  .gaz-3col-item { padding: 0 18px; border-right: 1px solid var(--gaz-rule); }
+  .gaz-3col-item:first-child { padding-left: 0; }
+  .gaz-3col-item:last-child  { border-right: 0; padding-right: 0; }
+
+  /* ---- 4-briefs row ---- */
+  .gaz-4col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  .gaz-4col-item { padding: 0 13px; border-right: 1px solid var(--gaz-rule); }
+  .gaz-4col-item:first-child { padding-left: 0; }
+  .gaz-4col-item:last-child  { border-right: 0; padding-right: 0; }
+
+  /* ---- Pull quote ---- */
+  .gaz-pull {
+    border-top: 2px solid var(--gaz-ink); border-bottom: 2px solid var(--gaz-ink);
+    padding: 8px 4px; margin: 14px 0; text-align: center;
+    font-family: var(--display); font-size: 14px; font-style: italic;
+    color: var(--gaz-ink); line-height: 1.38;
+  }
+
+  /* ---- Mobile gazette layout ---- */
+  @media (max-width: 720px) {
+    .gaz-lead-wrap  { grid-template-columns: 1fr; }
+    .gaz-lead-col   { border-right: 0; padding-right: 0; border-bottom: 1px solid var(--gaz-rule); padding-bottom: 16px; }
+    .gaz-sidebar-col { padding-left: 0; padding-top: 14px; }
+    .gaz-3col       { grid-template-columns: 1fr; }
+    .gaz-3col-item  { border-right: 0; padding: 0; border-top: 1px solid var(--gaz-rule); padding-top: 14px; }
+    .gaz-3col-item:first-child { border-top: 0; padding-top: 0; }
+    .gaz-4col       { grid-template-columns: 1fr 1fr; }
+    .gaz-4col-item:nth-child(2n)  { border-right: 0; }
+    .gaz-4col-item:nth-child(n+3) { border-top: 1px solid var(--gaz-rule); padding-top: 12px; margin-top: 10px; }
+    .gaz-hed.xl  { font-size: 28px; }
+    .gaz-hed.lg  { font-size: 21px; }
+    .gaz-body-2col { column-count: 1; }
+    .gaz-mast-title { letter-spacing: -2px; }
+    .gaz-mast-top span:nth-child(2) { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -1295,7 +1569,14 @@ function renderHtml(dataJson) {
     <div class="mast-top">
       <span id="mt-left">Malabi · Shared Brain</span>
       <span>Vol. I</span>
-      <span id="mt-date"></span>
+      <div class="mast-date-toggle">
+        <span id="mt-date"></span>
+        <div class="mast-view-toggle">
+          <button class="vtb-btn active" data-mode="classic">Classic</button>
+          <button class="vtb-btn" data-mode="paper">Paper</button>
+          <button class="vtb-btn" data-mode="gazette">Gazette ✦</button>
+        </div>
+      </div>
     </div>
     <div class="mast-title"><span class="mast-icon">🍮</span>The Malabi Daily</div>
     <hr class="mast-rule" />
@@ -1326,6 +1607,7 @@ function renderHtml(dataJson) {
       <div class="timeline" id="feed"></div>
     </div>
     <div id="front-times" hidden></div>
+    <div id="gazette-front" class="gazette-front" hidden></div>
     <div class="band"><span class="band-emoji">✉️</span><h2 class="band-title">Letters to the Editor</h2><span class="band-rule"></span></div>
     <p class="letters-blurb">Notes from the team on any piece of info — extra context, corrections, new content,
       questions. The brain reads every open letter at the next sync, folds it into the right memory, and marks it addressed.</p>
@@ -1946,11 +2228,284 @@ window.addEventListener('hashchange', applyHash);
 applyHash();
 
 // ---- tabs ----
-document.querySelectorAll('nav.tabs button').forEach(b=>
+document.querySelectorAll('nav.tabs button[data-tab]').forEach(b=>
   b.addEventListener('click', ()=>{ const tab=b.getAttribute('data-tab');
-    document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.toggle('active', x===b));
+    document.querySelectorAll('nav.tabs button[data-tab]').forEach(x=>x.classList.toggle('active', x===b));
     document.querySelectorAll('section.view').forEach(s=>s.classList.toggle('active', s.id===tab));
     window.scrollTo({top:0}); if(tab==='map') drawGraph(); }));
+
+// ---- gazette front-page renderer ----
+
+function gazKicker(c) {
+  var k = desk(c.desk);
+  return '<div class="gaz-kicker">' + k.emoji + ' ' + escapeHtml(c.desk) + '</div>';
+}
+function gazHed(c, size) {
+  var readable = primaryReadable(c);
+  var link = readable
+    ? '<a data-open="' + readable.name + '">' + escapeHtml(c.headline) + '</a>'
+    : '<a href="' + c.url + '" target="_blank" rel="noopener">' + escapeHtml(c.headline) + '</a>';
+  return '<div class="gaz-hed ' + size + '">' + link + '</div>';
+}
+function gazByline(c) {
+  return '<div class="gaz-byline">By ' + escapeHtml(c.author) + ' · ' + longDate(c.date) + '</div>';
+}
+function gazImg(c, tiltClass) {
+  if (!c.image) return '';
+  var tc = tiltClass ? ' ' + tiltClass : '';
+  var img = (tiltClass === 'tilt-cw' && c.imageWide) ? c.imageWide : c.image;
+  var cap = img.page
+    ? '<a href="' + img.page + '" target="_blank" rel="noopener">' + escapeHtml(img.title || 'Wikimedia') + '</a>'
+    : escapeHtml(img.title || '');
+  return '<figure class="gaz-fig' + tc + '"><img loading="lazy" src="' + img.src + '" alt="' + escapeHtml(img.title || '') + '">' +
+    (cap ? '<figcaption>' + cap + '</figcaption>' : '') + '</figure>';
+}
+function gazDeck(c) {
+  if (!c.intro) return '';
+  return '<div class="gaz-deck">' + renderInline(c.intro) + '</div>';
+}
+function gazBodyText(c, twoCol) {
+  var text = c.intro || c.summary || '';
+  if (!text) return '';
+  var cls = 'gaz-body' + (twoCol ? ' gaz-body-2col gaz-dropcap' : '');
+  return '<div class="' + cls + '">' + renderInline(text) + '</div>';
+}
+function gazBriefBody(c, maxChars) {
+  var text = c.intro || c.summary || '';
+  if (!text) return '';
+  var short = text.length > maxChars ? text.slice(0, maxChars) + '…' : text;
+  return '<div class="gaz-body" style="font-size:12.5px">' + renderInline(short) + '</div>';
+}
+
+function renderGazetteFront(items) {
+  if (!items || !items.length)
+    return '<p style="font-family:Georgia;color:#8b6410;padding:28px">No dispatches yet.</p>';
+
+  var lead      = items[0];
+  var sidebar   = items.slice(1, 4);
+  var midItems  = items.slice(4, 7);
+  var briefItems= items.slice(7, 11);
+  var stats     = DATA.stats;
+
+  var h = '';
+
+  // Outer border + inner padding
+  h += '<div class="gazette-inner">';
+
+  var gazetteToggle =
+    '<div class="mast-view-toggle gaz-mast-toggle">' +
+    '<button class="vtb-btn" data-mode="classic">Classic</button>' +
+    '<button class="vtb-btn" data-mode="paper">Paper</button>' +
+    '<button class="vtb-btn active" data-mode="gazette">Gazette ✦</button>' +
+    '</div>';
+
+  // Ornate masthead
+  h += '<div class="gaz-masthead">' +
+    '<div class="gaz-mast-top">' +
+    '<span>Malabi · Shared Brain · Est. 2026</span>' +
+    '<span>Vol. I, No. ' + stats.changes + '</span>' +
+    '<div style="display:flex;align-items:center;gap:10px">' +
+    '<span>' + longDate(DATA.buildDate) + '</span>' +
+    gazetteToggle +
+    '</div>' +
+    '</div>' +
+    '<div class="gaz-mast-title"><span class="gaz-mast-icon">🍮</span>The Malabi Daily</div>' +
+    '<hr class="gaz-mast-rule">' +
+    '<div class="gaz-mast-sub">“All the knowledge that’s fit to commit” &mdash; ' +
+    stats.articles + ' dispatches · ' + stats.memories + ' memories · ' + stats.decisions + ' decisions</div>' +
+    '</div>';
+
+  // Date strip
+  h += '<div class="gaz-date-strip">' +
+    '<span>' + longDate(DATA.buildDate) + '</span>' +
+    '<span>“Make us money. Make it fun.” 🌟</span>' +
+    '<span><a href="' + DATA.repoUrl + '" target="_blank" rel="noopener">Repository ↗</a></span>' +
+    '</div>';
+
+  // === TIER 1: Lead + sidebar ===
+  h += '<div class="gaz-lead-wrap">';
+
+  // Lead main column
+  h += '<div class="gaz-lead-col">' +
+    '<div class="gaz-sec-head">Latest Dispatch</div>' +
+    gazKicker(lead) +
+    gazHed(lead, 'xl') +
+    gazByline(lead) +
+    gazImg(lead, 'tilt-cw') +
+    gazDeck(lead) +
+    gazBodyText(lead, true) +
+    '</div>';
+
+  // Sidebar column
+  h += '<div class="gaz-sidebar-col">' +
+    '<div class="gaz-sec-head">In the News</div>' +
+    sidebar.map(function(c) {
+      return '<div class="gaz-brief">' +
+        gazKicker(c) +
+        gazHed(c, 'sm') +
+        gazByline(c) +
+        gazBriefBody(c, 140) +
+        '</div>';
+    }).join('') +
+    '</div>';
+
+  h += '</div>'; // close gaz-lead-wrap
+
+  // === TIER 2: Three-column ===
+  if (midItems.length) {
+    h += '<div class="gaz-orn"><span>✦ ✦ ✦ ✦ ✦</span></div>';
+    h += '<div class="gaz-sec-head" style="margin-bottom:16px">From the Desk</div>';
+    h += '<div class="gaz-3col">';
+    midItems.forEach(function(c, i) {
+      var tilt = i === 0 ? 'tilt-ccw' : i === 2 ? 'tilt-cw' : '';
+      h += '<div class="gaz-3col-item">' +
+        gazKicker(c) +
+        gazHed(c, 'md') +
+        gazByline(c) +
+        gazImg(c, tilt) +
+        gazBodyText(c, false) +
+        '</div>';
+    });
+    h += '</div>';
+  }
+
+  // === TIER 3: Brief row ===
+  if (briefItems.length) {
+    h += '<div class="gaz-orn"><span>— ◆ —</span></div>';
+    h += '<div class="gaz-sec-head" style="margin-bottom:14px">In Brief</div>';
+    h += '<div class="gaz-4col">';
+    briefItems.forEach(function(c) {
+      h += '<div class="gaz-4col-item">' +
+        gazKicker(c) +
+        gazHed(c, 'sm') +
+        gazByline(c) +
+        '</div>';
+    });
+    h += '</div>';
+  }
+
+  h += '</div>'; // close gazette-inner
+  return h;
+}
+
+// ---- Paper (NYT-style) front helpers ----
+function nytHeadLink(c){
+  const readable = primaryReadable(c);
+  return readable
+    ? '<a data-open="'+readable.name+'">'+escapeHtml(c.headline)+'</a>'
+    : '<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
+}
+function nytKicker(c, live){
+  if(live){
+    const when = relDay(c.date) || longDate(c.date);
+    return '<div class="nyt-kicker live"><span class="live-dot">&#9679;</span> Latest &middot; '+escapeHtml(when)+'</div>';
+  }
+  return '<div class="nyt-kicker">'+escapeHtml(c.desk)+'</div>';
+}
+function nytFigure(c, wide){
+  if(!c.image) return '';
+  const img = (wide && c.imageWide) ? c.imageWide : c.image;
+  const cap = img.page
+    ? '<figcaption><a href="'+img.page+'" target="_blank" rel="noopener">'+escapeHtml(img.credit||img.title||'')+'</a></figcaption>'
+    : (img.credit||img.title ? '<figcaption>'+escapeHtml(img.credit||img.title)+'</figcaption>' : '');
+  return '<figure class="nyt-figure"><img loading="lazy" src="'+img.src+'" alt="'+escapeHtml(img.title||'')+'">'+cap+'</figure>';
+}
+function nytByline(c){
+  const day = relDay(c.date) || longDate(c.date);
+  return '<div class="nyt-byline">By <span class="nyt-author">'+escapeHtml(c.author)+'</span>'+
+    '<span class="nyt-time">'+escapeHtml(day)+'</span>'+
+    '<a class="nyt-commit" href="'+c.url+'" target="_blank" rel="noopener" title="View commit '+c.hash+'">↗</a></div>';
+}
+function nytArt(c, cls, opts){
+  opts = opts || {};
+  return '<article class="nyt-art '+(cls||'')+'">'+
+    (opts.image ? nytFigure(c, opts.wide) : '')+
+    nytKicker(c, opts.live)+
+    '<h3 class="nyt-hl">'+nytHeadLink(c)+'</h3>'+
+    (opts.sum !== false && c.summary ? '<p class="nyt-sum">'+renderInline(c.summary)+'</p>' : '')+
+    nytByline(c)+
+    '</article>';
+}
+var _timesBuilt = false;
+function buildTimesFront(){
+  if(_timesBuilt) return; _timesBuilt = true;
+  const ft = document.getElementById('front-times');
+  const used = new Set();
+  const take = c => { if(c) used.add(c.hash); return c; };
+  const all = DATA.history.slice();
+  if(!all.length){ ft.innerHTML = '<p class="standfirst">No dispatches yet.</p>'; return; }
+  const nextImg = () => all.find(c => c.image && !used.has(c.hash));
+  const center  = take(nextImg() || all[0]);
+  const feature = take(nextImg());
+  const rest    = all.filter(c => !used.has(c.hash));
+  const lead     = rest.shift();
+  const leftMore = rest.splice(0, 3);
+  const rightMore= rest.splice(0, 2);
+  const bottom   = rest.slice(0, 8);
+  const left = '<div class="nyt-col left">'+
+    (lead ? nytArt(lead, 'nyt-lead', {live:true}) : '')+
+    leftMore.map(c => nytArt(c, '')).join('')+'</div>';
+  const mid = '<div class="nyt-col center">'+
+    nytArt(center, 'nyt-center', {image:true, wide:true})+'</div>';
+  const right = '<div class="nyt-col right">'+
+    (feature ? nytArt(feature, 'nyt-feature', {image:true}) : '')+
+    rightMore.map(c => nytArt(c, '')).join('')+'</div>';
+  const grid = bottom.length
+    ? '<div class="nyt-more-rule"></div><div class="nyt-grid">'+bottom.map(c => nytArt(c, '', {sum:false})).join('')+'</div>'
+    : '';
+  ft.innerHTML = '<div class="nyt-top">'+left+mid+right+'</div>'+grid;
+  wireWikilinks(ft);
+}
+
+// ---- view mode switching ----
+var _gazetteRendered = false;
+
+function applyViewMode(mode) {
+  mode = mode || 'classic';
+  document.body.classList.remove('mode-gazette');
+  if (mode === 'gazette') document.body.classList.add('mode-gazette');
+
+  document.querySelectorAll('.vtb-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+  });
+
+  var classicEl = document.getElementById('front-classic');
+  var timesEl   = document.getElementById('front-times');
+  var gazetteEl = document.getElementById('gazette-front');
+
+  classicEl.hidden = mode !== 'classic';
+  timesEl.hidden   = mode !== 'paper';
+  gazetteEl.hidden = mode !== 'gazette';
+
+  if (mode === 'paper') buildTimesFront();
+
+  if (mode === 'gazette' && !_gazetteRendered) {
+    gazetteEl.innerHTML = renderGazetteFront(DATA.history);
+    wireWikilinks(gazetteEl);
+    gazetteEl.querySelectorAll('[data-open]').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.preventDefault();
+        openEntry(el.getAttribute('data-open'));
+      });
+    });
+    _gazetteRendered = true;
+  }
+
+  try { localStorage.setItem('gazette-view-mode', mode); } catch(e) {}
+}
+
+// Use delegation so buttons rendered later (e.g. gazette masthead) work without re-wiring.
+document.addEventListener('click', function(e) {
+  var b = e.target.closest('.vtb-btn');
+  if (b) applyViewMode(b.getAttribute('data-mode'));
+});
+
+// Restore saved mode (runs synchronously — no flash)
+(function() {
+  var saved = 'classic';
+  try { saved = localStorage.getItem('gazette-view-mode') || 'classic'; } catch(e) {}
+  if (saved !== 'classic') applyViewMode(saved);
+})();
 
 // ---- knowledge graph (d3 force) ----
 let graphDrawn = false;

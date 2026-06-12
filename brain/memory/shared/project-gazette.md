@@ -1,6 +1,6 @@
 ---
 name: project-gazette
-description: The Project Gazette — a newspaper-style wiki, auto-published to GitHub Pages, that visualizes the brain and what changed when
+description: The Gazette — a newspaper-style wiki, auto-published to GitHub Pages, that visualizes the brain and what changed when
 owner: team
 scope: shared
 created: 2026-06-10
@@ -11,6 +11,12 @@ tags: [wiki, gazette, pages, visualization, infra]
 
 A newspaper-style ("NYTimes" editorial, shadcn warm-grey / stone palette) wiki that
 turns `brain/**` into a single, always-current page the whole team can skim.
+
+**Three front-page views** (toggle: Classic · Paper · Gazette)
+- **Classic** — digital card grid, warm stone palette, the default.
+- **Paper** — stripped chrome, clean editorial print feel.
+- **Gazette ✦** — ornate broadsheet: aged-paper texture, sepia images, drop caps,
+  multi-column layout, decorative column rules and ornamental dividers. View mode persists via localStorage.
 
 **What it shows**
 - **Front Page** — a dated *dispatch feed* built from `git log` over `brain/**`:
