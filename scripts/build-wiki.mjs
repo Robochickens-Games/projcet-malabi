@@ -1431,6 +1431,7 @@ function renderHtml(dataJson) {
     font-size: clamp(44px, 8vw, 86px); letter-spacing: -4px;
     line-height: .9; color: var(--gaz-ink); margin: 0 0 6px;
   }
+  .gaz-date-toggle { display: flex; align-items: center; gap: 10px; }
   .gaz-mast-icon { font-size: .68em; vertical-align: 5%; margin-right: .14em; letter-spacing: 0; }
   .gaz-mast-rule { border: 0; height: 6px; border-top: 2px solid var(--gaz-ink); border-bottom: 2px solid var(--gaz-ink); margin: 8px 0; }
   .gaz-mast-sub  { font-family: 'Source Serif 4', Georgia, serif; font-size: 13px; font-style: italic; color: var(--gaz-gold); letter-spacing: .02em; }
@@ -1561,7 +1562,7 @@ function renderHtml(dataJson) {
     .gaz-mast-top span:nth-child(2) { display: none; }
     /* Keep the date on the top row, drop only the toggle to its own line below. */
     .gaz-mast-top { flex-wrap: wrap; justify-content: center; gap: 6px 12px; }
-    .gaz-mast-top > div:last-child { display: contents; }
+    .gaz-date-toggle { display: contents; }
     .gaz-mast-toggle { flex-basis: 100%; justify-content: center; margin-top: 3px; }
   }
 </style>
@@ -2252,7 +2253,7 @@ function renderGazetteFront(items) {
     '<div class="gaz-mast-top">' +
     '<span>Malabi · Shared Brain · Est. 2026</span>' +
     '<span>Vol. I, No. ' + stats.changes + '</span>' +
-    '<div style="display:flex;align-items:center;gap:10px">' +
+    '<div class="gaz-date-toggle">' +
     '<span>' + longDate(DATA.buildDate) + '</span>' +
     gazetteToggle +
     '</div>' +
