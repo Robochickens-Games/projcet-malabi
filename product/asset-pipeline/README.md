@@ -7,90 +7,69 @@ swappable.
 ```
 style.yaml      ← LOCKED style DNA, shared by every asset (the consistency contract)
 assets.yaml     ← the work-list: one line per asset. Grow the game by growing this.
-workflows/      ← the ComfyUI node graph (transparent-painterly.json)
-scripts/        ← generate.mjs (manifest → ComfyUI → raw PNG) · postprocess.mjs (→ transparent)
+scripts/        ← postprocess.mjs (raw → clean transparent) + image utilities
 out/raw/        ← generated candidates (gitignored)
 out/final/      ← chosen, clean transparent PNGs (committed — these are the product)
 ```
 
-**Why this shape:** assets are treated like code — declared, generated
-deterministically (seed derived from id), version-tracked. Consistency lives in
-`style.yaml`, not in a person remembering the prompt. Engine lives behind
-`generate.mjs`, so you can swap ComfyUI ↔ a paid API without touching the manifest.
+**Why this shape:** assets are treated like code — declared, version-tracked.
+Consistency lives in `style.yaml`, not in a person remembering the prompt. The
+manifest and post-processing are engine-agnostic, so the generator behind them is
+swappable.
 
 This is the *upstream* of the prototype's `generate-assets.mjs` slicer: this
 **creates** isolated transparent sprites; the slicer **cuts painted scenes** into
 parallax layers.
 
+> **No generator is wired up right now.** The original local engine (ComfyUI +
+> SDXL/ControlNet/IP-Adapter models, ~22 GB) was removed — too heavy, too much
+> disk, and off-target results. The manifest (`assets.yaml`), the style contract
+> (`style.yaml`), the post-processing scripts, and the committed product in
+> `out/final/` all remain. To resume generation, plug a generator into a new
+> `scripts/generate.mjs` (see **Adding a generator** below).
+
 ---
 
-## Setup (one time, ~1 day incl. downloads)
+## Setup
 
-### 1. This pipeline's deps
 ```bash
 cd product/asset-pipeline
 npm install            # yaml, sharp, @imgly/background-removal-node
 ```
 
-### 2. ComfyUI (the free local engine — runs on Apple Silicon)
-```bash
-# anywhere outside this repo, e.g. ~/tools
-git clone https://github.com/comfyanonymous/ComfyUI
-cd ComfyUI
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-```
+## Post-process existing/raw candidates
 
-### 3. The model (~6.5 GB, free)
-Download **SDXL base 1.0** into `ComfyUI/models/checkpoints/`:
-- https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0 → `sd_xl_base_1.0.safetensors`
+The post-processing step is engine-independent — it turns any raw PNG into a
+clean, tightly-trimmed transparent sprite:
 
-(The filename in `workflows/transparent-painterly.json` must match.)
-
-### 4. Run the ComfyUI server
-```bash
-cd ComfyUI && source venv/bin/activate
-python main.py            # serves http://127.0.0.1:8188  — leave it running
-```
-On Apple Silicon it auto-uses MPS (the GPU). First run is slow; later runs cache.
-
----
-
-## Generate
-
-With the ComfyUI server running, in another terminal:
-```bash
-cd product/asset-pipeline
-npm run generate                  # every asset in assets.yaml (3 candidates each)
-npm run generate clue-tooth       # just one id
-node scripts/generate.mjs --wing dinosaurs
-```
-→ candidates land in `out/raw/<wing>/<id>-vN.png`.
-
-## Make them transparent
 ```bash
 npm run postprocess               # strips bg → alpha, trims tight
 ```
 → clean PNGs in `out/final/<wing>/<id>-vN.png`. **Pick the winning variant per
 asset** and copy it into the game.
 
+The remaining `scripts/*.mjs` (chroma-key, cut-by-mask, key-magenta, pixelate,
+verify-cutout, render-control helpers) are standalone `sharp`-based image
+utilities and do not depend on any generation engine.
+
 ---
+
+## Adding a generator
+
+Write `scripts/generate.mjs` that reads `assets.yaml` + `style.yaml` and writes
+candidates to `out/raw/<wing>/<id>-vN.png`. Keep the manifest and `postprocess`
+untouched. The recommended path is a paid hosted API:
+
+- **OpenAI `gpt-image-1`** — `background:transparent`, `output_format:png`,
+  ~$0.02–0.19/image. No local models, no GPU.
+
+Derive each asset's seed from its id for reproducibility. **Flag the spend per the
+team budget constraint before wiring up a paid engine.**
 
 ## Consistency: the three levels
 
-1. **Now (locked prompt + seed):** `style.yaml` prefix/suffix + per-id seed. Baseline.
-2. **Better (style reference):** add an IP-Adapter node fed your concept art —
-   every generation inherits the painting's DNA.
-3. **Best (style LoRA):** once ~20 final assets exist, train a LoRA on them
-   (free, local, `kohya_ss`) and reference it in the workflow. True
+1. **Locked prompt + seed:** `style.yaml` prefix/suffix + per-id seed. Baseline.
+2. **Style reference:** feed the per-wing `stylerefs` panorama as a style anchor
+   (most hosted APIs support a reference/edit input).
+3. **Style fine-tune:** once ~20 final assets exist, fine-tune on them for true
    one-artist coherence at scale. *Do this after first output, not now.*
-
-## Transparency upgrade (optional)
-Day 1 uses background removal in postprocess. For **native alpha**, add
-[LayerDiffuse](https://github.com/huchenlei/ComfyUI-layerdiffuse) nodes to the
-workflow and set `transparency.native: true` in `style.yaml`.
-
-## Swapping to a paid engine
-Set `style.yaml engine: openai` and point `generate.mjs` at `gpt-image-1`
-(`background:transparent`, `output_format:png`). ~$0.02–0.19/image. The manifest
-and postprocess stay identical. Flag the spend per the team budget constraint first.

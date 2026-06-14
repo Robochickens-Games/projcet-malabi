@@ -116,7 +116,6 @@ assets:
     kind: scene
     variants: 1
     size: 1344x768                         # 16:9, matches the SVG layout layers
-    workflow: workflows/controlnet-pixel.json   # SDXL + pixel-art LoRA + Canny ControlNet
     control:
       image: out/control/lobby-control.png  # rendered from art.js by render-control.mjs
       strength: 0.8                          # layout adherence: 1.0 strict, ~0.5 loose
@@ -147,7 +146,6 @@ assets:
     kind: scene
     variants: 1
     size: 1344x768
-    workflow: workflows/controlnet.json     # ControlNet from the shell, no LoRA
     control:
       image: out/control/lobby-shell.png    # room WITHOUT wing arches
       strength: 0.85
@@ -176,7 +174,6 @@ assets:
     kind: sprite
     variants: 1
     size: 832x1216
-    workflow: workflows/layerdiffuse.json   # native RGBA — no bg removal needed
     style: *aaa
     prompt: >-
       an ornate Art Deco museum archway doorway, tall rounded stone arch with
@@ -207,7 +204,6 @@ assets:
     kind: sprite
     variants: 1
     size: 1024x1024
-    workflow: workflows/layerdiffuse.json
     style:
       prefix: >-
         premium hand-painted adventure-game prop, highly detailed digital painting,
@@ -301,7 +297,6 @@ assets:
     kind: scene
     variants: 1
     size: 2816x640
-    workflow: workflows/styleref.json
     styleref: ../../brain/images/landscape dino.png
     styleweight: 0.45
     style:
@@ -354,7 +349,6 @@ assets:
     kind: sprite
     variants: 1
     size: 832x1216
-    workflow: workflows/controlnet.json     # geometry locked to the demo's clip path
     control:
       image: out/control/door-control.png   # rendered by scripts/render-door-control.mjs
       strength: 0.9
@@ -442,7 +436,6 @@ assets:
     kind: scene
     variants: 1
     size: 1432x720
-    workflow: workflows/controlnet.json
     control: { image: out/control/grove-clouds.png, strength: 0.85 }
     style: &grovestyle
       prefix: >-
@@ -459,7 +452,6 @@ assets:
     kind: scene
     variants: 1
     size: 1680x720
-    workflow: workflows/controlnet.json
     control: { image: out/control/grove-mountains.png, strength: 0.85 }
     style: *grovestyle
     prompt: layered misty mountain ridges on the horizon, hazy atmospheric blue-green silhouettes
@@ -468,7 +460,6 @@ assets:
     kind: scene
     variants: 1
     size: 1936x720
-    workflow: workflows/controlnet.json
     control: { image: out/control/grove-treeline.png, strength: 0.85 }
     style: *grovestyle
     prompt: a dense band of round-canopy prehistoric jungle trees, varied green crowns with slim trunks
@@ -477,7 +468,6 @@ assets:
     kind: scene
     variants: 1
     size: 1936x720
-    workflow: workflows/controlnet.json
     control: { image: out/control/grove-ground.png, strength: 0.85 }
     style: *grovestyle
     prompt: a jungle dirt trail ground band, warm earth and scattered grass tufts, walkable path
@@ -486,7 +476,6 @@ assets:
     kind: scene
     variants: 1
     size: 1024x712
-    workflow: workflows/controlnet.json
     control: { image: out/control/grove-canopy.png, strength: 0.85 }
     style: *grovestyle
     prompt: a hanging cluster of lush jungle canopy palm fronds and leaves
@@ -495,7 +484,6 @@ assets:
     kind: scene
     variants: 1
     size: 1024x624
-    workflow: workflows/controlnet.json
     control: { image: out/control/grove-bush.png, strength: 0.85 }
     style: *grovestyle
     prompt: a single lush rounded jungle bush with big leaves
@@ -507,7 +495,6 @@ assets:
     kind: sprite
     variants: 1
     size: 1024x640
-    workflow: workflows/styleref-controlnet.json
     control: { image: out/control/el-cloud.png, strength: 0.72 }
     styleref: demo/img/dino-vista.png
     seed: r2
@@ -532,7 +519,6 @@ assets:
     kind: sprite
     variants: 1
     size: 1216x832
-    workflow: workflows/styleref-controlnet.json
     control: { image: out/control/el-mountain.png, strength: 0.85 }
     styleref: demo/img/styleref-mountain.png
     styleweight: 0.65
@@ -548,7 +534,6 @@ assets:
     kind: sprite
     variants: 1
     size: 832x1216
-    workflow: workflows/styleref-controlnet.json
     control: { image: out/control/el-tree.png, strength: 0.72 }
     styleref: demo/img/dino-vista.png
     style: *elstyle
@@ -574,7 +559,6 @@ assets:
     kind: scene
     variants: 1
     size: 1680x720
-    workflow: workflows/styleref-controlnet.json
     control: { image: out/control/grove-mountains.png, strength: 0.65 }
     styleref: demo/img/dino-hall.png
     styleweight: 0.75
@@ -589,7 +573,6 @@ assets:
     kind: scene
     variants: 1
     size: 1936x720
-    workflow: workflows/styleref-controlnet.json
     control: { image: out/control/dino-treeband.png, strength: 0.7 }
     styleref: demo/img/dino-hall.png
     styleweight: 0.75
@@ -604,7 +587,6 @@ assets:
     kind: scene
     variants: 1
     size: 2816x512
-    workflow: workflows/styleref-controlnet.json
     control: { image: out/control/dino-groundband.png, strength: 0.7 }
     styleref: demo/img/dino-hall.png
     styleweight: 0.75

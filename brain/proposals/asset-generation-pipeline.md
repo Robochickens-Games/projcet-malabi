@@ -2,11 +2,18 @@
 name: asset-generation-pipeline
 description: A manifest-driven, style-consistent AI pipeline that generates transparent-PNG game assets at scale; free local engine (ComfyUI) primary, paid API as escape hatch
 owner: dor
-status: under-review
+status: decided
 area: design
 created: 2026-06-12
 reviewers: [gidi, ohad]
 ---
+
+> **Decided (2026-06-14):** The pipeline shape (manifest-as-code, locked style,
+> swappable engine) is adopted, but the **free-local ComfyUI engine was tried and
+> dropped** — too heavy (~22 GB), off-target quality. See
+> [[0004-drop-local-comfyui-engine]]. The manifest, post-processing, and committed
+> product remain; a paid hosted API is the path when generation resumes. The
+> ComfyUI-specific "Engine" recommendation and open question below are superseded.
 
 # Asset generation pipeline
 

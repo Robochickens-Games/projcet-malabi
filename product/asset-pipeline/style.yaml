@@ -3,7 +3,9 @@
 # them. Distilled from brain/memory/shared/art-direction.md. Change it rarely;
 # when you do, regenerate everything so the set stays coherent.
 
-engine: comfyui            # comfyui (free/local) | openai (paid) — generate.mjs reads this
+# engine: the local ComfyUI engine was removed (too heavy, off-target results).
+# A future paid-API generator plugs in here — see README. The manifest below and
+# the style contract stay engine-agnostic.
 
 # per-wing STYLE ANCHORS — every generation is style-transferred from its wing's
 # hall panorama unless the asset overrides. This is what keeps 100 assets coherent.
@@ -12,9 +14,6 @@ stylerefs:
   dinosaurs: demo/img/dino-hall.png
   space: demo/img/space-hall.png
   inventions: demo/img/inventions-hall.png
-default_sprite_workflow: workflows/styleref.json
-host: http://127.0.0.1:8188   # ComfyUI server (default when you run it locally)
-workflow: workflows/transparent-painterly.json
 
 # --- the prompt contract ---------------------------------------------------
 # Every asset's prompt is built as:  style_prefix + ", " + asset.prompt + ", " + style_suffix

@@ -61,10 +61,11 @@ After writing a memory, add a one-line pointer below under the right section.
 ## Proposals (under review)
 - [dinosaur-section-mechanics](../proposals/dinosaur-section-mechanics.md) — 15 mechanic ideas for the dino wing; recommended trio: Time Lens + Fossil Detective Board + Living Diorama
 - [puzzle-brush-away-the-dust](../proposals/puzzle-brush-away-the-dust.md) — first dino puzzle: find brush → brush rock in layers → reveal out-of-place ammonite
-- [asset-generation-pipeline](../proposals/asset-generation-pipeline.md) — manifest-driven AI pipeline for style-consistent transparent-PNG assets at scale; free ComfyUI primary, scaffold built in product/asset-pipeline/
+- [asset-generation-pipeline](../proposals/asset-generation-pipeline.md) — DECIDED: manifest-driven pipeline adopted, but free-local ComfyUI engine dropped (see 0004); manifest + post-process + product kept, paid API is the path
 
 ## Decisions
 - [0003-first-product-direction-science-games-for-kids](../decisions/0003-first-product-direction-science-games-for-kids.md) — proposed: kids science games niche, ASO topic research, Apple feature design bar, click-to-play gameplay held to six engagement principles (Ohad review pending)
+- [0004-drop-local-comfyui-engine](../decisions/0004-drop-local-comfyui-engine.md) — accepted: removed the local ComfyUI + SDXL engine (~22 GB freed, off-target quality); manifest/post-process/product kept engine-agnostic, paid hosted API when generation resumes
 
 ## Projects
 _(none yet — first initiative creates `memory/projects/<slug>/` and a section here)_
