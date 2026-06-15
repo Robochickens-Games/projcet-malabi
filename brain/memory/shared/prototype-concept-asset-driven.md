@@ -23,6 +23,20 @@ a `prebuild` step (`scripts/sync-layout.mjs`) bakes `.layout.json` →
 matches the last local layout. Re-running `vercel deploy --prod` after edit-mode
 changes now carries them through.
 
+**Mobile-Safari crash fixed (2026-06-15):** the deployed concept hit iOS Safari's
+"A problem repeatedly occurred" (tab killed on memory pressure, reload-loops).
+Cause: the painted props were authored at 3000+px / 4–7.6 MB each (~22 images),
+≈**310 MB of decoded RGBA bitmaps** held at once — over the per-tab budget;
+amplified by a per-`.prop` `drop-shadow` filter + fullscreen blur/blend FX. Fix
+(done): downscaled every oversized PNG to a **1600px long-edge cap** with `sips`
+(tooth → 800), no format/path change. Decoded memory **310 → 76 MB**, on-disk
+**97 → 29 MB**; redeployed, layout intact. Originals backed up at
+`product/prototypes/_museum-concept-orig-assets/` (sibling, outside the Vercel
+project root so it's never uploaded). Still-available follow-ups if needed: drop
+the mobile drop-shadow and gate the FX behind a touch check. **Asset rule going
+forward:** keep dropped-in art ≤~1600px on the long edge — full-res exports crash
+the phone.
+
 **What:** A second concept test in `product/prototypes/museum-concept/`
 (`npm install && npm run dev` to run locally).
 Sibling to the wireframe [[prototype-parallax-first-slice]]: same
