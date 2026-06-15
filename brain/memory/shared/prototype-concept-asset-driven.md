@@ -32,10 +32,23 @@ amplified by a per-`.prop` `drop-shadow` filter + fullscreen blur/blend FX. Fix
 (tooth → 800), no format/path change. Decoded memory **310 → 76 MB**, on-disk
 **97 → 29 MB**; redeployed, layout intact. Originals backed up at
 `product/prototypes/_museum-concept-orig-assets/` (sibling, outside the Vercel
-project root so it's never uploaded). Still-available follow-ups if needed: drop
-the mobile drop-shadow and gate the FX behind a touch check. **Asset rule going
+project root so it's never uploaded). **Asset rule going
 forward:** keep dropped-in art ≤~1600px on the long edge — full-res exports crash
 the phone.
+
+**Round 2 — still crashed; low-FX mobile mode (2026-06-15):** shrinking assets
+alone wasn't enough because the concept renders in **DOM layers** (unlike the
+Pixi/WebGL [[prototype-parallax-first-slice]], which is one canvas). Each of
+~16 parallax layers rides its own `translate3d` compositing layer under a
+`scale()`-d world, every `.prop` carries a `drop-shadow` filter, and the
+cinematic FX are fullscreen `blur(22px)` + `mix-blend-mode` overlays driven every
+rAF frame — on iOS those filtered/blended backing stores pile up and blow the
+budget regardless of image bytes. Fix: a `LOW_FX` flag
+(`matchMedia('(hover:none) and (pointer:coarse)')`) adds a `.lowfx` body class on
+touch devices that (a) **skips `setupFx()`** entirely and (b) CSS-removes the
+per-prop `drop-shadow`, the FX overlays, and the modal `backdrop-filter`. Desktop
+keeps the full look. **Lesson:** DOM-layer parallax is memory-cheap to author but
+GPU-heavy on mobile — filters/blends are the cost, not just pixels.
 
 **What:** A second concept test in `product/prototypes/museum-concept/`
 (`npm install && npm run dev` to run locally).
