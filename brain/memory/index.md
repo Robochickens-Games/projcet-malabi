@@ -61,6 +61,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [scientific-realism-rule](shared/scientific-realism-rule.md) — all game imagery depicts real, scientifically accurate artifacts; painterly style stays, subjects must be real
 - [dino-accuracy-rulings](shared/dino-accuracy-rulings.md) — settled paleontology verdicts for the dino roster (Velociraptor feathered, Triceratops scaly, tooth-shape→diet); don't re-litigate, append new rulings
 - [mobile-shipping-webview-wrap](shared/mobile-shipping-webview-wrap.md) — path to App Store / Play is a WebView wrapper (Capacitor / Expo-webview), reuses ~95% of the web code; native React Native would only salvage game logic, so keep building web-first
+- [blender-asset-experiment-flop](shared/blender-asset-experiment-flop.md) — 🎈 Flop watch: Dor's try at auto-generating game assets straight from Blender produced a balloon-blob "Triceratops" (pink sphere up front, hornless aardvark in profile); off art-direction + accuracy bar, lessons logged, paid hosted-API pipeline still the path
 
 ## Members
 ### Dor
