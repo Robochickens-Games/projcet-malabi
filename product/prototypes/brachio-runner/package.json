@@ -1,0 +1,18 @@
+{
+  "name": "brachio-runner-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Brachiosaurus endless runner — low-poly Three.js mechanics prototype (lane-based, jump, collect leaves/berries)",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
