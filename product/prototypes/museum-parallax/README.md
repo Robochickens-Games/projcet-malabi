@@ -73,3 +73,9 @@ when the tooth is found and when you reach the skeleton. Desktop is unchanged
 - Science note: herbivore copy says **ferns and leaves**, not grass — grass
   barely existed in the dinosaurs' era. Vet final copy with the
   `paleontologist` skill.
+- Deploy gotcha: `src/brachioGame.js` imports the Brachio minigame from the
+  sibling `../../brachio-runner/src/runner.js`. That sibling prototype **must be
+  committed** or the Vercel build fails (`Could not resolve …/brachio-runner`).
+  The cloud build clones the whole repo, so the import resolves there — it just
+  needs the files in git. Vercel's Root Directory is this folder, so a deploy is
+  only triggered by commits that touch `product/prototypes/museum-parallax/`.
