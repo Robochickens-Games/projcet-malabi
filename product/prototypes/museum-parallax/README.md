@@ -22,23 +22,41 @@ Open the printed URL (works on a phone over the same Wi-Fi).
 2. **Dinosaur Wing → Nesting Grove** (3840px world) — a jungle trail. Layer
    stack: clouds+sun 0.1× · mountains 0.3× · treeline 0.5× · trail+scene 1.0× ·
    canopy/bush foreground 1.42×. Each wireframe layer carries its speed tag.
-3. Arrive at the **skeleton + field guide**: four tooth-type cards
-   (carnivore / piscivore / insectivore / herbivore). Wrong picks shake and
-   teach; **broad & flat → herbivore** glows the skeleton (Triceratops) and
-   awards Fossil Fragment 1/4.
+3. Arrive at the **skeleton with a missing tooth**. Open the **Inventory** panel
+   (right) and **drag the fossil tooth onto the dinosaur** — drop it on the
+   skeleton and it flies into the jaw, locks in (Triceratops), a **placeholder
+   success video** plays, and you earn Fossil Fragment 1/4. (The old field-guide
+   tooth-matching mini-game was removed.)
+
+**Two side panels** (toggle with the 📖 Catalog / 🎒 Inventory buttons in the HUD):
+- **Catalog** (left) — a **field guide that opens on a cover**: a crest, a title,
+  and a tappable list of **sections** (start: **Teeth** · **Covering**). Tap a
+  section to read it, **‹ Sections** to return. *Teeth* is the species/tooth
+  reference; *Covering* is scaffolded ("Soon") for scales/skin/feathers content. Add a section
+  by pushing to `CATALOG_SECTIONS` in `src/main.js`.
+- **Inventory** (right) — your finds; drag an item onto an exhibit to use it.
 
 **Controls:** drag / fling, scroll wheel, arrow keys (with acceleration), or
-device tilt. BAG opens the dino field-notes; HINT nudges.
+device tilt to walk. Gestures that start on a panel or the HUD don't move the
+camera. HINT nudges.
 
 **Mobile:** the game is landscape — phones held in portrait get a
 rotate-your-phone overlay. The ⛶ HUD button enters fullscreen and (on Android)
 locks landscape. iPhone Safari has no fullscreen API, so the button hides
 there; "Add to Home Screen" gives true fullscreen instead.
 
+On phones both side panels **start closed** so the world fills the screen, and
+only **one is open at a time** (opening one tucks the other away). When opened
+they become **roomy sheets** instead of thin rails: the Catalog browses items in
+a readable 2-up grid you can scan; the Inventory shows big, grabbable slots. The
+game still surfaces the inventory automatically at the moments that need it —
+when the tooth is found and when you reach the skeleton. Desktop is unchanged
+(both panels open as side rails).
+
 ## Structure (for the art handoff)
 
 - `src/wireframe.js` — all blockout art + the world layout constants
-  (`LOBBY_SPOTS`, `GROVE_SPOTS`, `GUIDE`). Drawings and hotspots share these,
+  (`LOBBY_SPOTS`, `GROVE_SPOTS` incl. the jaw `socket`). Drawings and hotspots share these,
   so repositioning is one edit. Replacing a wireframe layer = swapping the SVG
   string for a painted texture of the same world width.
 - `src/main.js` — camera/scroll engine, input, game flow. Scene = a world width

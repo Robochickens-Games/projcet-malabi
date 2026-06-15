@@ -1,10 +1,10 @@
 // Low-fidelity blockout art for the side-scrolling prototype.
 // Filled silhouettes + outlines + labels on ink — placeholder geometry to be
 // replaced 1:1 by painted layers later. Single source of truth for world
-// layout: the exported *_SPOTS / GUIDE constants drive both the drawings and
-// the hotspots. Fills are depth-graded (far = darker/recedes, near = lighter)
+// layout: the exported *_SPOTS constants drive both the drawings and the
+// hotspots. Fills are depth-graded (far = darker/recedes, near = lighter)
 // so the parallax reads even before real art.
-import { SILHOUETTES, toothSVGInner } from './art.js'
+import { SILHOUETTES } from './art.js'
 
 export const INK = '#0d141d'
 const FAR = '#44606f'
@@ -139,22 +139,13 @@ export function lobbyForeSVG() {
 
 export const GROVE_W = 3840
 
-export const GUIDE = {
-  cards: [
-    { name: 'carnivore', tooth: 'blade', label: 'CARNIVORE', sub: 'sharp + pointed', x: 3140, y: 330, w: 210, h: 200,
-      hint: 'Sharp & pointed — a meat slicer! Your tooth has a broad, flat edge…' },
-    { name: 'piscivore', tooth: 'cone', label: 'PISCIVORE', sub: 'smooth cone', x: 3390, y: 330, w: 210, h: 200,
-      hint: 'A smooth cone for gripping slippery fish. Yours is wide and flat…' },
-    { name: 'insectivore', tooth: 'cone', small: true, label: 'INSECTIVORE', sub: 'tiny + pointy', x: 3140, y: 570, w: 210, h: 200,
-      hint: 'Tiny and pointy, for crunching bugs. Yours is much bigger — and flat…' },
-    { name: 'herbivore', tooth: 'leaf', label: 'HERBIVORE', sub: 'broad + flat', x: 3390, y: 570, w: 210, h: 200, correct: true },
-  ],
-}
-
 export const GROVE_SPOTS = {
   backPost: { x: 130, y: 600, w: 220, h: 300 },
   placard: { x: 2130 },
   skeleton: { x: 2700, y: 430, w: 640, h: 460 },
+  socket: { x: 2440, y: 685 },   // the empty jaw — where the player places the tooth
+  feather: { x: 2050, y: 905 },  // a stray feather on the trail — belongs to the raptor
+                                 // (rides a 1.2x layer; the 1.42x bush in front reveals it as you walk)
   tray: { x: 2480, y: 940 },     // top-left of the FOUND CLUES tray
   bag: { x: 2280, y: 1000 },
   hint: { x: 3760, y: 1000 },
@@ -227,17 +218,6 @@ export function groveMainSVG() {
       <line x1="${x + 42}" y1="880" x2="${x + 50}" y2="856"/></g>`
   }
 
-  // tooth-type cards in the field guide
-  const card = (c) => `
-    <g transform="translate(${c.x},${c.y})">
-      <rect x="0" y="0" width="${c.w}" height="${c.h}" rx="10" stroke="${MAIN}" stroke-width="3" fill="${PAPER_F}"/>
-      <g transform="translate(${c.w / 2 - 38},22) scale(0.76) ${c.small ? 'translate(22,30) scale(0.6)' : ''}">
-        ${toothSVGInner(c.tooth, BONE_F, MAIN)}
-      </g>
-      ${tag(c.w / 2, c.h - 32, c.label, MAIN, 17)}
-      ${tag(c.w / 2, c.h - 10, c.sub, FAR, 14)}
-    </g>`
-
   const S = GROVE_SPOTS
   return `${svgOpen(GROVE_W, 1080)}
     <rect x="0" y="880" width="${GROVE_W}" height="200" fill="${MAIN_F}"/>
@@ -263,24 +243,14 @@ export function groveMainSVG() {
       ${[706, 726, 746, 766, 786].map((y) => `<line x1="-62" y1="${y}" x2="62" y2="${y}" stroke="${FAR}" stroke-width="3"/>`).join('')}
     </g>
 
-    <!-- the skeleton mount -->
+    <!-- the skeleton mount, with an empty jaw socket to fill -->
     <g transform="translate(${S.skeleton.x},0)">
       <line x1="-320" y1="880" x2="320" y2="880" stroke="${MAIN}" stroke-width="6"/>
       <g transform="translate(-310,388) scale(0.9)">${SILHOUETTES.trike(BONE_F, '#223039', MAIN)}</g>
       <g fill="none" stroke="${MAIN}" stroke-width="2" opacity="0.6">
         <rect x="-320" y="350" width="640" height="530" rx="14" stroke-dasharray="10 8"/>
       </g>
-      ${tag(0, 330, 'SKELETON — WHOSE TOOTH?', GOLD, 22)}
     </g>
-
-    <!-- field guide -->
-    <g stroke="${MAIN}" stroke-width="4">
-      <rect x="3105" y="290" width="530" height="520" rx="14" fill="${PAPER_F}"/>
-      <line x1="3370" y1="290" x2="3370" y2="810"/>
-      <line x1="3370" y1="810" x2="3370" y2="880"/>
-    </g>
-    ${tag(3370, 270, 'FIELD GUIDE — TAP THE MATCHING TOOTH', GOLD, 20)}
-    ${GUIDE.cards.map(card).join('')}
 
     <!-- found clues tray -->
     <g transform="translate(${S.tray.x},${S.tray.y})">
@@ -316,5 +286,429 @@ export function bushSVG() {
     <g stroke="${FORE}" stroke-width="3" fill="none">
       <line x1="95" y1="160" x2="105" y2="80"/><line x1="160" y1="160" x2="150" y2="60"/>
     </g>
+  ${'</svg>'}`
+}
+
+/* ===================== DINO HALL — the dino-wing hub (world: 4700) =====================
+   A gallery of dioramas, one per dino. Each framed niche is a tappable door into
+   that dino's room. */
+
+export const DINOHUB_W = 4700
+
+export const DINOHUB_SPOTS = {
+  back: { x: 120, label: 'LOBBY' },               // ‹ back to the museum lobby (left)
+  trike: { x: 900, w: 460, h: 660 },              // → TRICERATOPS grove
+  ptero: { x: 1700, w: 460, h: 660 },             // → PTERODACTYL sea cliffs
+  trex: { x: 2500, w: 460, h: 660 },              // → T-REX forest
+  raptor: { x: 3300, w: 460, h: 660 },            // → VELOCIRAPTOR badlands
+  brachio: { x: 4100, w: 460, h: 660 },           // → BRACHIOSAURUS plains
+}
+
+// the diorama order shown in the hall (also the catalog order)
+export const DINOHUB_ORDER = [
+  ['trike', 'TRICERATOPS'], ['ptero', 'PTERODACTYL'], ['trex', 'T-REX'],
+  ['raptor', 'VELOCIRAPTOR'], ['brachio', 'BRACHIOSAURUS'],
+]
+
+export function dinohubBackSVG() {
+  const W = 3900
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="150" width="${W}" height="710" fill="${WALL_F}"/>
+    <g stroke="${FAR}" stroke-width="3" fill="none">
+      <line x1="0" y1="150" x2="${W}" y2="150"/><line x1="0" y1="860" x2="${W}" y2="860"/>
+    </g>
+    ${tag(W / 2, 112, 'HALL OF DINOSAURS', FAR, 30)}
+    ${speedTag('LAYER: BACK WALL · 0.3x')}
+  ${'</svg>'}`
+}
+
+export function dinohubMainSVG() {
+  const S = DINOHUB_SPOTS
+  // a framed niche with the dino inside, a nameplate, and an ENTER cue
+  const diorama = (x, sil, label) => `
+    <g transform="translate(${x},0)">
+      <rect x="-230" y="200" width="460" height="660" rx="18" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="5"/>
+      <path d="M-208,300 A208,150 0 0 1 208,300" fill="none" stroke="${GOLD}" stroke-width="3"/>
+      <rect x="-210" y="720" width="420" height="140" fill="${MID_F}"/>
+      <g transform="translate(-252,374) scale(0.72)">${sil}</g>
+      <rect x="-150" y="772" width="300" height="54" rx="10" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="3"/>
+      ${tag(0, 808, label, GOLD, 18)}
+      ${tag(0, 262, '[ ENTER ]', GOLD, 18)}
+    </g>`
+  let ticks = ''
+  for (let x = 40; x < DINOHUB_W; x += 120) ticks += `<line x1="${x}" y1="880" x2="${x - 18}" y2="912" stroke="${MAIN}" stroke-width="2" opacity="0.5"/>`
+  const dioramas = DINOHUB_ORDER.map(([id, label]) => diorama(S[id].x, SILHOUETTES[id](BONE_F, '#223039', MAIN), label)).join('')
+  return `${svgOpen(DINOHUB_W, 1080)}
+    <rect x="0" y="880" width="${DINOHUB_W}" height="200" fill="${MAIN_F}"/>
+    <line x1="0" y1="880" x2="${DINOHUB_W}" y2="880" stroke="${MAIN}" stroke-width="4"/>
+    ${ticks}
+    <!-- ‹ back to lobby -->
+    <g transform="translate(${S.back.x + 90},0)">
+      <line x1="0" y1="880" x2="0" y2="600" stroke="${GOLD}" stroke-width="4"/>
+      <rect x="-100" y="552" width="200" height="58" rx="8" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
+    </g>
+    ${tag(S.back.x + 90, 588, '&#8592; LOBBY', GOLD, 20)}
+    ${dioramas}
+    ${speedTag('LAYER: GALLERY · 1.0x')}
+  ${'</svg>'}`
+}
+
+export function dinohubForeSVG() {
+  const W = 5000
+  const column = (x) => `
+    <g transform="translate(${x},0)" stroke="${FORE}" stroke-width="5">
+      <rect x="-44" y="60" width="88" height="980" fill="${FORE_F}"/>
+      <rect x="-66" y="20" width="132" height="44" fill="${FORE_F}"/>
+      <rect x="-66" y="1010" width="132" height="40" fill="${FORE_F}"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    ${[480, 1300, 2100, 2900, 3700, 4520].map(column).join('')}
+    ${speedTag('LAYER: FOREGROUND · 1.35x')}
+  ${'</svg>'}`
+}
+
+/* ===================== VELOCIRAPTOR ROOM — arid badlands (world: 3600) ===================== */
+
+export const RAPTOR_W = 3600
+
+export const RAPTOR_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 1500 },
+  skeleton: { x: 2300, y: 380, w: 560, h: 500 },
+  socket: { x: 2240, y: 612 },   // on the raptor's feathered arm/back (not drawn)
+  clue: { x: 2050, y: 905 },     // a T-REX tooth hidden behind a rock here
+  hint: { x: 3360, y: 1000 },
+}
+
+const SAND = '#9c8a52'
+const D_FAR = '#2b2718'
+const D_MID = '#393320'
+const D_MAIN = '#4a4327'
+const D_FORE = '#5c5430'
+
+function dunes(W, baseY, amp, fill) {
+  const step = 360
+  let d = `M-40,1080 L-40,${baseY}`
+  for (let x = -40, i = 0; x <= W + 40; x += step, i++) {
+    const cy = baseY - amp * (0.5 + ((i * 5) % 7) / 9)
+    d += ` Q ${x + step / 2},${cy} ${x + step},${(baseY - amp * 0.2).toFixed(0)}`
+  }
+  d += ` L${W + 40},1080 Z`
+  return `<path d="${d}" fill="${fill}" stroke="${SAND}" stroke-width="3"/>`
+}
+
+export function raptorSkySVG() {
+  const W = 2200
+  let rays = ''
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4
+    rays += `<line x1="${1700 + Math.cos(a) * 64}" y1="${280 + Math.sin(a) * 64}"
+                   x2="${1700 + Math.cos(a) * 98}" y2="${280 + Math.sin(a) * 98}" stroke="${GOLD}" stroke-width="3"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="0" width="${W}" height="1080" fill="#241a0c"/>
+    <circle cx="1700" cy="280" r="60" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="3"/>
+    ${rays}
+    ${speedTag('LAYER: DESERT SKY + SUN · 0.1x')}
+  ${'</svg>'}`
+}
+
+export function raptorDunesFarSVG() {
+  const W = 2600
+  return `${svgOpen(W, 1080)}
+    ${dunes(W, 720, 150, D_FAR)}
+    ${speedTag('LAYER: FAR DUNES · 0.3x')}
+  ${'</svg>'}`
+}
+
+export function raptorDunesMidSVG() {
+  const W = 2950
+  let rocks = ''
+  for (let x = 120, i = 0; x < W; x += 520, i++) {
+    rocks += `<path d="M${x},860 l40,-90 l60,40 l50,-60 l70,110 Z" fill="${D_MID}" stroke="${SAND}" stroke-width="3"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    ${dunes(W, 820, 110, D_MID)}
+    ${rocks}
+    ${speedTag('LAYER: NEAR DUNES · 0.5x')}
+  ${'</svg>'}`
+}
+
+export function raptorMainSVG() {
+  const S = RAPTOR_SPOTS
+  let ticks = ''
+  for (let x = 30, i = 0; x < RAPTOR_W; x += 130, i++) {
+    ticks += `<line x1="${x}" y1="880" x2="${x - 20}" y2="914" stroke="${SAND}" stroke-width="2" opacity="0.5"/>`
+    if (i % 3 === 0) ticks += `<path d="M${x + 50},880 l9,-22 l15,4 l6,18 Z" fill="${D_MID}" stroke="${SAND}" stroke-width="2"/>`
+  }
+  return `${svgOpen(RAPTOR_W, 1080)}
+    <rect x="0" y="880" width="${RAPTOR_W}" height="200" fill="${D_MAIN}"/>
+    <line x1="0" y1="880" x2="${RAPTOR_W}" y2="880" stroke="${SAND}" stroke-width="4"/>
+    ${ticks}
+    <!-- ‹ back to the dino hall -->
+    <g transform="translate(${S.backPost.x + 110},0)">
+      <line x1="0" y1="880" x2="0" y2="640" stroke="${GOLD}" stroke-width="4"/>
+      <rect x="-120" y="590" width="240" height="60" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
+    </g>
+    ${tag(S.backPost.x + 110, 628, '&#8592; DINO HALL', GOLD, 20)}
+    <!-- placard -->
+    <g transform="translate(${S.placard.x},0) rotate(-3)">
+      <rect x="-85" y="640" width="170" height="200" rx="8" stroke="${SAND}" stroke-width="3" fill="${PAPER_F}"/>
+      ${tag(0, 680, 'PLACARD', SAND, 16)}
+      ${[706, 726, 746, 766, 786].map((y) => `<line x1="-62" y1="${y}" x2="62" y2="${y}" stroke="${D_MID}" stroke-width="3"/>`).join('')}
+    </g>
+    <!-- the raptor skeleton mount -->
+    <g transform="translate(${S.skeleton.x},0)">
+      <line x1="-300" y1="880" x2="300" y2="880" stroke="${SAND}" stroke-width="6"/>
+      <g transform="translate(-280,400) scale(0.9)">${SILHOUETTES.raptor(BONE_F, '#2a2415', SAND)}</g>
+      <g fill="none" stroke="${SAND}" stroke-width="2" opacity="0.6">
+        <rect x="-300" y="330" width="600" height="550" rx="14" stroke-dasharray="10 8"/>
+      </g>
+    </g>
+    <!-- hint -->
+    <circle cx="${S.hint.x}" cy="${S.hint.y}" r="56" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
+    ${tag(S.hint.x, S.hint.y + 7, 'HINT', GOLD, 18)}
+    ${speedTag('LAYER: BADLANDS · 1.0x')}
+  ${'</svg>'}`
+}
+
+export function raptorRockSVG() {
+  return `${svgOpen(340, 230)}
+    <path d="M10,220 L70,90 L130,150 L196,60 L280,170 L330,220 Z" fill="${D_FORE}" stroke="${SAND}" stroke-width="5"/>
+  ${'</svg>'}`
+}
+
+/* ===================== shared room furniture ===================== */
+// every dino room reuses these: a back-exit post, a placard, the skeleton mount,
+// and a hint puck — only the palette + silhouette change.
+function roomBackPost(S, label) {
+  return `<g transform="translate(${S.backPost.x + 110},0)">
+      <line x1="0" y1="880" x2="0" y2="640" stroke="${GOLD}" stroke-width="4"/>
+      <rect x="-120" y="590" width="240" height="60" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
+    </g>
+    ${tag(S.backPost.x + 110, 628, label, GOLD, 20)}`
+}
+function roomPlacard(S, stroke) {
+  return `<g transform="translate(${S.placard.x},0) rotate(-3)">
+      <rect x="-85" y="640" width="170" height="200" rx="8" stroke="${stroke}" stroke-width="3" fill="${PAPER_F}"/>
+      ${tag(0, 680, 'PLACARD', stroke, 16)}
+      ${[706, 726, 746, 766, 786].map((y) => `<line x1="-62" y1="${y}" x2="62" y2="${y}" stroke="${stroke}" stroke-width="3" opacity="0.7"/>`).join('')}
+    </g>`
+}
+function roomMount(S, stroke, sil, ty = 400, scale = 0.9) {
+  return `<g transform="translate(${S.skeleton.x},0)">
+      <line x1="-300" y1="880" x2="300" y2="880" stroke="${stroke}" stroke-width="6"/>
+      <g transform="translate(-280,${ty}) scale(${scale})">${sil}</g>
+      <g fill="none" stroke="${stroke}" stroke-width="2" opacity="0.55">
+        <rect x="-300" y="300" width="600" height="580" rx="14" stroke-dasharray="10 8"/>
+      </g>
+    </g>`
+}
+function roomHint(S) {
+  return `<circle cx="${S.hint.x}" cy="${S.hint.y}" r="56" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
+    ${tag(S.hint.x, S.hint.y + 7, 'HINT', GOLD, 18)}`
+}
+function roomFloorTicks(W, stroke) {
+  let t = ''
+  for (let x = 30; x < W; x += 130) t += `<line x1="${x}" y1="880" x2="${x - 20}" y2="914" stroke="${stroke}" stroke-width="2" opacity="0.5"/>`
+  return t
+}
+
+/* ===================== T-REX ROOM — dim conifer forest (world: 3600) ===================== */
+
+export const TREX_W = 3600
+export const TREX_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 1500 },
+  skeleton: { x: 2300, y: 360, w: 600, h: 520 },
+  socket: { x: 2130, y: 662 },   // the T-rex jaw — place the T-REX TOOTH
+  clue: { x: 2050, y: 905 },     // a BRACHIOSAURUS egg hidden behind a fern
+  foot: { x: 1150, y: 880 },     // the foot-assembly station (drag bones here)
+  hint: { x: 3360, y: 1000 },
+}
+
+const F_LEAF = '#5f8a63'
+const F_FAR = '#16261b'
+const F_MID = '#1e3325'
+const F_MAIN = '#284233'
+const F_FORE = '#35543f'
+const conifer = (x, baseY, h, fill) => `<g stroke="${F_LEAF}" stroke-width="3" fill="${fill}">
+  <polygon points="${x},${baseY - h} ${x - h * 0.34},${baseY} ${x + h * 0.34},${baseY}"/>
+  <polygon points="${x},${baseY - h * 0.66} ${x - h * 0.27},${baseY - h * 0.26} ${x + h * 0.27},${baseY - h * 0.26}"/>
+  <line x1="${x}" y1="${baseY}" x2="${x}" y2="${baseY + 22}"/></g>`
+
+export function trexSkySVG() {
+  return `${svgOpen(2200, 1080)}
+    <rect width="2200" height="1080" fill="#0e1a13"/>
+    <ellipse cx="1500" cy="240" rx="260" ry="160" fill="#1c3326" opacity="0.7"/>
+    ${speedTag('LAYER: FOREST HAZE · 0.15x')}
+  ${'</svg>'}`
+}
+export function trexFarSVG() {
+  const W = 2600
+  let t = ''
+  for (let x = 60, i = 0; x < W; x += 150, i++) t += conifer(x, 760, 260 + ((i * 7) % 4) * 30, F_FAR)
+  return `${svgOpen(W, 1080)}${t}${speedTag('LAYER: FAR CONIFERS · 0.3x')}</svg>`
+}
+export function trexMidSVG() {
+  const W = 2950
+  let t = ''
+  for (let x = 80, i = 0; x < W; x += 210, i++) t += conifer(x, 850, 330 + ((i * 5) % 3) * 44, F_MID)
+  return `${svgOpen(W, 1080)}${t}${speedTag('LAYER: TREELINE · 0.5x')}</svg>`
+}
+export function trexMainSVG() {
+  const S = TREX_SPOTS
+  return `${svgOpen(TREX_W, 1080)}
+    <rect x="0" y="880" width="${TREX_W}" height="200" fill="${F_MAIN}"/>
+    <line x1="0" y1="880" x2="${TREX_W}" y2="880" stroke="${F_LEAF}" stroke-width="4"/>
+    ${roomFloorTicks(TREX_W, F_LEAF)}
+    ${roomBackPost(S, '&#8592; DINO HALL')}
+    ${roomPlacard(S, F_LEAF)}
+    ${roomMount(S, F_LEAF, SILHOUETTES.trex(BONE_F, '#1a2a20', F_LEAF))}
+    <!-- foot-assembly station -->
+    ${tag(S.foot.x, 556, 'REBUILD THE FOOT', GOLD, 18)}
+    ${tag(S.foot.x, 582, 'drag the bones — match the catalog’s 3-toed track', F_LEAF, 13)}
+    ${roomHint(S)}
+    ${speedTag('LAYER: FOREST FLOOR · 1.0x')}
+  ${'</svg>'}`
+}
+export function trexFernSVG() {
+  return `${svgOpen(320, 240)}
+    <g stroke="${F_LEAF}" stroke-width="4" fill="${F_FORE}">
+      <path d="M160,240 C90,180 60,90 150,20 C170,110 180,170 160,240 Z"/>
+      <path d="M160,240 C230,180 260,90 170,20 C150,110 140,170 160,240 Z"/>
+    </g>
+  ${'</svg>'}`
+}
+
+/* ===================== BRACHIOSAURUS ROOM — open plains (world: 4000) ===================== */
+
+export const BRACHIO_W = 4000
+export const BRACHIO_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 1600 },
+  skeleton: { x: 2500, y: 280, w: 700, h: 600 },
+  socket: { x: 2150, y: 846 },   // an egg nest on the ground by its feet — place the EGG
+  clue: { x: 2050, y: 905 },     // PYCNOFIBERS hidden behind a grass tuft
+  hint: { x: 3760, y: 1000 },
+}
+
+const P_GRASS = '#b89a5a'
+const P_FAR = '#3a3a26'
+const P_MID = '#4a4327'
+const P_MAIN = '#5a4f2c'
+const P_FORE = '#6d6035'
+
+export function brachioSkySVG() {
+  return `${svgOpen(2200, 1080)}
+    <rect width="2200" height="1080" fill="#2a2410"/>
+    <circle cx="1700" cy="260" r="70" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="3"/>
+    ${speedTag('LAYER: PLAINS SKY · 0.1x')}
+  ${'</svg>'}`
+}
+export function brachioHillsSVG() {
+  const W = 2600
+  let d = `M-40,1080 L-40,780`
+  for (let x = -40, i = 0; x <= W + 40; x += 380, i++) d += ` Q ${x + 190},${720 - ((i * 5) % 5) * 24} ${x + 380},760`
+  d += ` L${W + 40},1080 Z`
+  return `${svgOpen(W, 1080)}<path d="${d}" fill="${P_FAR}" stroke="${P_GRASS}" stroke-width="3"/>${speedTag('LAYER: FAR HILLS · 0.3x')}</svg>`
+}
+export function brachioTreesSVG() {
+  const W = 2950
+  let t = ''
+  for (let x = 120, i = 0; x < W; x += 520, i++) t += `<g stroke="${P_GRASS}" stroke-width="4" fill="${P_MID}">
+    <line x1="${x}" y1="860" x2="${x}" y2="700"/><ellipse cx="${x}" cy="690" rx="${90 + (i % 2) * 24}" ry="34"/></g>`
+  return `${svgOpen(W, 1080)}${t}${speedTag('LAYER: ACACIAS · 0.5x')}</svg>`
+}
+export function brachioMainSVG() {
+  const S = BRACHIO_SPOTS
+  // a nest ring at the egg socket
+  const nest = `<g transform="translate(${S.socket.x},${S.socket.y})">
+    <ellipse cx="0" cy="6" rx="86" ry="26" fill="${P_MID}" stroke="${P_GRASS}" stroke-width="3"/>
+    <ellipse cx="0" cy="0" rx="58" ry="16" fill="${INK}" stroke="${P_GRASS}" stroke-width="2"/></g>`
+  return `${svgOpen(BRACHIO_W, 1080)}
+    <rect x="0" y="880" width="${BRACHIO_W}" height="200" fill="${P_MAIN}"/>
+    <line x1="0" y1="880" x2="${BRACHIO_W}" y2="880" stroke="${P_GRASS}" stroke-width="4"/>
+    ${roomFloorTicks(BRACHIO_W, P_GRASS)}
+    ${roomBackPost(S, '&#8592; DINO HALL')}
+    ${roomPlacard(S, P_GRASS)}
+    ${roomMount(S, P_GRASS, SILHOUETTES.brachio(BONE_F, '#2c2716', P_GRASS), 380, 0.92)}
+    ${nest}
+    ${roomHint(S)}
+    ${speedTag('LAYER: PLAINS · 1.0x')}
+  ${'</svg>'}`
+}
+export function brachioGrassSVG() {
+  return `${svgOpen(300, 200)}
+    <g stroke="${P_GRASS}" stroke-width="5" fill="none" stroke-linecap="round">
+      ${[60, 100, 140, 180, 220].map((x, i) => `<path d="M${x},200 Q${x - 10 + i * 4},90 ${x + 20},40"/>`).join('')}
+    </g>
+  ${'</svg>'}`
+}
+
+/* ===================== PTERODACTYL ROOM — sea cliffs + sky (world: 3400) ===================== */
+
+export const PTERO_W = 3400
+export const PTERO_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 1400 },
+  skeleton: { x: 2200, y: 240, w: 640, h: 460 },
+  socket: { x: 2240, y: 512 },   // on the flying pterosaur's body — place the PYCNOFIBERS
+  hint: { x: 3160, y: 1000 },
+}
+
+const C_LINE = '#7fa6c0'
+const C_SKY = '#16242f'
+const C_SEA = '#1d3344'
+const C_FAR = '#22384a'
+const C_MAIN = '#2c4458'
+const C_FORE = '#3a586e'
+
+export function pteroSkySVG() {
+  const W = 2200
+  const cloud = (cx, cy, rx) => `<g stroke="${C_FAR}" stroke-width="3" fill="#21384a">
+    <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${rx * 0.26}"/>
+    <ellipse cx="${cx - rx * 0.35}" cy="${cy - rx * 0.16}" rx="${rx * 0.5}" ry="${rx * 0.18}"/></g>`
+  return `${svgOpen(W, 1080)}
+    <rect width="${W}" height="1080" fill="${C_SKY}"/>
+    <circle cx="1600" cy="250" r="58" fill="#26415a" stroke="${C_LINE}" stroke-width="3"/>
+    ${cloud(360, 220, 150)}${cloud(900, 150, 180)}${cloud(1400, 280, 120)}${cloud(1980, 190, 150)}
+    ${speedTag('LAYER: SKY · 0.1x')}
+  ${'</svg>'}`
+}
+export function pteroSeaSVG() {
+  const W = 2600
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="640" width="${W}" height="160" fill="${C_SEA}"/>
+    <g stroke="${C_LINE}" stroke-width="2" opacity="0.4">
+      ${[670, 700, 730, 760].map((y) => `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`).join('')}
+    </g>
+    ${speedTag('LAYER: SEA · 0.25x')}
+  ${'</svg>'}`
+}
+export function pteroCliffSVG() {
+  const W = 2900
+  let t = ''
+  for (let x = 0, i = 0; x < W; x += 620, i++) t += `<path d="M${x},880 L${x + 60},${560 - (i % 2) * 60} L${x + 280},${600 - (i % 3) * 40} L${x + 480},${640} L${x + 620},880 Z" fill="${C_FAR}" stroke="${C_LINE}" stroke-width="3"/>`
+  return `${svgOpen(W, 1080)}${t}${speedTag('LAYER: CLIFFS · 0.5x')}</svg>`
+}
+export function pteroMainSVG() {
+  const S = PTERO_SPOTS
+  return `${svgOpen(PTERO_W, 1080)}
+    <rect x="0" y="880" width="${PTERO_W}" height="200" fill="${C_MAIN}"/>
+    <line x1="0" y1="880" x2="${PTERO_W}" y2="880" stroke="${C_LINE}" stroke-width="4"/>
+    ${roomFloorTicks(PTERO_W, C_LINE)}
+    ${roomBackPost(S, '&#8592; DINO HALL')}
+    ${roomPlacard(S, C_LINE)}
+    <!-- a mount pole holds the flying pterosaur above the ledge -->
+    <line x1="${S.skeleton.x}" y1="880" x2="${S.skeleton.x}" y2="560" stroke="${C_LINE}" stroke-width="4" opacity="0.6"/>
+    ${roomMount(S, C_LINE, SILHOUETTES.ptero(BONE_F, '#16242f', C_LINE), 220, 0.95)}
+    ${roomHint(S)}
+    ${speedTag('LAYER: CLIFF LEDGE · 1.0x')}
+  ${'</svg>'}`
+}
+export function pteroRockSVG() {
+  return `${svgOpen(320, 220)}
+    <path d="M10,220 L80,110 L150,160 L210,80 L290,180 L310,220 Z" fill="${C_FORE}" stroke="${C_LINE}" stroke-width="5"/>
   ${'</svg>'}`
 }

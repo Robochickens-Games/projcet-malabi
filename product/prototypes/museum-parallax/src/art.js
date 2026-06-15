@@ -343,7 +343,113 @@ function spinoSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
   </g>`
 }
 
-export const SILHOUETTES = { trike: trikeSilhouette, allo: alloSilhouette, spino: spinoSilhouette }
+// Velociraptor — turkey-sized, FEATHERED, horizontal spine + long balancing tail,
+// raised sickle claw. (Quill knobs on the ulna confirm wing feathers — Turner et al.
+// 2007, Science.) Box 700x520, standing on y≈480, facing left like the others.
+function raptorSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  return `<g>
+    <!-- far leg -->
+    <path d="M372,344 C366,400 360,440 374,478 L344,478 L330,400 L348,344 Z" fill="${dim}"/>
+    <rect x="320" y="474" width="74" height="16" rx="8" fill="${dim}"/>
+    <!-- long balancing tail, swept up to the right + feather tufts -->
+    <polygon points="430,262 694,196 702,218 440,318" fill="${bone}"/>
+    ${[470, 540, 610].map((x) => `<path d="M${x},230 q26,-34 54,-26 q-30,16 -34,40 Z" fill="${dim}" opacity="0.85"/>`).join('')}
+    <!-- body -->
+    <ellipse cx="332" cy="300" rx="128" ry="66" fill="${bone}"/>
+    <!-- feathered arm hanging from the body -->
+    <polygon points="262,300 206,352 222,362 286,318" fill="${dim}"/>
+    ${[214, 236, 258].map((x) => `<path d="M${x},348 q-16,22 -8,42 q18,-14 26,-34 Z" fill="${dim}" opacity="0.85"/>`).join('')}
+    <!-- near leg + raised sickle claw -->
+    <path d="M302,352 C296,406 290,442 304,478 L270,478 L256,398 L282,350 Z" fill="${bone}"/>
+    <rect x="246" y="474" width="86" height="16" rx="8" fill="${bone}"/>
+    <polygon points="246,478 226,460 260,470" fill="${bone}"/>
+    <path d="M300,456 q-22,-4 -30,-26 q16,8 34,8 Z" fill="${bg}"/>
+    <!-- neck + head, low and forward (left) -->
+    <polygon points="248,258 150,300 182,326 282,288" fill="${bone}"/>
+    <ellipse cx="142" cy="312" rx="72" ry="36" fill="${bone}"/>
+    <rect x="44" y="306" width="86" height="24" rx="8" fill="${bone}"/>
+    <line x1="48" y1="330" x2="124" y2="332" stroke="${bg}" stroke-width="4"/>
+    ${[58, 78, 98].map((x) => `<polygon points="${x},330 ${x + 6},342 ${x + 12},330" fill="${bone}"/>`).join('')}
+    <circle cx="152" cy="302" r="7" fill="${bg}"/>
+  </g>`
+}
+
+// Tyrannosaurus rex — huge head, tiny two-fingered arms, horizontal spine,
+// heavy balancing tail. Box 700x520, standing on y≈480, facing left.
+function trexSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  return `<g>
+    <!-- far leg -->
+    <path d="M364,330 C354,402 348,452 364,480 L330,480 L316,400 L340,330 Z" fill="${dim}"/>
+    <rect x="306" y="476" width="84" height="16" rx="8" fill="${dim}"/>
+    <!-- heavy tail, swept right -->
+    <polygon points="438,296 700,330 700,366 446,360" fill="${bone}"/>
+    <!-- body -->
+    <ellipse cx="344" cy="298" rx="142" ry="88" fill="${bone}"/>
+    <!-- tiny arm -->
+    <path d="M256,322 q-26,16 -28,42 q14,-6 22,-16 Z" fill="${dim}"/>
+    <!-- near leg, muscular -->
+    <path d="M300,338 C292,410 286,454 304,480 L260,480 L246,396 L280,336 Z" fill="${bone}"/>
+    <rect x="238" y="476" width="96" height="16" rx="8" fill="${bone}"/>
+    <polygon points="238,480 214,460 256,472" fill="${bone}"/>
+    <!-- thick neck + huge skull (left) -->
+    <polygon points="262,238 196,222 206,300 286,286" fill="${bone}"/>
+    <path d="M210,196 L58,224 L62,300 L214,300 Z" fill="${bone}"/>
+    <!-- lower jaw + teeth -->
+    <path d="M66,300 L210,300 L202,338 L92,334 Z" fill="${bone}"/>
+    ${[86, 112, 138, 164].map((x) => `<polygon points="${x},300 ${x + 9},324 ${x + 18},300" fill="${bone}"/>`).join('')}
+    <circle cx="126" cy="240" r="8" fill="${bg}"/>
+  </g>`
+}
+
+// Brachiosaurus — sauropod: tiny head on a long neck reaching up-left, huge
+// body, columnar legs, long tail. Box 700x520, standing on y≈480, facing left.
+function brachioSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  return `<g>
+    <!-- far legs -->
+    <rect x="318" y="318" width="54" height="164" rx="16" fill="${dim}"/>
+    <rect x="448" y="318" width="54" height="164" rx="16" fill="${dim}"/>
+    <!-- tail right -->
+    <polygon points="486,300 692,366 692,394 492,348" fill="${bone}"/>
+    <!-- giant body -->
+    <ellipse cx="390" cy="300" rx="164" ry="112" fill="${bone}"/>
+    <!-- near legs -->
+    <rect x="282" y="328" width="62" height="154" rx="18" fill="${bone}"/>
+    <rect x="422" y="328" width="62" height="154" rx="18" fill="${bone}"/>
+    <!-- long neck rising up-left + small head -->
+    <polygon points="306,256 150,86 198,64 350,236" fill="${bone}"/>
+    <ellipse cx="150" cy="74" rx="50" ry="30" fill="${bone}"/>
+    <rect x="106" y="60" width="52" height="22" rx="9" fill="${bone}"/>
+    <path d="M146,50 q14,-18 28,4 Z" fill="${bone}"/>
+    <circle cx="160" cy="68" r="6" fill="${bg}"/>
+  </g>`
+}
+
+// Pteranodon — the famous "pterodactyl" (a PTEROSAUR, not a dinosaur): huge
+// wings, long toothless beak, swept-back head crest. Drawn in a flying pose,
+// centred in the box (mounted hanging, not standing).
+function pteroSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  return `<g>
+    <!-- far wing (behind) -->
+    <path d="M344,250 L636,150 L662,196 L372,300 Z" fill="${dim}"/>
+    <!-- near wing (big, foreground) -->
+    <path d="M336,256 L60,150 L34,202 L312,304 Z" fill="${bone}"/>
+    <path d="M60,150 L300,268" stroke="${bg}" stroke-width="3" opacity="0.5" fill="none"/>
+    <!-- body + short legs -->
+    <ellipse cx="336" cy="284" rx="66" ry="40" fill="${bone}"/>
+    <path d="M330,318 l-8,70 M352,318 l10,70" stroke="${bone}" stroke-width="13" stroke-linecap="round"/>
+    <!-- neck + head: long beak (left) + swept-back crest -->
+    <polygon points="304,256 226,214 244,244 320,278" fill="${bone}"/>
+    <ellipse cx="214" cy="210" rx="34" ry="22" fill="${bone}"/>
+    <polygon points="190,210 84,198 190,228" fill="${bone}"/>
+    <polygon points="226,198 292,150 250,202" fill="${bone}"/>
+    <circle cx="210" cy="204" r="6" fill="${bg}"/>
+  </g>`
+}
+
+export const SILHOUETTES = {
+  trike: trikeSilhouette, allo: alloSilhouette, spino: spinoSilhouette, raptor: raptorSilhouette,
+  trex: trexSilhouette, brachio: brachioSilhouette, ptero: pteroSilhouette,
+}
 
 /* ============================== TEETH ============================== */
 
@@ -361,18 +467,157 @@ export function toothSVGInner(kind, fill = '#efe2c0', stroke = '#6b4f2a') {
       <rect x="56" y="76" width="17" height="42" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="4"/>`
   }
   if (kind === 'blade') {
-    // carnivore — curved, serrated blade
+    // big carnivore — a large, curved, serrated blade (T-rex)
     return `
       <path d="M60,8 C84,40 82,86 56,120 C49,108 39,80 37,52 C36,30 46,14 60,8 Z"
             fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
       <path d="M44,34 l-5,6 l6,5 l-5,6 l6,5 l-5,6 l6,5 l-4,6"
             fill="none" stroke="${stroke}" stroke-width="3" opacity="0.8"/>`
   }
+  if (kind === 'fang') {
+    // small carnivore — a slim, strongly recurved serrated fang, drawn smaller in
+    // the box so it clearly reads tinier than the T-rex blade (Velociraptor)
+    return `
+      <path d="M58,26 C76,52 70,86 48,106 C44,94 39,74 39,56 C39,40 47,30 58,26 Z"
+            fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M46,50 l-5,5 l6,4 l-5,5 l6,4 l-5,5"
+            fill="none" stroke="${stroke}" stroke-width="2.5" opacity="0.8"/>`
+  }
+  if (kind === 'peg') {
+    // sauropod — chisel / peg tooth for stripping leaves
+    return `
+      <path d="M34,14 L66,14 L60,92 C60,112 40,112 40,92 Z"
+            fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
+      <line x1="42" y1="100" x2="58" y2="100" stroke="${stroke}" stroke-width="4"/>`
+  }
+  if (kind === 'beak' || kind === 'none') {
+    // pterosaur — a toothless, pointed beak
+    return `
+      <path d="M14,46 C40,20 82,30 88,52 C70,58 42,58 26,70 C18,62 12,54 14,46 Z"
+            fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
+      <line x1="30" y1="50" x2="74" y2="50" stroke="${stroke}" stroke-width="3" opacity="0.5"/>`
+  }
   // cone — fish-eater
   return `
     <path d="M50,8 C61,30 67,72 58,120 L42,120 C33,72 39,30 50,8 Z"
           fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
     <line x1="50" y1="20" x2="50" y2="108" stroke="${stroke}" stroke-width="3" opacity="0.4"/>`
+}
+
+/* ============================== CLUE / SECTION ICON ART ============================== */
+// Iconic, low-fi art shared by the inventory clues, the drag ghost, and the
+// catalog sections (Covering · Footprints · Eggs). Drawn in a 100x130 box.
+
+// an egg (Brachiosaurus clue + the Eggs section). Each kind has a deliberately
+// DISTINCT silhouette + surface so they don't read as the same egg at four sizes:
+//   round → near-sphere · oval → plump asymmetric egg · elongated → long & slim ·
+//   leathery → soft, saggy shell with wrinkles (no hard speckles).
+export function eggSVGInner(kind = 'round', fill = '#e7dcc0', stroke = '#6b4f2a') {
+  const speck = (pts) => pts.map(([x, y, r = 3]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${stroke}" opacity="0.38"/>`).join('')
+  if (kind === 'oval') {
+    // T-rex — a plump, asymmetric egg: pointier top, rounder base
+    return `
+      <path d="M50,12 C69,12 76,40 76,66 C76,96 64,116 50,116 C36,116 24,96 24,66 C24,40 31,12 50,12 Z"
+            fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
+      ${speck([[42, 44], [58, 64], [46, 86], [60, 98], [50, 30]])}`
+  }
+  if (kind === 'elongated') {
+    // raptor — long and slim, stood on end like a bird's egg
+    return `
+      <ellipse cx="50" cy="66" rx="20" ry="58" fill="${fill}" stroke="${stroke}" stroke-width="4"/>
+      <path d="M42,20 C36,46 36,86 44,110" fill="none" stroke="#fff" stroke-width="3" opacity="0.18"/>
+      ${speck([[53, 46], [48, 72], [54, 94]])}`
+  }
+  if (kind === 'leathery') {
+    // pterosaur — a soft, saggy shell: dimpled outline with creases, not speckles
+    return `
+      <path d="M22,72 C20,50 34,32 50,34 C62,35 70,28 79,40 C87,51 84,66 82,76 C79,100 64,114 49,113 C31,112 24,94 22,72 Z"
+            fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
+      <g fill="none" stroke="${stroke}" stroke-width="2.5" opacity="0.5" stroke-linecap="round">
+        <path d="M34,58 q14,-8 26,-2"/>
+        <path d="M32,80 q16,8 34,1"/>
+        <path d="M40,98 q10,6 22,0"/>
+      </g>`
+  }
+  // round — near-sphere (Triceratops, Brachiosaurus), lightly speckled
+  return `
+    <ellipse cx="50" cy="66" rx="40" ry="43" fill="${fill}" stroke="${stroke}" stroke-width="4"/>
+    ${speck([[40, 50], [60, 74], [44, 86], [62, 56], [50, 40], [54, 92]])}`
+}
+export function eggSVG(kind = 'round', w = 100, h = 130) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">${eggSVGInner(kind)}</svg>`
+}
+
+// a toe bone (phalanx) — a shaft with knobby ends. `len` sets how long it is, so
+// short/long bones read differently (used by the T-rex foot-assembly puzzle).
+export function boneSVGInner(len = 80, fill = '#ece0c2', stroke = '#7a5c33', outline = false) {
+  const top = 20
+  const bot = top + len
+  const f = outline ? `fill="none" stroke="${stroke}" stroke-width="4" stroke-dasharray="7 6"` : `fill="${fill}" stroke="${stroke}" stroke-width="4"`
+  return `<g ${f}>
+    <circle cx="38" cy="${top}" r="16"/><circle cx="62" cy="${top}" r="16"/>
+    <rect x="34" y="${top}" width="32" height="${len}" rx="14"/>
+    <circle cx="38" cy="${bot}" r="15"/><circle cx="62" cy="${bot}" r="15"/>
+  </g>`
+}
+export function boneSVG(len = 80, w = 100, h = 130) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 ${Math.max(130, len + 60)}">${boneSVGInner(len)}</svg>`
+}
+
+// pycnofibers — the pterosaur "fuzz" (Pterodactyl clue + a Covering icon)
+export function pycnofiberInner(fill = '#d9c9a6', stroke = '#6b4f2a') {
+  const hair = (i) => {
+    const dx = (i - 3) * 9
+    return `<path d="M50,114 q${dx * 0.6},-46 ${dx},-92" fill="none" stroke="${stroke}" stroke-width="4" stroke-linecap="round"/>`
+  }
+  return `
+    <ellipse cx="50" cy="114" rx="24" ry="8" fill="${fill}" opacity="0.6"/>
+    ${[0, 1, 2, 3, 4, 5, 6].map(hair).join('')}`
+}
+export function pycnofiberSVG(w = 100, h = 130) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">${pycnofiberInner()}</svg>`
+}
+
+// a fossil footprint / track (the Footprints section)
+export function footprintInner(kind, fill = '#3a2c1a', stroke = '#6b4f2a') {
+  const F = `fill="${fill}" stroke="${stroke}" stroke-width="3"`
+  if (kind === 'round') return `<ellipse cx="50" cy="66" rx="40" ry="46" ${F}/>` // sauropod
+  if (kind === 'round3') return `<g ${F}>
+    <ellipse cx="50" cy="80" rx="30" ry="20"/>
+    <path d="M50,72 L34,38 L46,36 Z"/><path d="M50,70 L50,32 L58,34 Z"/><path d="M50,72 L66,38 L76,46 Z"/></g>` // ceratopsian
+  if (kind === 'two-toe') return `<g ${F}>
+    <ellipse cx="50" cy="92" rx="16" ry="12"/>
+    <path d="M50,86 L34,28 L46,28 Z"/><path d="M50,86 L64,26 L76,32 Z"/></g>` // raptor
+  if (kind === 'wing') return `<g ${F}>
+    <ellipse cx="40" cy="84" rx="16" ry="11"/>
+    <g fill="none" stroke="${stroke}" stroke-width="6" stroke-linecap="round">
+      <path d="M58,68 l28,-26"/><path d="M58,80 l30,-4"/><path d="M58,92 l26,18"/></g></g>` // pterosaur
+  // three-toe (theropod)
+  return `<g ${F}>
+    <ellipse cx="50" cy="86" rx="22" ry="15"/>
+    <path d="M50,80 L28,30 L40,28 Z"/><path d="M50,78 L50,20 L58,22 Z"/><path d="M50,80 L72,30 L80,40 Z"/></g>`
+}
+export function footprintSVG(kind, w = 100, h = 130) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">${footprintInner(kind)}</svg>`
+}
+
+// body covering (the Covering section): scales / feathers / pycnofibers
+export function coveringInner(kind, fill = '#e7dcc0', stroke = '#6b4f2a') {
+  if (kind === 'feathers') return featherInner(fill, stroke)
+  if (kind === 'pycnofibers') return pycnofiberInner(fill, stroke)
+  // scales — rows of overlapping scallops
+  let s = ''
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const x = 22 + c * 19 + (r % 2 ? 9 : 0)
+      const y = 32 + r * 22
+      s += `<path d="M${x - 12},${y} a12,12 0 0 1 24,0" fill="none" stroke="${stroke}" stroke-width="3"/>`
+    }
+  }
+  return s
+}
+export function coveringSVG(kind, w = 100, h = 130) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">${coveringInner(kind)}</svg>`
 }
 
 export function toothSVG(kind, w = 100, h = 130) {
@@ -393,21 +638,44 @@ export function floorToothSVG() {
 
 /* ============================== DIORAMAS ============================== */
 
+// The museum roster — one entry per dino in the game, with the science for every
+// catalog section (Teeth · Covering · Footprints · Eggs). `kind` flags that
+// Pterodactyl is a pterosaur, not a dinosaur.
 export const DINOS = [
   {
-    id: 'spino', name: 'SPINOSAURUS', diet: 'Eats fish 🐟', tooth: 'cone',
-    toothNote: 'Smooth cone-shaped teeth — made for gripping slippery fish.',
-    wrongHint: 'Hmm — Spinosaurus has smooth, pointy cone teeth for catching fish. Your tooth is wide and flat…',
+    id: 'trike', name: 'TRICERATOPS', kind: 'dinosaur', diet: 'Eats plants 🌿',
+    tooth: 'leaf', toothNote: 'Wide, flat teeth — for grinding ferns and leaves.',
+    covering: 'scales', coveringNote: 'Scaly, pebbly skin — like a lizard’s.',
+    footprint: 'round3', footprintNote: 'Broad footprints with short, stubby toes.',
+    egg: 'round', eggNote: 'Round eggs, laid in a nest on the ground.',
   },
   {
-    id: 'allo', name: 'ALLOSAURUS', diet: 'Eats meat 🍖', tooth: 'blade',
-    toothNote: 'Sharp, jagged teeth — like steak knives for slicing meat.',
-    wrongHint: 'Careful — Allosaurus teeth are sharp and jagged, for meat. Your tooth has a flat edge…',
+    id: 'ptero', name: 'PTERODACTYL', kind: 'pterosaur', diet: 'Eats fish 🐟',
+    tooth: 'beak', toothNote: 'No teeth at all — a long, pointed beak to snatch fish.',
+    covering: 'pycnofibers', coveringNote: 'Pycnofibers — a soft fuzz (not feathers, not scales).',
+    footprint: 'wing', footprintNote: 'Odd four-part tracks — it walked on its folded wings.',
+    egg: 'leathery', eggNote: 'Soft, leathery eggs, buried like a turtle’s.',
   },
   {
-    id: 'trike', name: 'TRICERATOPS', diet: 'Eats plants 🌿', tooth: 'leaf', correct: true,
-    toothNote: 'Wide, flat-edged teeth — for chopping ferns and leaves.',
-    successText: 'Triceratops, the plant eater! Its wide flat teeth chopped ferns and leaves — a perfect match for your fossil tooth.',
+    id: 'trex', name: 'T-REX', kind: 'dinosaur', diet: 'Eats meat 🍖',
+    tooth: 'blade', toothNote: 'Banana-sized, serrated teeth — strong enough to crush bone.',
+    covering: 'scales', coveringNote: 'Mostly scaly skin (maybe a few feathers).',
+    footprint: 'three-toe', footprintNote: 'Huge three-toed footprints, longer than your arm.',
+    egg: 'oval', eggNote: 'Big oval eggs — though none are confirmed yet!',
+  },
+  {
+    id: 'raptor', name: 'VELOCIRAPTOR', kind: 'dinosaur', diet: 'Eats meat 🍖',
+    tooth: 'fang', toothNote: 'Small, curved, serrated teeth.',
+    covering: 'feathers', coveringNote: 'Feathers — like a bird. Quill knobs prove it.',
+    footprint: 'two-toe', footprintNote: 'Two-toed tracks — the killing claw was held off the ground.',
+    egg: 'elongated', eggNote: 'Long eggs, brooded in a nest like a bird.',
+  },
+  {
+    id: 'brachio', name: 'BRACHIOSAURUS', kind: 'dinosaur', diet: 'Eats plants 🌿',
+    tooth: 'peg', toothNote: 'Chisel-shaped peg teeth — for stripping leaves.',
+    covering: 'scales', coveringNote: 'Scaly skin over a giant body.',
+    footprint: 'round', footprintNote: 'Enormous round footprints — like tractor tyres.',
+    egg: 'round', eggNote: 'Surprisingly small round eggs, laid in long lines.',
   },
 ]
 
@@ -479,6 +747,26 @@ function dietVignette(id) {
       <ellipse cx="50" cy="0" rx="46" ry="20" fill="#c96a5a"/>
     </g>`
   }
+  if (id === 'raptor') {
+    // a drifting feather — Velociraptor's signature
+    return `<g transform="translate(58,408) rotate(-12) scale(1.4)">${featherInner('#e7d9b6', '#6b4f2a')}</g>`
+  }
+  if (id === 'trex') {
+    // a gnawed bone — the apex predator
+    return `<g transform="translate(64,452) rotate(-16)" fill="#e8dcc0">
+      <rect x="-6" y="-11" width="116" height="22" rx="11"/>
+      <circle cx="-8" cy="-9" r="12"/><circle cx="-8" cy="9" r="12"/>
+      <circle cx="108" cy="-9" r="12"/><circle cx="108" cy="9" r="12"/>
+    </g>`
+  }
+  if (id === 'brachio') {
+    // a tall leafy branch it reached up to browse
+    return `<g transform="translate(86,500)" stroke="#4e8a52" stroke-width="7" fill="none">
+      <line x1="0" y1="0" x2="-6" y2="-150"/>
+      ${[-40, -78, -116].map((y) => `<path d="M-4,${y} C-30,${y - 16} -46,${y - 8} -56,${y + 6}" stroke="#5fa763" stroke-width="6"/>
+        <path d="M-4,${y} C22,${y - 16} 38,${y - 8} 48,${y + 6}" stroke="#5fa763" stroke-width="6"/>`).join('')}
+    </g>`
+  }
   return `<g transform="translate(72,452) rotate(-12)">
     <path d="M0,0 C30,-22 80,-22 104,0 C80,22 30,22 0,0 Z" fill="#7fb6c9"/>
     <polygon points="100,0 134,-20 134,20" fill="#7fb6c9"/>
@@ -493,5 +781,42 @@ export function catalogCardArt(dino) {
     <ellipse cx="350" cy="498" rx="280" ry="26" fill="#0a2930"/>
     <g transform="translate(350,300) scale(0.86) translate(-350,-290)">${sil}</g>
     ${dietVignette(dino.id)}
+  </svg>`
+}
+
+/* ============================== CATALOG COVER ART ============================== */
+// Section icons + the field-guide crest. Authored in the same gold/teal language
+// as the tooth art so the cover reads as one book with the cards inside it.
+
+function featherInner(fill = '#efe2c0', stroke = '#6b4f2a') {
+  // a single vane — pointed tip, symmetric barbs, bare shaft below
+  const barbs = [28, 37, 46, 55, 64, 73, 82, 91].map((y) => {
+    const w = 16 - Math.abs(y - 56) * 0.22
+    return `<line x1="50" y1="${y}" x2="${(50 - w).toFixed(1)}" y2="${y - 7}" stroke="${stroke}" stroke-width="2.2" opacity=".55"/>
+            <line x1="50" y1="${y}" x2="${(50 + w).toFixed(1)}" y2="${y - 7}" stroke="${stroke}" stroke-width="2.2" opacity=".55"/>`
+  }).join('')
+  return `
+    <path d="M50,12 C68,34 68,66 50,100 C32,66 32,34 50,12 Z"
+          fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>
+    ${barbs}
+    <line x1="50" y1="16" x2="52" y2="124" stroke="${stroke}" stroke-width="3.5" stroke-linecap="round"/>`
+}
+
+export function featherSVG(w = 100, h = 130) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">
+    ${featherInner()}
+  </svg>`
+}
+
+export function catalogCrest(size = 92) {
+  // field-guide medallion: a magnifying glass — the game's "investigate" motif
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="46" fill="${TEAL_DEEP}" stroke="${GOLD}" stroke-width="3"/>
+    <circle cx="50" cy="50" r="40" fill="none" stroke="${GOLD_DEEP}" stroke-width="1.5" opacity=".6"/>
+    <g stroke="${GOLD}" fill="none" stroke-linecap="round">
+      <circle cx="45" cy="44" r="17" stroke-width="5"/>
+      <line x1="57" y1="56" x2="72" y2="71" stroke-width="6"/>
+    </g>
+    <circle cx="40" cy="39" r="4" fill="${CREAM}" opacity=".8"/>
   </svg>`
 }

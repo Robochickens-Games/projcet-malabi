@@ -1,10 +1,20 @@
-import { Application, Container, Sprite, Graphics, Texture } from 'pixi.js'
+import { Application, Container, Sprite, Graphics, Texture, Text } from 'pixi.js'
 import { gsap } from 'gsap'
-import { toothSVG, catalogCardArt, DINOS } from './art.js'
+import {
+  toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
+  eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, boneSVG,
+} from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
-  GROVE_W, GROVE_SPOTS, GUIDE, groveCloudsSVG, groveMountainsSVG, groveMidSVG, groveMainSVG, canopySVG, bushSVG,
+  GROVE_W, GROVE_SPOTS, groveCloudsSVG, groveMountainsSVG, groveMidSVG, groveMainSVG, canopySVG, bushSVG,
+  DINOHUB_W, DINOHUB_SPOTS, DINOHUB_ORDER, dinohubBackSVG, dinohubMainSVG, dinohubForeSVG,
+  RAPTOR_W, RAPTOR_SPOTS, raptorSkySVG, raptorDunesFarSVG, raptorDunesMidSVG, raptorMainSVG, raptorRockSVG,
+  TREX_W, TREX_SPOTS, trexSkySVG, trexFarSVG, trexMidSVG, trexMainSVG, trexFernSVG,
+  BRACHIO_W, BRACHIO_SPOTS, brachioSkySVG, brachioHillsSVG, brachioTreesSVG, brachioMainSVG, brachioGrassSVG,
+  PTERO_W, PTERO_SPOTS, pteroSkySVG, pteroSeaSVG, pteroCliffSVG, pteroMainSVG, pteroRockSVG,
 } from './wireframe.js'
+import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
+import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
 
 /* ---------- constants ---------- */
 const DESIGN_W = 1920
@@ -14,10 +24,43 @@ const DESIGN_H = 1080
 // scroll speed; the camera walks left↔right; real art replaces wireframes 1:1
 const WORLDS = {
   lobby: { w: LOBBY_W },
+  dinohub: { w: DINOHUB_W },
   grove: { w: GROVE_W },
+  raptor: { w: RAPTOR_W },
+  trex: { w: TREX_W },
+  brachio: { w: BRACHIO_W },
+  ptero: { w: PTERO_W },
 }
 
 const $ = (id) => document.getElementById(id)
+
+/* ---------- side-panel (rail) helpers ----------
+   On phones both rails start tucked away so the scene fills the screen, and only
+   one panel is open at a time. Opening a rail closes its sibling (compact only). */
+const compactMQ = window.matchMedia('(max-width: 820px), (max-height: 460px)')
+const isCompact = () => compactMQ.matches
+const railBtn = (railId) => $(railId === 'catalog-rail' ? 'catalog-toggle' : 'inv-toggle')
+
+function setRail(railId, collapsed) {
+  $(railId).classList.toggle('collapsed', collapsed)
+  railBtn(railId).classList.toggle('active', !collapsed)
+  if (!collapsed && isCompact()) {
+    const other = railId === 'catalog-rail' ? 'inventory-rail' : 'catalog-rail'
+    $(other).classList.add('collapsed')
+    railBtn(other).classList.remove('active')
+  }
+}
+
+// open a rail with no slide animation, so a freshly-measured slot rect is the
+// resting on-screen position (used when the found tooth flies into the inventory)
+function openRailInstant(railId) {
+  const rail = $(railId)
+  const prev = rail.style.transition
+  rail.style.transition = 'none'
+  setRail(railId, false)
+  void rail.offsetWidth // force reflow at the resting position
+  rail.style.transition = prev
+}
 
 /* ---------- tiny synth (no assets needed) ---------- */
 let AC = null
@@ -57,16 +100,31 @@ async function svgTexture(svg) {
 }
 
 /* ---------- game state ---------- */
-const state = { hasTooth: false, solved: false, scene: 'lobby', triedWrong: 0 }
+// per-puzzle progress lives on each scene's `_drop.done`; here we track the
+// player's collected clues + the current scene
+// has[itemId] = true once that clue is collected into the inventory
+const state = { scene: 'lobby', has: {} }
+const hasClue = (id) => !!state.has[id]
 
 /* ---------- input: walk the world ---------- */
-const cams = { lobby: { x: 0, vel: 0 }, grove: { x: 0, vel: 0 } }
+// true while the player is dragging an inventory item — pauses camera walking
+let draggingItem = false
+// set while dragging a bone in the T-rex foot-assembly puzzle (also pauses camera)
+let footDrag = null
+// the full-screen foot-puzzle overlay + whether it's currently open (pauses the room)
+let footStage = null
+let puzzleOpen = false
+const SERIF = 'Iowan Old Style, Palatino, Georgia, serif'
+// don't start a camera-walk when the gesture begins on the HUD, a rail, or the ghost
+const uiHit = (e) => !!(e.target?.closest && e.target.closest('#hud, .rail, #drag-ghost'))
+const cams = Object.fromEntries(Object.keys(WORLDS).map((k) => [k, { x: 0, vel: 0 }]))
 const camMax = () => WORLDS[state.scene].w - DESIGN_W
 const cam = () => cams[state.scene]
 const lens = { x: 0, y: 0, tx: 0, ty: 0 } // micro hover parallax on top
 const keys = { left: false, right: false }
 
 function nudgeCam(dx) {
+  if (puzzleOpen) return
   const c = cam()
   c.x = Math.max(0, Math.min(camMax(), c.x + dx))
 }
@@ -103,10 +161,10 @@ function setupInput() {
     }
     drag = null
   }
-  window.addEventListener('mousedown', (e) => dragStart(e.clientX))
+  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !uiHit(e)) dragStart(e.clientX) })
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
   window.addEventListener('mouseup', () => dragEnd())
-  window.addEventListener('touchstart', (e) => dragStart(e.touches[0].clientX), { passive: true })
+  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
@@ -133,6 +191,7 @@ function setupInput() {
     return e.gamma
   }
   const onTilt = (e) => {
+    if (puzzleOpen) return
     const v = tiltValue(e)
     if (v == null) return
     base ??= v
@@ -195,9 +254,13 @@ function setupFullscreen() {
 
 /* ---------- toast ---------- */
 let toastTimer = null
+function dismissToast() {
+  clearTimeout(toastTimer)
+  $('toast').classList.add('hidden')
+}
 function toast(msg, ms = 4800) {
   const el = $('toast')
-  el.textContent = msg
+  $('toast-text').textContent = msg
   el.classList.remove('hidden')
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => el.classList.add('hidden'), ms)
@@ -214,6 +277,34 @@ function scrollLayer(speed) {
   const c = new Container()
   c._speed = speed
   return c
+}
+
+// world coords on a given layer → screen (CSS) px, accounting for camera + scale
+function worldToScreen(wx, wy, layer = scenes[state.scene]?._main) {
+  if (!layer) return { x: 0, y: 0 }
+  return {
+    x: root.position.x + root.scale.x * (layer.position.x + wx - DESIGN_W / 2),
+    y: root.position.y + root.scale.y * (layer.position.y + wy - DESIGN_H / 2),
+  }
+}
+
+// inverse: screen (CSS) px → world coords on a given layer
+function screenToWorld(sx, sy, layer = scenes[state.scene]?._main) {
+  if (!layer) return { x: 0, y: 0 }
+  return {
+    x: (sx - root.position.x) / root.scale.x - layer.position.x + DESIGN_W / 2,
+    y: (sy - root.position.y) / root.scale.y - layer.position.y + DESIGN_H / 2,
+  }
+}
+
+// is a screen point currently over the current room's dino? (the drag-drop target)
+function pointerOverDino(x, y) {
+  const d = activeDrop()
+  if (!d) return false
+  const S = d.skeleton
+  const a = worldToScreen(S.x - S.w / 2, S.y)
+  const b = worldToScreen(S.x + S.w / 2, S.y + S.h)
+  return x >= a.x && x <= b.x && y >= a.y && y <= b.y
 }
 
 function makeDust(scene, count, worldW, tint = 0xc2d6e2) {
@@ -241,11 +332,43 @@ function hitRect(wx, wy, w, h, onTap) {
   return g
 }
 
+// a wax-stamp "SOLVED" seal (gold disc + checkmark + caption), placed in world
+// coords and hidden (alpha 0) until its puzzle is solved. Used to mark a finished
+// diorama in the hall and the completed wing's door in the lobby.
+function solvedSeal(wx, wy, { r = 44, caption = 'SOLVED' } = {}) {
+  const c = new Container()
+  c.addChild(new Graphics().circle(0, 0, r + 8).fill({ color: 0xffd98a, alpha: 0.22 }).stroke({ color: 0xffd98a, width: 3, alpha: 0.5 }))
+  c.addChild(new Graphics().circle(0, 0, r).fill({ color: 0xe8a948 }).stroke({ color: 0xf4e6c8, width: 4 }))
+  c.addChild(new Graphics()
+    .moveTo(-r * 0.42, 0).lineTo(-r * 0.12, r * 0.34).lineTo(r * 0.46, -r * 0.36)
+    .stroke({ color: 0x123c44, width: r * 0.2, cap: 'round', join: 'round' }))
+  if (caption) {
+    const label = new Text({ text: caption, style: { fontFamily: SERIF, fontSize: 22, fontWeight: '700', fill: 0xe8a948, letterSpacing: 2 } })
+    label.anchor.set(0.5)
+    label.position.set(0, r + 26)
+    c.addChild(label)
+  }
+  placeAt(c, wx, wy)
+  c.alpha = 0
+  return c
+}
+
+// pop a hidden seal/glow into view with a stamp + sustained shimmer
+function revealMark(node, { glow = false } = {}) {
+  if (!node || node._shown) return
+  node._shown = true
+  gsap.to(node, { alpha: glow ? 0.5 : 1, duration: 0.55, ease: 'power2.out' })
+  if (!glow && node.scale) gsap.fromTo(node.scale, { x: 0, y: 0 }, { x: 1, y: 1, duration: 0.6, ease: 'back.out(3)' })
+  if (glow) gsap.to(node, { alpha: 0.26, duration: 1.4, yoyo: true, repeat: -1, delay: 0.6, ease: 'sine.inOut' })
+}
+
 /* ---------- boot ---------- */
 // no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
-let app, root, lobby, grove
-let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow
-const cardFx = {}
+let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero
+let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow, placedTooth
+let featherSprite, featherSparkle
+const scenes = {}                                  // name → scene container
+const activeDrop = () => scenes[state.scene]?._drop // the placeable target in view, if any
 
 function layout() {
   const s = Math.max(window.innerWidth / DESIGN_W, window.innerHeight / DESIGN_H)
@@ -278,7 +401,7 @@ async function buildLobby() {
   doorGlow.alpha = 0
   mainL.addChild(doorGlow)
 
-  mainL.addChild(hitRect(LOBBY_SPOTS.doorDino.x - 180, 300, 360, 580, enterGrove))
+  mainL.addChild(hitRect(LOBBY_SPOTS.doorDino.x - 180, 300, 360, 580, () => goScene('dinohub')))
   mainL.addChild(hitRect(LOBBY_SPOTS.doorSpace.x - 170, 320, 340, 560, () => { sfx.tap(); toast('SPACE wing — roped off. Opening soon! ✨') }))
   mainL.addChild(hitRect(LOBBY_SPOTS.doorInventions.x - 170, 320, 340, 560, () => { sfx.tap(); toast('INVENTIONS wing — roped off. Opening soon! ⚙️') }))
 
@@ -309,16 +432,21 @@ async function buildLobby() {
   placeAt(fore, 3300 / 2, 540)
   foreL.addChild(fore)
 
+  // wing-complete seal over the Dinosaur Wing door (hidden until every room is solved)
+  lobby._wingMark = solvedSeal(LOBBY_SPOTS.doorDino.x, 470, { r: 58, caption: 'WING COMPLETE' })
+  mainL.addChild(lobby._wingMark)
+
   lobby.addChild(backL, mainL, toothL, foreL)
   lobby._layers = [backL, mainL, toothL, foreL]
   lobby._main = mainL
   makeDust(lobby, 26, LOBBY_W)
+  if (dinoWingComplete()) revealMark(lobby._wingMark)
 }
 
 /* ---------- GROVE ---------- */
 async function buildGrove() {
-  const [cloudsT, mountainsT, midT, mainT, canopyT, bushT] = await Promise.all(
-    [groveCloudsSVG(), groveMountainsSVG(), groveMidSVG(), groveMainSVG(), canopySVG(), bushSVG()].map(svgTexture),
+  const [cloudsT, mountainsT, midT, mainT, canopyT, bushT, toothT, featherT] = await Promise.all(
+    [groveCloudsSVG(), groveMountainsSVG(), groveMidSVG(), groveMainSVG(), canopySVG(), bushSVG(), toothSVG('leaf', 64, 83), featherSVG(60, 78)].map(svgTexture),
   )
 
   const cloudsL = scrollLayer(0.1)
@@ -346,40 +474,35 @@ async function buildGrove() {
   mainL.addChild(main)
 
   const S = GROVE_SPOTS
-  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, backToLobby))
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('dinohub')))
   mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
     sfx.tap()
     toast('TRICERATOPS — “three-horned face”. A plant eater with a beak and hundreds of leaf-shaped teeth.')
   }))
   mainL.addChild(hitRect(S.skeleton.x - S.skeleton.w / 2, S.skeleton.y, S.skeleton.w, S.skeleton.h, () => {
     sfx.tap()
-    toast('A skeleton guarding its nest… Which tooth card in the field guide matches YOUR find?')
+    toast(grove._drop?.done
+      ? 'A perfect fit — that tooth belongs to this Triceratops.'
+      : hasClue('tooth')
+        ? 'A gap in this jaw where a tooth should sit. If one of your finds looks like it fits, drag it onto the skeleton →'
+        : 'A gap in this jaw where a tooth should sit. What kind of tooth wears down chewing tough plants all day?')
   }))
-  mainL.addChild(hitRect(S.bag.x - 60, S.bag.y - 60, 120, 120, () => { sfx.tap(); $('catalog').classList.remove('hidden') }))
+  mainL.addChild(hitRect(S.bag.x - 60, S.bag.y - 60, 120, 120, () => {
+    sfx.tap()
+    toast('Your finds live in the INVENTORY on the right →')
+  }))
   mainL.addChild(hitRect(S.hint.x - 60, S.hint.y - 60, 120, 120, () => {
     sfx.tap()
-    toast(state.solved
-      ? 'You solved it! Tap the skeleton to say goodbye.'
-      : state.hasTooth
-        ? 'Look at your tooth: wide, with a broad flat edge. Find the card that says that…'
-        : 'You need a clue first — something glinted back in the lobby.')
+    toast(grove._drop?.done
+      ? 'You did it! The tooth is right where it belongs.'
+      : !hasClue('tooth')
+        ? 'A plant-eater chews with flat, grinding teeth — and something glinted back near the lobby planter…'
+        : 'Read the placard, then open the CATALOG on the left. Which tooth shape suits a plant-grinder?')
   }))
   mainL.addChild(hitRect(S.tray.x, S.tray.y, 620, 110, () => {
     sfx.tap()
-    if (state.hasTooth) toast('Your fossil tooth — wide and flat, with grinding ridges.')
+    if (hasClue('tooth') && !grove._drop?.done) toast('Your fossil tooth is in the inventory — drag it onto the dinosaur.')
   }))
-
-  for (const card of GUIDE.cards) {
-    const fx = new Graphics()
-      .roundRect(0, 0, card.w, card.h, 12)
-      .stroke({ color: 0xffd98a, width: 7, alpha: 0.95 })
-    placeAt(fx, card.x, card.y)
-    fx.alpha = 0
-    fx.blendMode = 'add'
-    mainL.addChild(fx)
-    cardFx[card.name] = fx
-    mainL.addChild(hitRect(card.x, card.y, card.w, card.h, () => tryCard(card)))
-  }
 
   skeletonGlow = new Graphics()
     .roundRect(0, 0, S.skeleton.w, S.skeleton.h, 24)
@@ -396,7 +519,21 @@ async function buildGrove() {
   trayGlow.blendMode = 'add'
   mainL.addChild(trayGlow)
 
-  // foreground: canopy hanging from the top, bushes along the bottom (fastest)
+  // the tooth locked into the jaw once placed (hidden until then)
+  placedTooth = new Sprite(toothT)
+  placedTooth.anchor.set(0.5)
+  placedTooth.rotation = -0.15
+  placeAt(placedTooth, S.socket.x, S.socket.y)
+  placedTooth.alpha = 0
+  mainL.addChild(placedTooth)
+
+  // a stray FEATHER hidden on the trail — rides a 1.2x layer behind the 1.42x bush,
+  // so walking past reveals it (the lobby-tooth parallax beat). It belongs to the raptor.
+  const featherL = scrollLayer(1.2)
+  addHiddenClue(featherL, S.feather, 'feather', featherT)
+
+  // foreground: canopy hanging from the top, bushes along the bottom (fastest).
+  // the bush at the feather's x is what hides it until you walk past.
   const foreL = scrollLayer(1.42)
   for (const [wx, s, flip] of [[260, 1.4, false], [1500, 1.1, true], [2900, 1.5, false], [4350, 1.2, true]]) {
     const c = new Sprite(canopyT)
@@ -405,7 +542,7 @@ async function buildGrove() {
     placeAt(c, wx, -20)
     foreL.addChild(c)
   }
-  for (const [wx, s, flip] of [[700, 1.3, false], [2100, 1.6, true], [3550, 1.2, false], [4650, 1.5, true]]) {
+  for (const [wx, s, flip] of [[700, 1.3, false], [S.feather.x, 1.25, false], [2100, 1.6, true], [3550, 1.2, false], [4650, 1.5, true]]) {
     const b = new Sprite(bushT)
     b.anchor.set(0.5, 1)
     b.scale.set(s * (flip ? -1 : 1), s)
@@ -413,23 +550,418 @@ async function buildGrove() {
     foreL.addChild(b)
   }
 
-  grove.addChild(cloudsL, mountainsL, midL, mainL, foreL)
-  grove._layers = [cloudsL, mountainsL, midL, mainL, foreL]
+  grove.addChild(cloudsL, mountainsL, midL, mainL, featherL, foreL)
+  grove._layers = [cloudsL, mountainsL, midL, mainL, featherL, foreL]
   grove._main = mainL
+  // the placeable target in this room: drag the TOOTH here
+  grove._drop = {
+    item: 'tooth', skeleton: S.skeleton, socket: S.socket, glow: skeletonGlow, placed: placedTooth, done: false,
+    success: {
+      frag: 1,
+      html: 'A <b>wide, flat tooth</b> — perfect for grinding ferns and leaves. It fits the jaw of a ' +
+        '<b>plant eater</b>: the skeleton guarding the nest is a <b>Triceratops</b>!',
+    },
+  }
   makeDust(grove, 32, GROVE_W, 0xd8f0a0)
+}
+
+/* ---------- DINO HALL HUB ---------- */
+async function buildDinoHub() {
+  const [backT, mainT, foreT] = await Promise.all(
+    [dinohubBackSVG(), dinohubMainSVG(), dinohubForeSVG()].map(svgTexture),
+  )
+
+  const backL = scrollLayer(0.3)
+  const back = new Sprite(backT)
+  back.anchor.set(0.5)
+  placeAt(back, DINOHUB_W / 2 - 400, 540)
+  backL.addChild(back)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, DINOHUB_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = DINOHUB_SPOTS
+  // diorama id → the room it opens
+  const DIORAMA_ROOM = { trike: 'grove', ptero: 'ptero', trex: 'trex', raptor: 'raptor', brachio: 'brachio' }
+  mainL.addChild(hitRect(S.back.x - 40, 540, 240, 360, () => goScene('lobby')))
+  for (const [id] of DINOHUB_ORDER) {
+    const spot = S[id]
+    mainL.addChild(hitRect(spot.x - spot.w / 2, 200, spot.w, spot.h, () => goScene(DIORAMA_ROOM[id])))
+  }
+
+  // per-diorama completion marks (hidden until that room is solved): a gold glow
+  // around the niche frame + a SOLVED seal stamped in the corner
+  dinohub._marks = {}
+  for (const [id] of DINOHUB_ORDER) {
+    const room = DIORAMA_ROOM[id]
+    const spot = S[id]
+    const frameGlow = new Graphics()
+      .roundRect(0, 0, spot.w, spot.h, 18)
+      .stroke({ color: 0xffd98a, width: 8, alpha: 0.9 })
+    placeAt(frameGlow, spot.x - spot.w / 2, 200)
+    frameGlow.alpha = 0
+    frameGlow.blendMode = 'add'
+    mainL.addChild(frameGlow)
+    const seal = solvedSeal(spot.x + spot.w / 2 - 70, 268, { r: 40 })
+    mainL.addChild(seal)
+    dinohub._marks[room] = { frameGlow, seal }
+  }
+
+  const foreL = scrollLayer(1.35)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 5000 / 2, 540)
+  foreL.addChild(fore)
+
+  dinohub.addChild(backL, mainL, foreL)
+  dinohub._layers = [backL, mainL, foreL]
+  dinohub._main = mainL
+  makeDust(dinohub, 24, DINOHUB_W)
+
+  // already-solved rooms stay stamped if the hall is rebuilt/revisited
+  for (const room of ROOMS) if (roomComplete(room)) markRoomComplete(room)
+}
+
+/* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
+async function buildRaptor() {
+  const [skyT, dunesFarT, dunesMidT, mainT, rockT, featherT, trexToothT] = await Promise.all(
+    [raptorSkySVG(), raptorDunesFarSVG(), raptorDunesMidSVG(), raptorMainSVG(), raptorRockSVG(), featherSVG(60, 78), toothSVG('blade', 60, 78)].map(svgTexture),
+  )
+
+  const skyL = scrollLayer(0.1)
+  const sky = new Sprite(skyT)
+  sky.anchor.set(0.5)
+  placeAt(sky, 2200 / 2, 540)
+  skyL.addChild(sky)
+
+  const dunesFarL = scrollLayer(0.3)
+  const dunesFar = new Sprite(dunesFarT)
+  dunesFar.anchor.set(0.5)
+  placeAt(dunesFar, 2600 / 2, 540)
+  dunesFarL.addChild(dunesFar)
+
+  const dunesMidL = scrollLayer(0.5)
+  const dunesMid = new Sprite(dunesMidT)
+  dunesMid.anchor.set(0.5)
+  placeAt(dunesMid, 2950 / 2, 540)
+  dunesMidL.addChild(dunesMid)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, RAPTOR_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = RAPTOR_SPOTS
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('dinohub')))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
+    sfx.tap()
+    toast('VELOCIRAPTOR — “swift thief”. A turkey-sized, FEATHERED hunter with a big sickle claw.')
+  }))
+  mainL.addChild(hitRect(S.skeleton.x - S.skeleton.w / 2, S.skeleton.y, S.skeleton.w, S.skeleton.h, () => {
+    sfx.tap()
+    toast(raptor._drop?.done
+      ? 'Feathers, just like a bird — they suit this raptor perfectly.'
+      : hasClue('feather')
+        ? 'This hunter’s arms look strangely bare. If one of your finds belongs here, drag it on →'
+        : 'This little hunter’s arms look strangely bare — as if something light is missing.')
+  }))
+  mainL.addChild(hitRect(S.hint.x - 60, S.hint.y - 60, 120, 120, () => {
+    sfx.tap()
+    toast(raptor._drop?.done
+      ? 'You did it! The feather belongs to the only feathered dino here.'
+      : !hasClue('feather')
+        ? 'You’re missing the right piece. Watch the shadows as you walk the other rooms — things hide behind them.'
+        : 'Check the placards. Which dinosaur here was built more like a bird than a scaly lizard?')
+  }))
+
+  const raptorGlow = new Graphics()
+    .roundRect(0, 0, S.skeleton.w, S.skeleton.h, 24)
+    .fill({ color: 0xffd98a, alpha: 0.14 })
+    .stroke({ color: 0xffd98a, width: 8, alpha: 0.8 })
+  placeAt(raptorGlow, S.skeleton.x - S.skeleton.w / 2, S.skeleton.y)
+  raptorGlow.alpha = 0
+  raptorGlow.blendMode = 'add'
+  mainL.addChild(raptorGlow)
+
+  const placedFeather = new Sprite(featherT)
+  placedFeather.anchor.set(0.5)
+  placedFeather.rotation = -0.35
+  placeAt(placedFeather, S.socket.x, S.socket.y)
+  placedFeather.alpha = 0
+  mainL.addChild(placedFeather)
+
+  // a hidden T-REX TOOTH (1.2x layer, revealed from behind the 1.4x rock as you walk)
+  const clueL = scrollLayer(1.2)
+  addHiddenClue(clueL, S.clue, 'trexTooth', trexToothT)
+
+  // foreground rocks (fastest) — the rock at the clue's x hides it until you walk past
+  const foreL = scrollLayer(1.4)
+  for (const [wx, s, flip] of [[500, 1.3, false], [S.clue.x, 1.25, false], [1700, 1.6, true], [2950, 1.2, false], [3500, 1.5, true]]) {
+    const r = new Sprite(rockT)
+    r.anchor.set(0.5, 1)
+    r.scale.set(s * (flip ? -1 : 1), s)
+    placeAt(r, wx, 1120)
+    foreL.addChild(r)
+  }
+
+  raptor.addChild(skyL, dunesFarL, dunesMidL, mainL, clueL, foreL)
+  raptor._layers = [skyL, dunesFarL, dunesMidL, mainL, clueL, foreL]
+  raptor._main = mainL
+  // the placeable target in this room: drag the FEATHER here
+  raptor._drop = {
+    item: 'feather', skeleton: S.skeleton, socket: S.socket, glow: raptorGlow, placed: placedFeather, done: false,
+    success: {
+      frag: 2,
+      video: '/video/raptor-success.mp4',
+      html: 'Velociraptor wore <b>feathers</b> like a bird! Bumps on its arm bones — <b>quill knobs</b> — ' +
+        'show exactly where its feathers attached.',
+    },
+  }
+  makeDust(raptor, 26, RAPTOR_W, 0xe8d29a)
+}
+
+// a background parallax layer holding one full-width sprite
+function bgLayer(speed, tex, x, y = 540) {
+  const L = scrollLayer(speed)
+  const s = new Sprite(tex)
+  s.anchor.set(0.5)
+  placeAt(s, x, y)
+  L.addChild(s)
+  return L
+}
+
+// the standard room hotspots (back exit · placard · skeleton · hint), driven by the
+// room's _drop so the copy reacts to whether the clue is held / placed
+function roomHotspots(mainL, scene, S, t) {
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('dinohub')))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => { sfx.tap(); toast(t.placard) }))
+  mainL.addChild(hitRect(S.skeleton.x - S.skeleton.w / 2, S.skeleton.y, S.skeleton.w, S.skeleton.h, () => {
+    sfx.tap(); toast(scene._drop?.done ? t.solved : hasClue(scene._drop?.item) ? t.have : t.need)
+  }))
+  mainL.addChild(hitRect(S.hint.x - 60, S.hint.y - 60, 120, 120, () => {
+    sfx.tap(); toast(scene._drop?.done ? t.solved : hasClue(scene._drop?.item) ? t.have : t.hint)
+  }))
+}
+
+/* ---------- T-REX ROOM (dim conifer forest) ---------- */
+async function buildTrex() {
+  const S = TREX_SPOTS
+  const [skyT, farT, midT, mainT, fernT, toothT, eggT, boneAT, boneBT, boneCT, footIconT] = await Promise.all(
+    [trexSkySVG(), trexFarSVG(), trexMidSVG(), trexMainSVG(), trexFernSVG(), toothSVG('blade', 64, 82), eggSVG('round', 60, 78),
+      boneSVG(66, 100, 150), boneSVG(98, 100, 180), boneSVG(80, 100, 160), footprintSVG('three-toe', 96, 120)].map(svgTexture),
+  )
+  const skyL = bgLayer(0.15, skyT, 2200 / 2)
+  const farL = bgLayer(0.3, farT, 2600 / 2)
+  const midL = bgLayer(0.5, midT, 2950 / 2)
+  const mainL = bgLayer(1, mainT, TREX_W / 2)
+
+  roomHotspots(mainL, trex, S, {
+    placard: 'TYRANNOSAURUS REX — “tyrant lizard king”. Huge jaws, tiny arms, and bone-crushing teeth.',
+    solved: 'A perfect bite — those banana-sized teeth belong to the T-rex.',
+    have: 'A giant jaw with a gap in it. If one of your finds is big enough, drag it here →',
+    need: 'A giant jaw with a gap in it. Only one kind of tooth could arm a bite this size.',
+    hint: 'Think about the size of that bite. A bone-crusher needs a tooth far bigger than a little hunter’s.',
+  })
+  addDropTarget(mainL, trex, {
+    item: 'trexTooth', skeleton: S.skeleton, socket: S.socket, placedTex: toothT, rot: 0.25, frag: 3,
+    html: 'Banana-sized, <b>serrated teeth</b> — strong enough to crush bone. They belong to the king: <b>Tyrannosaurus rex</b>!',
+  })
+
+  // a hidden BRACHIOSAURUS egg behind a fern (1.2x layer)
+  const clueL = scrollLayer(1.2)
+  addHiddenClue(clueL, S.clue, 'brachioEgg', eggT)
+
+  const foreL = scrollLayer(1.4)
+  for (const [wx, sc, flip] of [[420, 1.3, false], [S.clue.x, 1.25, false], [1950, 1.4, true], [3150, 1.3, false]]) {
+    const f = new Sprite(fernT)
+    f.anchor.set(0.5, 1)
+    f.scale.set(sc * (flip ? -1 : 1), sc)
+    placeAt(f, wx, 1120)
+    foreL.addChild(f)
+  }
+
+  // foot-assembly puzzle: a lit plinth in the room opens a full-screen, immersive
+  // stage where the player rebuilds the 3-toed foot to match a reference card.
+  const bonesCfg = [{ len: 66, tex: boneAT }, { len: 98, tex: boneBT }, { len: 80, tex: boneCT }]
+  buildFootEntry(mainL, S, footIconT)
+
+  trex.addChild(skyL, farL, midL, mainL, clueL, foreL)
+  trex._layers = [skyL, farL, midL, mainL, clueL, foreL]
+  trex._main = mainL
+  makeDust(trex, 24, TREX_W, 0x9fce9f)
+
+  // the full-screen overlay lives on top of every scene (added to root, hidden)
+  footStage = buildFootStage(bonesCfg)
+  root.addChild(footStage)
+}
+
+/* ---------- BRACHIOSAURUS ROOM (open plains) ---------- */
+async function buildBrachio() {
+  const S = BRACHIO_SPOTS
+  const [skyT, hillsT, treesT, mainT, grassT, eggT, fuzzT] = await Promise.all(
+    [brachioSkySVG(), brachioHillsSVG(), brachioTreesSVG(), brachioMainSVG(), brachioGrassSVG(), eggSVG('round', 64, 82), pycnofiberSVG(60, 78)].map(svgTexture),
+  )
+  const skyL = bgLayer(0.1, skyT, 2200 / 2)
+  const hillsL = bgLayer(0.3, hillsT, 2600 / 2)
+  const treesL = bgLayer(0.5, treesT, 2950 / 2)
+  const mainL = bgLayer(1, mainT, BRACHIO_W / 2)
+
+  roomHotspots(mainL, brachio, S, {
+    placard: 'BRACHIOSAURUS — a giant plant-eater that reached treetops on a long neck. Taller than a house!',
+    solved: 'Snug in its nest — a giant egg for a giant plant-eater.',
+    have: 'An empty nest by the giant’s feet. If one of your finds belongs here, drag it in →',
+    need: 'An empty nest sits by the giant’s feet. Whatever filled it must have been enormous.',
+    hint: 'A giant animal lays a giant clutch. Which of your finds is far too big for any small creature?',
+  })
+  addDropTarget(mainL, brachio, {
+    item: 'brachioEgg', skeleton: S.skeleton, socket: S.socket, placedTex: eggT, rot: 0, frag: 4,
+    html: 'A giant <b>round egg</b> for a giant plant-eater — <b>Brachiosaurus</b>, who browsed the treetops on its long neck.',
+  })
+
+  // a tappable sign on the open plain that launches the BRACHIO RUN mini-game
+  buildBrachioGameEntry(mainL, { x: 850, y: 720 })
+
+  // hidden PTERODACTYL pycnofibers behind a grass tuft (1.2x layer)
+  const clueL = scrollLayer(1.2)
+  addHiddenClue(clueL, S.clue, 'pycnofibers', fuzzT)
+
+  const foreL = scrollLayer(1.4)
+  for (const [wx, sc, flip] of [[500, 1.4, false], [S.clue.x, 1.25, false], [2200, 1.5, true], [3400, 1.3, false]]) {
+    const g = new Sprite(grassT)
+    g.anchor.set(0.5, 1)
+    g.scale.set(sc * (flip ? -1 : 1), sc)
+    placeAt(g, wx, 1118)
+    foreL.addChild(g)
+  }
+
+  brachio.addChild(skyL, hillsL, treesL, mainL, clueL, foreL)
+  brachio._layers = [skyL, hillsL, treesL, mainL, clueL, foreL]
+  brachio._main = mainL
+  makeDust(brachio, 26, BRACHIO_W, 0xe6d79a)
+}
+
+/* ---------- PTERODACTYL ROOM (sea cliffs) ---------- */
+async function buildPtero() {
+  const S = PTERO_SPOTS
+  const [skyT, seaT, cliffT, mainT, rockT, fuzzT] = await Promise.all(
+    [pteroSkySVG(), pteroSeaSVG(), pteroCliffSVG(), pteroMainSVG(), pteroRockSVG(), pycnofiberSVG(64, 82)].map(svgTexture),
+  )
+  const skyL = bgLayer(0.1, skyT, 2200 / 2)
+  const seaL = bgLayer(0.25, seaT, 2600 / 2)
+  const cliffL = bgLayer(0.5, cliffT, 2900 / 2)
+  const mainL = bgLayer(1, mainT, PTERO_W / 2)
+
+  roomHotspots(mainL, ptero, S, {
+    placard: 'PTERODACTYL — a flying reptile (a pterosaur, NOT a dinosaur). Toothless beak, big crest, fuzzy pycnofibers.',
+    solved: 'Fuzzy at last — pycnofibers suit this flying reptile perfectly.',
+    have: 'This flyer’s skin looks oddly bare. If one of your finds suits it, drag it on →',
+    need: 'This flying reptile looks oddly bare — as if a soft covering is missing.',
+    hint: 'Not every prehistoric fuzz is feathers. What soft coat would keep a flying reptile warm?',
+  })
+  addDropTarget(mainL, ptero, {
+    item: 'pycnofibers', skeleton: S.skeleton, socket: S.socket, placedTex: fuzzT, rot: 0, frag: 5,
+    html: 'Soft <b>pycnofibers</b> — fuzzy down! They belong to <b>Pterodactyl</b>, a flying reptile (a <b>pterosaur</b>), not a dinosaur.',
+  })
+
+  // a tappable cliff-side sign that launches the FISH RUN mini-game
+  buildPteroGameEntry(mainL, { x: 980, y: 720 })
+
+  const foreL = scrollLayer(1.4)
+  for (const [wx, sc, flip] of [[420, 1.3, false], [1500, 1.5, true], [2600, 1.3, false], [3200, 1.4, true]]) {
+    const r = new Sprite(rockT)
+    r.anchor.set(0.5, 1)
+    r.scale.set(sc * (flip ? -1 : 1), sc)
+    placeAt(r, wx, 1120)
+    foreL.addChild(r)
+  }
+
+  ptero.addChild(skyL, seaL, cliffL, mainL, foreL)
+  ptero._layers = [skyL, seaL, cliffL, mainL, foreL]
+  ptero._main = mainL
+  makeDust(ptero, 24, PTERO_W, 0xbcd6e6)
+}
+
+// a glowing cliff-side placard that opens the FISH RUN one-tap mini-game
+function buildPteroGameEntry(mainL, { x, y }) {
+  const glow = new Graphics().ellipse(0, 0, 150, 100).fill({ color: 0x7fa6c0, alpha: 0.16 })
+  placeAt(glow, x, y - 30); glow.blendMode = 'add'; mainL.addChild(glow)
+  gsap.to(glow, { alpha: 0.4, duration: 1.5, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+  const sign = new Graphics().roundRect(-128, -52, 256, 104, 16)
+    .fill({ color: 0x16242f, alpha: 0.92 }).stroke({ color: 0xece0c2, width: 3, alpha: 0.7 })
+  placeAt(sign, x, y); mainL.addChild(sign)
+
+  const fish = new Text({ text: '🐟', style: { fontSize: 44 } })
+  fish.anchor.set(0.5); placeAt(fish, x - 84, y); mainL.addChild(fish)
+  gsap.to(fish, { y: fish.y - 10, duration: 1.1, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+  const label = new Text({
+    text: 'FISH RUN\ntap to play ▸',
+    style: { fontFamily: SERIF, fontSize: 26, fill: 0xf4ead0, align: 'center', lineHeight: 30, fontWeight: '600' },
+  })
+  label.anchor.set(0.5); placeAt(label, x + 26, y); mainL.addChild(label)
+
+  ptero._gameBadge = solvedSeal(x + 150, y - 64, { r: 28, caption: '' })
+  mainL.addChild(ptero._gameBadge)
+
+  mainL.addChild(hitRect(x - 128, y - 56, 256, 112, () => {
+    sfx.tap()
+    openPteroGame({ goal: 10, onComplete: () => onMinigameSolved('ptero'), onClose: () => afterMinigameClose('ptero') })
+  }))
+}
+
+// a glowing plain-side placard that opens the BRACHIO RUN endless-runner mini-game
+function buildBrachioGameEntry(mainL, { x, y }) {
+  const glow = new Graphics().ellipse(0, 0, 150, 100).fill({ color: 0x8fce6a, alpha: 0.16 })
+  placeAt(glow, x, y - 30); glow.blendMode = 'add'; mainL.addChild(glow)
+  gsap.to(glow, { alpha: 0.42, duration: 1.5, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+  const sign = new Graphics().roundRect(-128, -52, 256, 104, 16)
+    .fill({ color: 0x1c2a16, alpha: 0.92 }).stroke({ color: 0xece0c2, width: 3, alpha: 0.7 })
+  placeAt(sign, x, y); mainL.addChild(sign)
+
+  const leaf = new Text({ text: '🌿', style: { fontSize: 44 } })
+  leaf.anchor.set(0.5); placeAt(leaf, x - 84, y); mainL.addChild(leaf)
+  gsap.to(leaf, { y: leaf.y - 10, duration: 1.1, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+  const label = new Text({
+    text: 'BRACHIO RUN\ntap to play ▸',
+    style: { fontFamily: SERIF, fontSize: 26, fill: 0xf4ead0, align: 'center', lineHeight: 30, fontWeight: '600' },
+  })
+  label.anchor.set(0.5); placeAt(label, x + 26, y); mainL.addChild(label)
+
+  brachio._gameBadge = solvedSeal(x + 150, y - 64, { r: 28, caption: '' })
+  mainL.addChild(brachio._gameBadge)
+
+  mainL.addChild(hitRect(x - 128, y - 56, 256, 112, () => {
+    sfx.tap()
+    openBrachioGame({ surviveSeconds: 20, onSurvive: () => onMinigameSolved('brachio'), onClose: () => afterMinigameClose('brachio') })
+  }))
 }
 
 /* ---------- game beats ---------- */
 let lobbyHintTimer = null
 
+// the first inventory slot holds the found tooth
+const invToothSlot = () => document.querySelector('#inventory-grid .inv-slot')
+
 function pickUpTooth() {
-  if (state.hasTooth) return
-  state.hasTooth = true
+  if (hasClue('tooth')) return
+  state.has.tooth = true
   clearTimeout(lobbyHintTimer)
   sfx.pickup()
 
+  // always open the inventory so the tooth has a visible slot to land in
+  // (instant, so the slot is measured at its resting position)
+  openRailInstant('inventory-rail')
+
   const gp = toothSprite.getGlobalPosition()
-  const slot = $('tooth-slot').getBoundingClientRect()
+  const slotEl = invToothSlot()
+  const slot = slotEl.getBoundingClientRect()
   const fly = document.createElement('div')
   fly.style.cssText = 'position:fixed;left:0;top:0;z-index:40;pointer-events:none;will-change:transform'
   fly.innerHTML = toothSVG('leaf', 64, 83)
@@ -441,10 +973,10 @@ function pickUpTooth() {
       duration: 0.8, ease: 'power2.inOut',
       onComplete: () => {
         fly.remove()
-        const slotEl = $('tooth-slot')
         slotEl.classList.remove('empty')
         slotEl.classList.add('filled')
-        slotEl.innerHTML = toothSVG('leaf', 30, 39)
+        slotEl.dataset.item = 'tooth'
+        slotEl.innerHTML = slotInner('tooth')
         gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
       },
     })
@@ -456,33 +988,221 @@ function pickUpTooth() {
   gsap.to(doorGlow, { alpha: 0.7, duration: 1.2 })
   gsap.to(doorGlow, { alpha: 0.25, duration: 1.4, yoyo: true, repeat: -1, delay: 1.2 })
 
-  toast('A fossil tooth! It’s wide and flat. The DINOSAUR WING is at the end of the hall →', 6000)
+  toast('A fossil tooth! It’s now in your INVENTORY. The DINOSAUR WING is at the end of the hall →', 6000)
 }
 
-function enterGrove() {
-  if (state.scene !== 'lobby') return
-  state.scene = 'grove'
-  cams.grove.x = 0
-  cams.grove.vel = 0
+/* ---------- scene navigation (lobby → dino hall → a dino's room) ---------- */
+const ROOMS = ['grove', 'raptor', 'trex', 'brachio', 'ptero']
+const SCENE_BACK = { dinohub: 'lobby', ...Object.fromEntries(ROOMS.map((r) => [r, 'dinohub'])) }
+const BACK_LABEL = { dinohub: 'Lobby', ...Object.fromEntries(ROOMS.map((r) => [r, 'Dino Hall'])) }
+const DEPTH = { lobby: 0, dinohub: 1, ...Object.fromEntries(ROOMS.map((r) => [r, 2])) }
+
+/* ---------- completion state (inner section = a dino room; section = the wing) ----------
+   A room is "done" when ALL its challenges are solved (the drag-placement puzzle,
+   plus the foot-assembly puzzle in the T-rex room). The Dinosaur WING is done when
+   every room is. Each room stamps a SOLVED seal on its diorama in the hall; the wing
+   stamps the lobby door and fires a grand finale. */
+function roomComplete(name) {
+  const sc = scenes[name]
+  // every room has a drag-placement puzzle; require it (also guards the build race
+  // where a room's _drop isn't assigned yet — an unbuilt room is NOT complete)
+  if (!sc || !sc._drop?.done) return false
+  if (name === 'trex' && !sc._foot?.done) return false
+  // brachio & ptero also each hide a mini-game challenge (Brachio Run / Fish Run)
+  if ((name === 'brachio' || name === 'ptero') && !sc._gameDone) return false
+  return true
+}
+const dinoWingComplete = () => ROOMS.every(roomComplete)
+
+function goScene(target) {
+  if (!scenes[target] || target === state.scene) return
+  if (puzzleOpen) closeFootPuzzle()
+  const from = scenes[state.scene]
+  const to = scenes[target]
+  const dir = DEPTH[target] >= DEPTH[state.scene] ? -1 : 1
+  state.scene = target
+  cams[target].x = 0
+  cams[target].vel = 0
   sfx.whoosh()
-  $('back-btn').classList.remove('hidden')
+  switchScene(from, to, dir)
+  const back = SCENE_BACK[target]
+  const btn = $('back-btn')
+  if (back) { btn.textContent = '‹ ' + BACK_LABEL[target]; btn.classList.remove('hidden') }
+  else btn.classList.add('hidden')
   $('walk-arrow').classList.remove('hidden')
-  switchScene(lobby, grove, -1)
-  if (state.hasTooth && !state.solved) gsap.to(trayGlow, { alpha: 0.8, duration: 1, delay: 1, yoyo: true, repeat: 3 })
-  setTimeout(() => {
-    toast(state.hasTooth
-      ? 'A jungle trail! Walk right — drag, tilt, scroll, or arrow keys — and find out whose tooth you’re carrying.'
-      : 'A jungle trail! Walk right and explore… though you feel like you missed a clue back in the lobby.', 6500)
-  }, 700)
+  onSceneEnter(target)
 }
 
-function backToLobby() {
-  if (state.scene !== 'grove') return
-  state.scene = 'lobby'
-  sfx.whoosh()
-  $('back-btn').classList.add('hidden')
-  $('walk-arrow').classList.add('hidden')
-  switchScene(grove, lobby, 1)
+// per-room: which clue is placed here, and the on-enter toasts
+const ROOM_ENTER = {
+  grove: { item: 'tooth', ready: 'A jungle trail! Walk to the skeleton and DRAG your tooth onto it — and watch the ground for a stray FEATHER.', explore: 'A jungle trail! Walk and explore — keep an eye on the ground…' },
+  raptor: { item: 'feather', ready: 'Arid badlands — a FEATHERED raptor! Drag your feather onto its arm. (Something glints by the rocks…)', explore: 'Arid badlands. This raptor looks like it’s missing a plume…' },
+  trex: { item: 'trexTooth', ready: 'A dark forest, and a giant jaw missing a tooth. Drag the big tooth onto it. (Is that an EGG in the ferns?)', explore: 'A dark conifer forest. The T-rex’s jaw looks bare…' },
+  brachio: { item: 'brachioEgg', ready: 'Open plains and a huge nest. Drag the egg into the nest. (Something fuzzy hides in the grass…)', explore: 'Open plains. There’s an empty nest by the giant’s feet…' },
+  ptero: { item: 'pycnofibers', ready: 'Sea cliffs! Drag the fuzzy pycnofibers onto the flying pterosaur.', explore: 'Windy sea cliffs. The pterosaur looks oddly bare…' },
+}
+
+function onSceneEnter(target) {
+  if (target === 'dinohub') {
+    setTimeout(() => toast('The Hall of Dinosaurs! Tap a diorama to step inside its world.', 6000), 700)
+    return
+  }
+  const cfg = ROOM_ENTER[target]
+  if (!cfg) return
+  const drop = scenes[target]?._drop
+  const ready = hasClue(cfg.item) && drop && !drop.done
+  if (ready) {
+    if (isCompact()) setRail('inventory-rail', false)
+    invSlotFor(cfg.item)?.classList.add('cue')
+    if (target === 'grove') gsap.to(trayGlow, { alpha: 0.8, duration: 1, delay: 1, yoyo: true, repeat: 3 })
+  }
+  setTimeout(() => toast(ready ? cfg.ready : cfg.explore, 6500), 700)
+}
+
+const invSlot = (i) => document.querySelectorAll('#inventory-grid .inv-slot')[i]
+const invSlotFor = (item) => [...document.querySelectorAll('#inventory-grid .inv-slot')].find((s) => s.dataset.item === item)
+const nextEmptyInvSlot = () => [...document.querySelectorAll('#inventory-grid .inv-slot')].find((s) => !s.classList.contains('filled'))
+
+// every collectible clue → how it's drawn (inventory icon · drag ghost · placed sprite)
+const ITEM_SVG = {
+  tooth: (w, h) => toothSVG('leaf', w, h),
+  feather: (w, h) => featherSVG(w, h),
+  trexTooth: (w, h) => toothSVG('blade', w, h),
+  brachioEgg: (w, h) => eggSVG('round', w, h),
+  pycnofibers: (w, h) => pycnofiberSVG(w, h),
+}
+const CLUE_TOAST = {
+  feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
+  trexTooth: 'A huge, serrated tooth — far too big for a little raptor. Into your INVENTORY it goes.',
+  brachioEgg: 'An enormous egg! No meat-eater laid this. It’s in your INVENTORY.',
+  pycnofibers: 'A tuft of fuzzy pycnofibers — only one flyer grew these. Into your INVENTORY.',
+}
+
+// The inventory is the CONTEXT-LIGHT side of the loop: a find shows only WHAT it is
+// and WHERE it was picked up (+ the image). The "whose is it / why" reasoning lives
+// in the Catalog. `found` = the diorama the clue was hidden in. `section`/`dino`
+// stay as metadata in case a Catalog cross-link is wired back in later.
+const ITEM_INFO = {
+  tooth: { name: 'Fossil Tooth', section: 'Teeth', dino: 'trike', found: 'Museum Lobby' },
+  feather: { name: 'Feather', section: 'Covering', dino: 'raptor', found: 'Fern Grove' },
+  trexTooth: { name: 'Giant Tooth', section: 'Teeth', dino: 'trex', found: 'Desert Dunes' },
+  brachioEgg: { name: 'Giant Egg', section: 'Eggs', dino: 'brachio', found: 'Pine Forest' },
+  pycnofibers: { name: 'Pycnofibers', section: 'Covering', dino: 'ptero', found: 'Green Hills' },
+}
+
+// a filled inventory slot's contents: the item icon + an ⓘ "more details" badge
+const slotInner = (itemId) => `${ITEM_SVG[itemId](40, 52)}<button class="inv-info" aria-label="More details">i</button>`
+
+function openItemDetail(itemId) {
+  const info = ITEM_INFO[itemId]
+  if (!info) return
+  sfx.tap()
+  $('inventory-detail').innerHTML = `
+    <button class="inv-back">‹ Inventory</button>
+    <div class="inv-detail-art">${ITEM_SVG[itemId](132, 172)}</div>
+    <h3 class="inv-detail-title">${info.name}</h3>
+    <p class="inv-detail-found">Found in <b>${info.found}</b></p>`
+  $('inventory-grid').classList.add('hidden-inv')
+  document.querySelector('#inventory-rail .inv-hint')?.classList.add('hidden-inv')
+  $('inventory-detail').classList.remove('hidden-inv')
+}
+
+function closeItemDetail() {
+  $('inventory-detail').classList.add('hidden-inv')
+  $('inventory-grid').classList.remove('hidden-inv')
+  document.querySelector('#inventory-rail .inv-hint')?.classList.remove('hidden-inv')
+}
+
+// clues currently hidden in the world: itemId → { sprite, sparkle }
+const CLUES = {}
+
+function sparkleAt(wx, wy) {
+  const s = new Graphics()
+    .poly([0, -16, 5, -5, 16, 0, 5, 5, 0, 16, -5, 5, -16, 0, -5, -5])
+    .fill({ color: 0xffe9b0 })
+  s.blendMode = 'add'
+  placeAt(s, wx, wy)
+  gsap.to(s, { alpha: 0.15, duration: 0.7, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+  gsap.to(s.scale, { x: 1.5, y: 1.5, duration: 0.7, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+  return s
+}
+
+// hide a clue in a room (on a 1.2x parallax layer; a foreground element reveals it on the walk)
+function addHiddenClue(layer, spot, itemId, tex) {
+  const s = new Sprite(tex)
+  s.anchor.set(0.5)
+  s.rotation = -0.4
+  placeAt(s, spot.x, spot.y)
+  s.eventMode = 'static'
+  s.cursor = 'pointer'
+  s.on('pointertap', () => pickUpClue(itemId))
+  layer.addChild(s)
+  const sparkle = sparkleAt(spot.x + 28, spot.y - 30)
+  layer.addChild(sparkle)
+  CLUES[itemId] = { sprite: s, sparkle }
+}
+
+// a room's placement target: drag `item` onto the skeleton to lock it into the socket
+function addDropTarget(mainLayer, scene, opts) {
+  const S = opts.skeleton
+  const glow = new Graphics()
+    .roundRect(0, 0, S.w, S.h, 24)
+    .fill({ color: 0xffd98a, alpha: 0.14 })
+    .stroke({ color: 0xffd98a, width: 8, alpha: 0.8 })
+  placeAt(glow, S.x - S.w / 2, S.y)
+  glow.alpha = 0
+  glow.blendMode = 'add'
+  mainLayer.addChild(glow)
+  const placed = new Sprite(opts.placedTex)
+  placed.anchor.set(0.5)
+  placed.rotation = opts.rot ?? -0.2
+  placeAt(placed, opts.socket.x, opts.socket.y)
+  placed.alpha = 0
+  mainLayer.addChild(placed)
+  scene._drop = {
+    item: opts.item, skeleton: S, socket: opts.socket, glow, placed, done: false,
+    success: { frag: opts.frag, html: opts.html },
+  }
+  return glow
+}
+
+// collect any clue into the inventory (works for every itemId)
+function pickUpClue(itemId) {
+  if (hasClue(itemId)) return
+  const clue = CLUES[itemId]
+  if (!clue) return
+  state.has[itemId] = true
+  sfx.pickup()
+  // open the inventory so the clue has a visible slot to fly into
+  openRailInstant('inventory-rail')
+
+  const gp = clue.sprite.getGlobalPosition()
+  const slotEl = nextEmptyInvSlot()
+  if (slotEl) {
+    const slot = slotEl.getBoundingClientRect()
+    const fly = document.createElement('div')
+    fly.style.cssText = 'position:fixed;left:0;top:0;z-index:40;pointer-events:none;will-change:transform'
+    fly.innerHTML = ITEM_SVG[itemId](60, 78)
+    document.body.appendChild(fly)
+    gsap.fromTo(fly,
+      { x: gp.x - 30, y: gp.y - 39, scale: 1, rotation: -24 },
+      {
+        x: slot.left + slot.width / 2 - 30, y: slot.top + slot.height / 2 - 39, scale: 0.55, rotation: 0,
+        duration: 0.8, ease: 'power2.inOut',
+        onComplete: () => {
+          fly.remove()
+          slotEl.classList.remove('empty')
+          slotEl.classList.add('filled')
+          slotEl.dataset.item = itemId
+          slotEl.innerHTML = slotInner(itemId)
+          gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
+        },
+      })
+  }
+  gsap.to(clue.sprite, { alpha: 0, duration: 0.25 })
+  gsap.to(clue.sparkle, { alpha: 0, duration: 0.25, overwrite: true })
+  clue.sprite.eventMode = 'none'
+  toast(CLUE_TOAST[itemId] || 'A new clue is in your INVENTORY.', 6000)
 }
 
 function switchScene(from, to, dir) {
@@ -495,55 +1215,420 @@ function switchScene(from, to, dir) {
   gsap.to(to.position, { x: 0, duration: 0.65, delay: 0.25, ease: 'power2.out' })
 }
 
-function tryCard(card) {
-  if (state.solved) return
-  if (!state.hasTooth) {
-    sfx.tap()
-    toast('You’ll need a clue to compare first… something glinted back in the lobby.')
-    return
-  }
-  const fx = cardFx[card.name]
-  if (card.correct) {
-    state.solved = true
-    sfx.success()
-    gsap.to(fx, { alpha: 1, duration: 0.4 })
-    gsap.to(skeletonGlow, { alpha: 1, duration: 0.6, delay: 0.3 })
-    confetti(skeletonGlow)
-    setTimeout(() => {
-      $('success-text').innerHTML =
-        'Broad &amp; flat — for grinding ferns and leaves. A <b>plant eater’s</b> tooth!<br>' +
-        'And the skeleton guarding the nest? <b>Triceratops</b> — it’s a perfect match.'
-      $('success').classList.remove('hidden')
-    }, 1400)
+/* ---------- inventory drag-and-drop: drag a clue onto its dinosaur ---------- */
+let dragSlot = null
+let dragItem = null
+
+function startItemDrag(x, y, slot) {
+  if (!slot.classList.contains('filled')) return
+  draggingItem = true
+  dragSlot = slot
+  dragItem = slot.dataset.item
+  slot.classList.remove('cue')
+  slot.classList.add('dragging')
+  sfx.pickup()
+  const ghost = $('drag-ghost')
+  ghost.innerHTML = (ITEM_SVG[dragItem] || ITEM_SVG.tooth)(64, 83)
+  ghost.classList.remove('hidden')
+  gsap.killTweensOf(ghost)
+  gsap.set(ghost, { x: x - 32, y: y - 41 })
+}
+
+function moveItemDrag(x, y) {
+  if (footDrag) { moveBoneDrag(x, y); return }
+  if (!draggingItem) return
+  gsap.set($('drag-ghost'), { x: x - 32, y: y - 41 })
+  // light up the dino as a drop affordance — only when it's the RIGHT clue
+  const d = activeDrop()
+  if (d?.glow && !d.done) d.glow.alpha = (pointerOverDino(x, y) && d.item === dragItem) ? 0.5 : 0
+}
+
+function endItemDrag(x, y) {
+  if (footDrag) { endBoneDrag(x, y); return }
+  if (!draggingItem) return
+  draggingItem = false
+  dragSlot?.classList.remove('dragging')
+  const d = activeDrop()
+  const over = pointerOverDino(x, y)
+  if (d && !d.done && over && d.item === dragItem) {
+    placeItem(d)
   } else {
-    state.triedWrong++
-    sfx.wrong()
-    gsap.fromTo(fx, { alpha: 0.9 }, { alpha: 0, duration: 0.9, ease: 'power2.out' })
-    const ox = grove._main.pivot.x
-    gsap.timeline()
-      .to(grove._main.pivot, { x: ox + 9, duration: 0.06 })
-      .to(grove._main.pivot, { x: ox - 9, duration: 0.06, repeat: 2, yoyo: true })
-      .to(grove._main.pivot, { x: ox, duration: 0.06 })
-    toast(card.hint, 5600)
+    if (d?.glow) d.glow.alpha = 0
+    const r = dragSlot.getBoundingClientRect()
+    gsap.to($('drag-ghost'), {
+      x: r.left + r.width / 2 - 32, y: r.top + r.height / 2 - 41,
+      duration: 0.3, ease: 'power2.out',
+      onComplete: () => $('drag-ghost').classList.add('hidden'),
+    })
+    if (over && d && d.item !== dragItem) toast('That’s not what this dinosaur is missing…', 3500)
+    else if (d && !d.done) toast('Drag it right onto the skeleton to place it.', 3000)
+  }
+  dragSlot = null
+  dragItem = null
+}
+
+// dropped on the right dino — fly into place, lock it in, celebrate
+function placeItem(d) {
+  d.done = true
+  sfx.success()
+  const slot = dragSlot
+  slot.classList.remove('filled', 'cue')
+  slot.classList.add('empty')
+  slot.innerHTML = ''
+  delete slot.dataset.item
+
+  const ghost = $('drag-ghost')
+  const to = worldToScreen(d.socket.x, d.socket.y)
+  gsap.to(ghost, {
+    x: to.x - 32, y: to.y - 41, duration: 0.4, ease: 'power2.out',
+    onComplete: () => {
+      ghost.classList.add('hidden')
+      gsap.to(d.placed, { alpha: 1, duration: 0.3 })
+      gsap.fromTo(d.placed.scale, { x: 1.4, y: 1.4 }, { x: 1, y: 1, duration: 0.45, ease: 'back.out(3)' })
+      gsap.to(d.glow, { alpha: 1, duration: 0.6 })
+      confetti(d.glow)
+      setTimeout(() => finishSolve(d, state.scene), 1000)
+    },
+  })
+}
+
+function showSuccess(d, meta = {}) {
+  const card = $('success-card')
+  const badge = $('fragment-badge')
+  card.classList.toggle('finale', !!meta.wingComplete)
+
+  if (meta.wingComplete) {
+    // grand finale — the whole Dinosaur Wing is solved
+    card.querySelector('.big').textContent = '🏆 WING COMPLETE! 🏆'
+    $('success-text').innerHTML = 'Every fossil is back where it belongs — you’ve solved <b>all five exhibits</b> ' +
+      'and completed the entire <b>Dinosaur Wing</b>! 🦕'
+    badge.innerHTML = 'DINOSAUR WING&nbsp;<b>· COMPLETE ·</b>'
+    badge.classList.remove('hidden')
+  } else {
+    $('success-text').innerHTML = d.success.html +
+      (meta.roomComplete ? '<span class="exhibit-done">✓ Exhibit complete</span>' : '')
+    // foot-style puzzles aren't fossil fragments — hide the badge when frag is absent
+    if (d.success.frag) {
+      badge.innerHTML = `FOSSIL FRAGMENT&nbsp;<b>${d.success.frag}</b>&nbsp;/ 5`
+      badge.classList.remove('hidden')
+    } else {
+      badge.classList.add('hidden')
+    }
+    card.querySelector('.big').textContent = d.success.title || '✨ It fits! ✨'
+  }
+
+  $('success').classList.remove('hidden')
+  const vid = $('success-video')
+  if (vid) {
+    const src = (meta.wingComplete ? null : d.success.video) || '/video/success.mp4'
+    if (!vid.src.endsWith(src)) vid.src = src
+    vid.currentTime = 0; vid.play().catch(() => {})
+  }
+  if (meta.wingComplete) { sfx.success(); finaleConfetti() }
+}
+
+/* ---------- T-rex foot-assembly puzzle (full-screen, immersive) ----------
+   Tapping the lit plinth in the T-rex room opens a dedicated full-screen stage:
+   a dark, spotlit pedestal with the loose toe bones and NO on-stage answer. The
+   player consults the CATALOG (Footprints → T-rex three-toed track) to work out
+   the shape, then recreates it: drag each bone into place AND twist its gold tip
+   to the right angle. There are no placement clues on the pedestal. A bone only locks when
+   BOTH its position and rotation match. POS_TOL / ANG_TOL set the slack. */
+const FOOT_SC = 1.7           // pieces are big for a full-screen feel
+const FOOT_POS_TOL = 70       // px of slack on placement (scales with the bigger pieces)
+const FOOT_ANG_TOL = 0.20     // ~11° of slack on rotation
+const angDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b))
+const MX = 1230, MY = 720     // mount (pedestal) centre, in design space
+
+// the assembled theropod pose relative to the mount: side toes splayed, middle
+// toe longest and near-vertical. `ang` is the bone's rotation (0 = upright).
+const FOOT_TOES = [
+  { dx: -150, dy: -82, ang: -0.5 },  // inner toe, splayed left
+  { dx: 0, dy: -196, ang: 0 },       // middle toe (longest), straight up
+  { dx: 150, dy: -82, ang: 0.5 },    // outer toe, splayed right
+]
+
+function makeBone(bc, scale) {
+  const sp = new Sprite(bc.tex)
+  sp.anchor.set(0.5)
+  sp.scale.set(scale)
+  return sp
+}
+
+// the lit plinth in the room that opens the full-screen puzzle
+function buildFootEntry(mainL, S, footTex) {
+  const x = S.foot.x, y = S.foot.y
+  const glow = new Graphics().ellipse(0, 0, 140, 96).fill({ color: 0xffd98a, alpha: 0.16 })
+  placeAt(glow, x, y - 36); glow.blendMode = 'add'; mainL.addChild(glow)
+  gsap.to(glow, { alpha: 0.42, duration: 1.5, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+  const plinth = new Graphics().roundRect(-96, -14, 192, 56, 12)
+    .fill({ color: 0x2a3b33, alpha: 0.92 }).stroke({ color: 0xece0c2, width: 3, alpha: 0.7 })
+  placeAt(plinth, x, y + 28); mainL.addChild(plinth)
+
+  const icon = new Sprite(footTex); icon.anchor.set(0.5); icon.scale.set(1.15)
+  placeAt(icon, x, y - 40); mainL.addChild(icon)
+  gsap.to(icon.scale, { x: 1.28, y: 1.28, duration: 1.2, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+  mainL.addChild(hitRect(x - 110, y - 130, 220, 210, () => { sfx.tap(); openFootPuzzle() }))
+}
+
+// build the hidden full-screen overlay once; it lives on top of every scene
+function buildFootStage(bonesCfg) {
+  const stage = new Container()
+  stage.visible = false
+  stage.alpha = 0
+  stage.eventMode = 'static'
+
+  // --- atmospheric backdrop: dark wash + warm spotlight on the pedestal ---
+  const dark = new Graphics().rect(-3000, -2000, 6000, 4000).fill({ color: 0x0d1411, alpha: 0.95 })
+  placeAt(dark, 960, 540)
+  dark.eventMode = 'static' // swallow taps so the room beneath never reacts
+  stage.addChild(dark)
+  const spot = new Graphics().ellipse(0, 0, 760, 600).fill({ color: 0x293a32, alpha: 0.6 })
+  placeAt(spot, MX, MY - 130); stage.addChild(spot)
+  const spot2 = new Graphics().ellipse(0, 0, 380, 320).fill({ color: 0xffd98a, alpha: 0.10 })
+  placeAt(spot2, MX, MY - 170); spot2.blendMode = 'add'; stage.addChild(spot2)
+
+  // floating dust motes for depth
+  for (let i = 0; i < 16; i++) {
+    const m = new Graphics().circle(0, 0, 1.5 + Math.random() * 2.5)
+      .fill({ color: 0xece0c2, alpha: 0.12 + Math.random() * 0.18 })
+    placeAt(m, 300 + Math.random() * 1320, 250 + Math.random() * 620)
+    m.blendMode = 'add'; stage.addChild(m)
+    gsap.to(m.position, { y: m.position.y - (30 + Math.random() * 60), duration: 4 + Math.random() * 4, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: Math.random() * 3 })
+    gsap.to(m, { alpha: 0.04, duration: 2 + Math.random() * 3, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: Math.random() * 2 })
+  }
+
+  // --- title + subtitle ---
+  const title = new Text({ text: 'REBUILD THE T-REX FOOT', style: { fontFamily: SERIF, fontSize: 50, fontWeight: '700', fill: 0xe8a948, letterSpacing: 3 } })
+  title.anchor.set(0.5); placeAt(title, 960, 178); stage.addChild(title)
+  const sub = new Text({ text: 'Open the CATALOG (Footprints) to find the T-rex track, then recreate it — drag each bone into place and twist the gold tip to its angle.', style: { fontFamily: SERIF, fontSize: 23, fill: 0xd9c9a6, align: 'center' } })
+  sub.anchor.set(0.5); placeAt(sub, 960, 228); stage.addChild(sub)
+
+  // No reference card on the stage — the player consults the CATALOG (Footprints →
+  // T-rex three-toed track) to work out the right shape for themselves.
+
+  // --- pedestal (NO placement clues — bare mount) ---
+  const shadow = new Graphics().ellipse(0, 0, 220, 40).fill({ color: 0x000000, alpha: 0.4 })
+  placeAt(shadow, MX, MY + 116); stage.addChild(shadow)
+  const heel = new Graphics().roundRect(-84, 0, 168, 98, 20)
+    .fill({ color: 0x34454f, alpha: 0.6 }).stroke({ color: 0xece0c2, width: 5 })
+  placeAt(heel, MX, MY); stage.addChild(heel)
+
+  const footGlow = new Graphics().roundRect(-240, -450, 480, 540, 30)
+    .fill({ color: 0xffd98a, alpha: 0.12 }).stroke({ color: 0xffd98a, width: 8, alpha: 0.8 })
+  placeAt(footGlow, MX, MY); footGlow.alpha = 0; footGlow.blendMode = 'add'; stage.addChild(footGlow)
+
+  const targets = bonesCfg.map((bc, i) => ({
+    len: bc.len, wx: MX + FOOT_TOES[i].dx, wy: MY + FOOT_TOES[i].dy, ang: FOOT_TOES[i].ang,
+  }))
+
+  // bones scattered around the pedestal, each clearly mis-rotated — drag + twist
+  const starts = [{ x: 770, y: 905, ang: -1.15 }, { x: MX, y: 935, ang: 0.9 }, { x: 1660, y: 905, ang: 2.3 }]
+  bonesCfg.forEach((bc, i) => {
+    const sp = makeBone(bc, FOOT_SC)
+    const st = starts[i]
+    placeAt(sp, st.x, st.y)
+    sp.rotation = st.ang
+    sp.eventMode = 'static'
+    sp.cursor = 'grab'
+    sp._bone = { len: bc.len, startX: st.x, startY: st.y, sprite: sp, placed: false, target: targets[i] }
+    sp.on('pointerdown', () => startBoneDrag(sp, 'move'))
+
+    // twist grip at the bone's tip — grab it and swing to rotate the bone
+    const grip = new Graphics()
+    grip.circle(0, 0, 18).fill({ color: 0xe8a948, alpha: 0.95 }).stroke({ color: 0x3a2c1a, width: 3 })
+    grip.arc(0, 0, 9, -2.2, 1.1).stroke({ color: 0x3a2c1a, width: 3, cap: 'round' }) // curved arrow hint
+    grip.position.set(0, -(bc.len / 2 + 30))
+    grip.eventMode = 'static'
+    grip.cursor = 'grab'
+    grip.on('pointerdown', (e) => { e.stopPropagation(); startBoneDrag(sp, 'rotate') })
+    sp.addChild(grip)
+    sp._grip = grip
+
+    stage.addChild(sp)
+  })
+
+  // --- close button (back to the room) ---
+  const close = new Container(); close.eventMode = 'static'; close.cursor = 'pointer'
+  close.addChild(
+    new Graphics().circle(0, 0, 30).fill({ color: 0x1d2823, alpha: 0.95 }).stroke({ color: 0xe8a948, width: 3 }),
+  )
+  const cx = new Text({ text: '✕', style: { fontFamily: SERIF, fontSize: 32, fill: 0xe8a948 } })
+  cx.anchor.set(0.5); close.addChild(cx)
+  placeAt(close, 1800, 175)
+  close.on('pointertap', () => { sfx.tap(); closeFootPuzzle() })
+  stage.addChild(close)
+
+  trex._foot = { targets, footGlow, done: false, placedCount: 0, hinted: false, stage }
+  return stage
+}
+
+function openFootPuzzle() {
+  if (puzzleOpen || !footStage) return
+  puzzleOpen = true
+  cam().vel = 0
+  setRail('inventory-rail', true)
+  setRail('catalog-rail', false) // open the field guide — it's the only reference now
+  $('walk-arrow').classList.add('hidden') // no room chrome over the full-screen stage
+  footStage.visible = true
+  gsap.killTweensOf(footStage)
+  gsap.fromTo(footStage, { alpha: 0 }, { alpha: 1, duration: 0.45, ease: 'power2.out' })
+  sfx.whoosh()
+  if (!trex._foot.hinted) {
+    trex._foot.hinted = true
+    toast('Check the CATALOG → Footprints for the T-rex’s three-toed track, then rebuild it on the pedestal — drag a bone, then grab its gold tip to TWIST it to the right angle.', 6000)
   }
 }
 
-function confetti(fromContainer) {
-  const gp = fromContainer.getGlobalPosition()
-  const lx = (gp.x - root.position.x) / root.scale.x
-  const ly = (gp.y - root.position.y) / root.scale.y
+function closeFootPuzzle() {
+  if (!puzzleOpen) return
+  puzzleOpen = false
+  gsap.killTweensOf(footStage)
+  gsap.to(footStage, { alpha: 0, duration: 0.35, ease: 'power2.in', onComplete: () => { footStage.visible = false } })
+}
+
+function startBoneDrag(sp, mode) {
+  if (sp._bone.placed || trex._foot?.done) return
+  footDrag = { sprite: sp, bone: sp._bone, layer: footStage, mode }
+  draggingItem = true // also pauses the camera walk
+  sp.cursor = 'grabbing'
+}
+
+function moveBoneDrag(x, y) {
+  if (!footDrag) return
+  const fd = footDrag
+  const w = screenToWorld(x, y, fd.layer)
+  if (fd.mode === 'rotate') {
+    // point the bone's tip toward the finger
+    const cx = fd.sprite.position.x + DESIGN_W / 2
+    const cy = fd.sprite.position.y + DESIGN_H / 2
+    fd.sprite.rotation = Math.atan2(w.y - cy, w.x - cx) + Math.PI / 2
+  } else {
+    placeAt(fd.sprite, w.x, w.y)
+  }
+}
+
+function endBoneDrag(x, y) {
+  const fd = footDrag
+  footDrag = null
+  draggingItem = false
+  fd.sprite.cursor = 'grab'
+  const foot = trex._foot
+  const t = fd.bone.target
+  const cx = fd.sprite.position.x + DESIGN_W / 2
+  const cy = fd.sprite.position.y + DESIGN_H / 2
+  const distOk = Math.hypot(cx - t.wx, cy - t.wy) < FOOT_POS_TOL
+  const angOk = Math.abs(angDelta(fd.sprite.rotation, t.ang)) < FOOT_ANG_TOL
+
+  if (distOk && angOk) {
+    fd.bone.placed = true
+    foot.placedCount++
+    fd.sprite.eventMode = 'none'
+    fd.sprite.cursor = 'default'
+    if (fd.sprite._grip) fd.sprite._grip.visible = false
+    sfx.pickup()
+    // snap crisply to the exact catalog pose
+    gsap.to(fd.sprite.position, { x: t.wx - DESIGN_W / 2, y: t.wy - DESIGN_H / 2, duration: 0.22, ease: 'back.out(2)' })
+    gsap.to(fd.sprite, { rotation: t.ang, duration: 0.22, ease: 'back.out(2)' })
+    if (foot.placedCount === foot.targets.length) finishFoot(foot)
+  } else if (distOk && !angOk) {
+    // right spot, wrong tilt — nudge them to twist it (leave it where it is)
+    sfx.wrong()
+    toast('Almost! It’s in the right spot but tilted wrong — grab the gold tip and TWIST it to match the catalog’s track.', 3800)
+  }
+  // otherwise: leave the bone wherever they dropped it — this is a posing puzzle, not a tray
+}
+
+function finishFoot(foot) {
+  foot.done = true
+  sfx.success()
+  gsap.to(foot.footGlow, { alpha: 0.8, duration: 0.6 })
+  gsap.to(foot.footGlow, { alpha: 0.4, duration: 1.2, yoyo: true, repeat: -1, delay: 0.6 })
+  confetti(foot.footGlow)
+  setTimeout(() => finishSolve({
+    success: {
+      title: '🦖 Foot rebuilt! 🦖',
+      video: '/video/trex-foot-success.mp4',
+      html: 'You rebuilt the T-rex’s foot! Three big toes — and the middle one longest — ' +
+        'a perfect match for the three-toed track in your catalog.',
+    },
+  }, 'trex'), 1000)
+}
+
+/* ---------- completion: stamp the finished room / wing, then celebrate ---------- */
+let wingFinaleShown = false
+
+function markRoomComplete(room) {
+  const m = dinohub?._marks?.[room]
+  if (!m) return
+  revealMark(m.frameGlow, { glow: true })
+  revealMark(m.seal)
+}
+
+function markWingComplete() {
+  revealMark(lobby?._wingMark) // idempotent — revealMark guards re-runs
+}
+
+// the grand finale card (shown once) — fired when the LAST challenge in the wing
+// is solved, whether that's a drag-puzzle, the foot, or a mini-game
+function showWingFinale() {
+  if (wingFinaleShown) return
+  wingFinaleShown = true
+  markWingComplete()
+  showSuccess(null, { wingComplete: true })
+}
+
+// called 1s after a drag-placement or the T-rex foot is solved: stamps the room
+// if all its challenges are done, then shows the success card (or the finale).
+function finishSolve(d, room) {
+  const roomDone = roomComplete(room)
+  if (roomDone) markRoomComplete(room)
+  if (dinoWingComplete()) { showWingFinale(); return }
+  showSuccess(d, { roomComplete: roomDone })
+}
+
+// a mini-game (Fish Run / Brachio Run) hit its goal — solve that challenge. The
+// player is still inside the full-screen game, so the museum-side celebration is
+// deferred to afterMinigameClose(); here we just record + stamp.
+function onMinigameSolved(room) {
+  const sc = scenes[room]
+  if (!sc || sc._gameDone) return
+  sc._gameDone = true
+  revealMark(sc._gameBadge)
+  if (roomComplete(room)) markRoomComplete(room)
+}
+
+// returning to the room from a mini-game: roll out any celebration earned inside it
+function afterMinigameClose(room) {
+  if (dinoWingComplete()) { showWingFinale(); return }
+  if (scenes[room]?._gameDone && roomComplete(room)) {
+    setTimeout(() => toast('🎉 Exhibit complete! Every challenge in this room is solved.', 5000), 500)
+  }
+}
+
+// confetti raining from the centre of the screen, repeated — the wing finale
+function finaleConfetti() {
+  const rx = (window.innerWidth / 2 - root.position.x) / root.scale.x
+  const ry = (window.innerHeight / 2.6 - root.position.y) / root.scale.y
+  for (let i = 0; i < 4; i++) setTimeout(() => confettiBurst(rx, ry, 90), i * 320)
+}
+
+// confetti burst at root-local coords (rx, ry)
+function confettiBurst(rx, ry, n = 70) {
   const colors = [0xe8a948, 0xf4e6c8, 0x7fb6c9, 0xc2d6e2]
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < n; i++) {
     const g = new Graphics()
     if (Math.random() > 0.5) g.rect(-4, -7, 8, 14).fill(colors[i % colors.length])
     else g.circle(0, 0, 5).fill(colors[i % colors.length])
-    g.position.set(lx + 320, ly + 230)
+    g.position.set(rx, ry)
     root.addChild(g)
     const a = Math.random() * Math.PI * 2
     const v = 180 + Math.random() * 420
     gsap.to(g, {
-      x: lx + 320 + Math.cos(a) * v,
-      y: ly + 230 + Math.sin(a) * v * 0.7 + 260,
+      x: rx + Math.cos(a) * v,
+      y: ry + Math.sin(a) * v * 0.7 + 260,
       rotation: (Math.random() - 0.5) * 9,
       alpha: 0,
       duration: 1.3 + Math.random() * 0.9,
@@ -553,30 +1638,103 @@ function confetti(fromContainer) {
   }
 }
 
-/* ---------- catalog (field notes modal — also opened by the BAG) ---------- */
-function buildCatalog() {
-  $('catalog-cards').innerHTML = DINOS.map((d) => `
-    <div class="dino-card">
-      <div class="art">${catalogCardArt(d)}</div>
-      <h3>${d.name}</h3>
-      <div class="diet">${d.diet}</div>
-      <div class="tooth-row">
-        ${toothSVG(d.tooth, 38, 46)}
-        <span>${d.toothNote}</span>
-      </div>
-    </div>`).join('')
+function confetti(fromContainer) {
+  const gp = fromContainer.getGlobalPosition()
+  const lx = (gp.x - root.position.x) / root.scale.x
+  const ly = (gp.y - root.position.y) / root.scale.y
+  confettiBurst(lx + 320, ly + 230)
+}
 
-  $('catalog-btn').addEventListener('pointerdown', () => {
-    sfx.tap()
-    $('catalog-btn').classList.remove('pulse')
-    $('catalog').classList.remove('hidden')
+/* ---------- catalog (left rail — the field guide) ----------
+   The catalog opens on a COVER that lists its sections; tap a section to read it,
+   tap ‹ Sections to come back. Teeth is built from DINOS; new sections (Covering,
+   …) are added to CATALOG_SECTIONS and their content drops into render(). */
+// one card per dino: the HERO image is just this section's trait (tooth / covering
+// / footprint / egg) — not the whole dino — so each section reads as its own thing.
+// The catalog is the CONTEXT-rich side of the loop: trait image + diet + a full note.
+// (It deliberately HIDES the dino's name, so the player reasons from traits, not labels.)
+function catalogCard(d, trait, note) {
+  return `
+    <div class="cat-card">
+      <div class="art trait">${trait(d)}</div>
+      <div class="diet">${d.diet}</div>
+      ${d.kind === 'pterosaur' ? '<div class="cat-kind">✦ a flying reptile, not a dinosaur</div>' : ''}
+      <div class="cat-note">${note(d)}</div>
+    </div>`
+}
+
+// each section reads its own field off every DINOS entry; `trait` draws it big
+const SECTION = (id, title, blurb, icon, trait, note) => ({
+  id, title, blurb, icon, tag: `${DINOS.length} entries`, ready: true,
+  render: () => DINOS.map((d) => catalogCard(d, trait, note)).join(''),
+})
+const CATALOG_SECTIONS = [
+  SECTION('teeth', 'Teeth', 'A tooth tells you what a dinosaur ate.', toothSVG('leaf', 34, 42),
+    (d) => toothSVG(d.tooth, 96, 120), (d) => d.toothNote),
+  SECTION('covering', 'Covering', 'Scales, feathers, or fuzzy pycnofibers?', coveringSVG('feathers', 34, 42),
+    (d) => coveringSVG(d.covering, 96, 120), (d) => d.coveringNote),
+  SECTION('footprints', 'Footprints', 'Every dino left a different track.', footprintSVG('three-toe', 34, 42),
+    (d) => footprintSVG(d.footprint, 96, 120), (d) => d.footprintNote),
+  SECTION('eggs', 'Eggs', 'Round, long, or leathery — eggs tell tales too.', eggSVG('round', 34, 42),
+    (d) => eggSVG(d.egg, 96, 120), (d) => d.eggNote),
+]
+
+function renderCatalogCover() {
+  $('catalog-list').innerHTML = `
+    <div class="cat-cover">
+      <div class="cat-crest">${catalogCrest(88)}</div>
+      <div class="cat-cover-title">Field Guide</div>
+      <div class="cat-cover-sub">Tap a section to study it</div>
+      <div class="cat-sections">
+        ${CATALOG_SECTIONS.map((s) => `
+          <button class="cat-row${s.ready ? '' : ' soon'}" data-section="${s.id}">
+            <span class="cat-row-ic">${s.icon}</span>
+            <span class="cat-row-meta">
+              <span class="cat-row-title">${s.title}</span>
+              <span class="cat-row-blurb">${s.blurb}</span>
+            </span>
+            <span class="cat-row-tag">${s.tag}</span>
+          </button>`).join('')}
+      </div>
+    </div>`
+}
+
+function openCatalogSection(id) {
+  const s = CATALOG_SECTIONS.find((x) => x.id === id)
+  if (!s) return
+  $('catalog-list').innerHTML = `
+    <button class="cat-back">‹ Sections</button>
+    <div class="cat-section-head"><span class="cat-section-ic">${s.icon}</span><h3>${s.title}</h3></div>
+    <div class="cat-section-body">${s.render()}</div>`
+}
+
+function setupCatalog() {
+  renderCatalogCover()
+  $('catalog-list').addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.cat-back')) { sfx.tap(); renderCatalogCover(); return }
+    const row = e.target.closest('.cat-row')
+    if (row) { sfx.tap(); openCatalogSection(row.dataset.section) }
   })
-  $('catalog-close').addEventListener('pointerdown', () => {
-    $('catalog').classList.add('hidden')
-    if (state.hasTooth && !state.solved && state.scene === 'lobby') {
-      toast('Wide and flat… a plant eater’s tooth! The DINOSAUR WING is at the end of the hall →', 5500)
-    }
+}
+
+/* ---------- inventory drag wiring (pointer events, mouse + touch) ---------- */
+function setupInventoryDrag() {
+  const grid = $('inventory-grid')
+  grid.addEventListener('pointerdown', (e) => {
+    // the ⓘ badge opens the item's "more details" drilldown (not a drag)
+    const info = e.target.closest('.inv-info')
+    if (info) { e.preventDefault(); e.stopPropagation(); openItemDetail(info.closest('.inv-slot').dataset.item); return }
+    const slot = e.target.closest('.inv-slot.filled')
+    if (!slot) return
+    e.preventDefault()        // suppress the compatibility mouse/touch events
+    startItemDrag(e.clientX, e.clientY, slot)
   })
+  $('inventory-detail').addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.inv-back')) { sfx.tap(); closeItemDetail() }
+  })
+  window.addEventListener('pointermove', (e) => moveItemDrag(e.clientX, e.clientY))
+  window.addEventListener('pointerup', (e) => endItemDrag(e.clientX, e.clientY))
+  window.addEventListener('pointercancel', (e) => endItemDrag(e.clientX, e.clientY))
 }
 
 /* ---------- go ---------- */
@@ -597,24 +1755,49 @@ async function boot() {
   layout()
   window.addEventListener('resize', layout)
 
-  lobby = new Container()
-  lobby._layers = []
-  lobby._dust = []
-  root.addChild(lobby)
+  // every scene is a Container of parallax layers; only the active one is visible
+  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero']) {
+    const c = new Container()
+    c._layers = []
+    c._dust = []
+    if (name !== 'lobby') { c.visible = false; c.alpha = 0 }
+    root.addChild(c)
+    scenes[name] = c
+  }
+  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero } = scenes)
 
-  grove = new Container()
-  grove._layers = []
-  grove._dust = []
-  grove.visible = false
-  grove.alpha = 0
-  root.addChild(grove)
-
-  $('back-btn').addEventListener('pointerdown', backToLobby)
+  $('back-btn').addEventListener('pointerdown', () => goScene(SCENE_BACK[state.scene] || 'lobby'))
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
+  $('success-continue').addEventListener('pointerdown', () => {
+    const vid = $('success-video'); if (vid) vid.pause()
+    $('success').classList.add('hidden')
+    if (puzzleOpen) closeFootPuzzle()
+  })
+  // side-panel toggles
+  const toggleRail = (railId) => {
+    sfx.tap()
+    setRail(railId, !$(railId).classList.contains('collapsed'))
+  }
+  $('catalog-toggle').addEventListener('pointerdown', () => toggleRail('catalog-rail'))
+  $('inv-toggle').addEventListener('pointerdown', () => toggleRail('inventory-rail'))
+  $('toast-close').addEventListener('pointerdown', (e) => { e.stopPropagation(); sfx.tap(); dismissToast() })
+  // tap outside the inventory closes it (ignore taps on the panel or its toggle)
+  document.addEventListener('pointerdown', (e) => {
+    const rail = $('inventory-rail')
+    if (rail.classList.contains('collapsed') || draggingItem) return
+    if (e.target.closest('#inventory-rail') || e.target.closest('#inv-toggle')) return
+    setRail('inventory-rail', true)
+  })
+  // phones: start with both panels closed so nothing covers the world
+  if (isCompact() || window.matchMedia('(pointer: coarse)').matches) {
+    setRail('catalog-rail', true)
+    setRail('inventory-rail', true)
+  }
   setupInput()
   setupFullscreen()
-  buildCatalog()
-  await Promise.all([buildLobby(), buildGrove()])
+  setupInventoryDrag()
+  setupCatalog()
+  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero()])
 
   let t = 0
   app.ticker.add((ticker) => {
@@ -625,7 +1808,7 @@ async function boot() {
     const px = lens.x + Math.sin(t * 0.25) * 0.07
     const py = lens.y + Math.cos(t * 0.18) * 0.05
 
-    const scene = state.scene === 'lobby' ? lobby : grove
+    const scene = scenes[state.scene]
     if (!scene.visible) return
     const c = cam()
 
@@ -652,13 +1835,32 @@ async function boot() {
     }
   })
 
-  // read-only debug hook (used by the prototype's headless feel-tests)
+  // read-only debug hooks (used by the prototype's headless feel-tests)
   window.__cam = () => ({ scene: state.scene, x: cam().x, vel: cam().vel })
+  window.__foot = () => !!trex?._foot?.done
+  window.__goScene = (s) => goScene(s)
+  window.__pteroGame = () => isPteroGameOpen()
+  window.__brachioGame = () => isBrachioGameOpen()
+  window.__openBrachio = () => openBrachioGame()
+  window.__roomComplete = (r) => roomComplete(r)
+  window.__wingComplete = () => dinoWingComplete()
+  window.__openPtero = () => openPteroGame({ goal: 10, onComplete: () => onMinigameSolved('ptero'), onClose: () => afterMinigameClose('ptero') })
+  // test/screenshot hook: mark every challenge solved, stamp all seals, fire the finale
+  window.__solveWing = () => {
+    for (const r of ROOMS) {
+      const sc = scenes[r]
+      if (sc._drop) { sc._drop.done = true; if (sc._drop.placed) sc._drop.placed.alpha = 1 }
+      if (r === 'trex' && sc._foot) sc._foot.done = true
+      if (sc._gameBadge) { sc._gameDone = true; revealMark(sc._gameBadge) }
+      markRoomComplete(r)
+    }
+    showWingFinale()
+  }
 
   $('walk-arrow').classList.remove('hidden')
-  toast('You’re in the museum lobby — walk right (drag, scroll, tilt, or arrow keys). Something glints behind the planter…', 7000)
+  toast('You’re in the museum lobby — walk right (drag, scroll, tilt, or arrow keys). Look closely as you move; the lobby hides more than it shows.', 7000)
   lobbyHintTimer = setTimeout(() => {
-    if (!state.hasTooth) toast('Psst — walk slowly past the PLANTER and watch behind it. Layers move at different speeds…', 6000)
+    if (!hasClue('tooth')) toast('Psst — walk slowly past the PLANTER and watch behind it. Layers move at different speeds…', 6000)
   }, 14000)
 }
 

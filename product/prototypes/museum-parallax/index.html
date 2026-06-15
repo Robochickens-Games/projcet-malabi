@@ -13,17 +13,46 @@
 
   <!-- HUD -->
   <header id="hud">
-    <button id="back-btn" class="hud-btn hidden" aria-label="Back to lobby">‹ Lobby</button>
+    <div id="hud-left">
+      <button id="back-btn" class="hud-btn hidden" aria-label="Back to lobby">‹ Lobby</button>
+      <button id="catalog-toggle" class="hud-btn active" aria-label="Toggle catalog">📖 Catalog</button>
+    </div>
     <div id="hud-title">SCIENCE MUSEUM MYSTERY</div>
     <div id="hud-right">
-      <div id="tooth-slot" class="empty" title="Your find"></div>
-      <button id="catalog-btn" class="hud-btn">📖 Catalog</button>
+      <button id="inv-toggle" class="hud-btn active" aria-label="Toggle inventory">🎒 Inventory</button>
       <button id="fs-btn" class="hud-btn" aria-label="Full screen">⛶</button>
     </div>
   </header>
 
+  <!-- left rail: the dinosaur catalog (reference) -->
+  <aside id="catalog-rail" class="rail">
+    <h2>📖 Catalog</h2>
+    <div id="catalog-list"></div>
+  </aside>
+
+  <!-- right rail: inventory — drag a find onto the exhibit to use it -->
+  <aside id="inventory-rail" class="rail">
+    <h2>🎒 Inventory</h2>
+    <div id="inventory-grid">
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+    </div>
+    <p class="inv-hint">drag a find onto the exhibit · tap ⓘ for details</p>
+    <div id="inventory-detail" class="hidden-inv"></div>
+  </aside>
+
+  <!-- floating ghost shown while dragging an inventory item -->
+  <div id="drag-ghost" class="hidden"></div>
+
   <!-- toast -->
-  <div id="toast" class="hidden"></div>
+  <div id="toast" class="hidden">
+    <span id="toast-text"></span>
+    <button id="toast-close" aria-label="Dismiss">✕</button>
+  </div>
 
   <!-- portrait nudge (phones) -->
   <div id="rotate-overlay">
@@ -37,24 +66,18 @@
   <!-- walk cue (grove) -->
   <div id="walk-arrow" class="hidden">walk&nbsp;<span>→</span></div>
 
-  <!-- catalog -->
-  <div id="catalog" class="hidden">
-    <div id="catalog-panel">
-      <div id="catalog-head">
-        <h2>Dinosaur Catalog</h2>
-        <button id="catalog-close" aria-label="Close">✕</button>
-      </div>
-      <div id="catalog-cards"></div>
-    </div>
-  </div>
-
   <!-- success -->
   <div id="success" class="hidden">
     <div id="success-card">
-      <div class="big">✨ It's a match! ✨</div>
+      <div class="big">✨ It fits! ✨</div>
+      <!-- the celebration clip — plays when the fossil fits -->
+      <video id="success-video" src="/video/success.mp4" muted loop playsinline preload="auto"></video>
       <p id="success-text"></p>
       <div id="fragment-badge">FOSSIL FRAGMENT&nbsp;<b>1</b>&nbsp;/ 4</div>
-      <button id="replay-btn">Play again</button>
+      <div class="success-actions">
+        <button id="success-continue">Keep exploring ▸</button>
+        <button id="replay-btn">Play again</button>
+      </div>
     </div>
   </div>
 
