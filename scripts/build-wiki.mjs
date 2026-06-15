@@ -1609,6 +1609,7 @@ function renderHtml(dataJson) {
       <span>“<b>Make us money. Make it fun.</b>” 🌟</span>
       <span><a id="repo-link" href="#">All the knowledge that's fit to commit</a></span>
       <span><a class="play-link" href="https://malabi-museum-parallax.vercel.app" target="_blank" rel="noopener"><span class="play-tri">▶</span> Play the prototype</a></span>
+      <span><a class="play-link" href="https://malabi-museum-concept.vercel.app" target="_blank" rel="noopener"><span class="play-tri">▶</span> Concept demo</a></span>
     </div>
   </header>
 
