@@ -15,7 +15,13 @@ wireframe) at **https://malabi-museum-concept.vercel.app** — separate from the
 wireframe's `malabi-museum-parallax.vercel.app`. Linked locally via `.vercel/`
 (git-ignored); deploy with `vercel deploy --prod` from the prototype dir. The
 Gazette masthead now links both side by side ("Play the prototype" + "Concept
-demo") via `scripts/build-wiki.mjs`.
+demo") via `scripts/build-wiki.mjs`. **Gotcha (fixed):** edit-mode positions
+live in `.layout.json` (dev-server only, git-ignored), so the first deploy showed
+props in their `config.js` default spots — looked like the art had "moved." Fix:
+a `prebuild` step (`scripts/sync-layout.mjs`) bakes `.layout.json` →
+`public/layout.json` so the production build ships `/layout.json` and the deploy
+matches the last local layout. Re-running `vercel deploy --prod` after edit-mode
+changes now carries them through.
 
 **What:** A second concept test in `product/prototypes/museum-concept/`
 (`npm install && npm run dev` to run locally).
