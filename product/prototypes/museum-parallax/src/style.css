@@ -44,7 +44,10 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
   transition: transform .15s ease, box-shadow .3s ease;
 }
 .hud-btn:hover { transform: translateY(-1px); }
+/* active = its panel is open */
+.hud-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); }
 .hud-btn.pulse { animation: pulse 1.4s ease-in-out infinite; }
+#hud-left { display: flex; align-items: center; gap: 10px; }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(232, 169, 72, 0); }
   50% { box-shadow: 0 0 18px 4px rgba(232, 169, 72, 0.55); }
@@ -55,28 +58,29 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
 #fs-btn { font-size: 17px; line-height: 1; padding: 7px 12px; }
 #fs-btn.hidden { display: none; }
 
-#tooth-slot {
-  width: 44px; height: 44px; border-radius: 12px;
-  border: 1.5px dashed var(--gold-deep); background: rgba(20, 12, 4, 0.55);
-  display: flex; align-items: center; justify-content: center;
-  transition: border-color .3s, box-shadow .3s;
-}
-#tooth-slot.empty::after { content: "?"; color: var(--gold-deep); opacity: .6; font-size: 18px; }
-#tooth-slot.filled { border-style: solid; border-color: var(--gold); box-shadow: 0 0 14px rgba(232,169,72,.5); }
-#tooth-slot svg { width: 32px; height: 32px; }
-
 /* ---------- toast ---------- */
 #toast {
-  position: fixed; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom));
+  position: fixed; left: 50%; top: calc(58px + env(safe-area-inset-top));
   transform: translateX(-50%); z-index: 12;
   max-width: min(560px, 88vw);
+  display: flex; align-items: flex-start; gap: 10px;
   background: rgba(22, 13, 5, 0.85); border: 1px solid var(--gold-deep);
-  border-radius: 14px; padding: 12px 20px;
-  font-size: 16px; line-height: 1.45; text-align: center;
+  border-radius: 14px; padding: 10px 10px 10px 18px;
+  font-size: 15px; line-height: 1.4; text-align: left;
   backdrop-filter: blur(8px);
   transition: opacity .35s ease, transform .35s ease;
 }
-#toast.hidden { opacity: 0; transform: translateX(-50%) translateY(12px); pointer-events: none; }
+#toast.hidden { opacity: 0; transform: translateX(-50%) translateY(-12px); pointer-events: none; }
+#toast-text { flex: 1; }
+#toast-close {
+  flex: none; margin-top: -1px;
+  width: 26px; height: 26px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--cream); cursor: pointer;
+  background: rgba(232, 169, 72, 0.12); border: 1px solid var(--gold-deep);
+  border-radius: 999px; transition: background .2s ease;
+}
+#toast-close:hover { background: rgba(232, 169, 72, 0.28); }
 
 /* ---------- tilt button ---------- */
 #tilt-btn {
@@ -98,90 +102,281 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
 @keyframes walknudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(9px); } }
 #walk-arrow.hidden { display: none; }
 
-/* ---------- catalog ---------- */
-#catalog {
-  position: fixed; inset: 0; z-index: 20;
-  background: rgba(8, 4, 0, 0.6); backdrop-filter: blur(4px);
+/* ---------- side rails (catalog left · inventory right) ---------- */
+.rail {
+  position: fixed; top: calc(54px + env(safe-area-inset-top)); bottom: 16px;
+  width: 190px; z-index: 14;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 12px;
+  background: rgba(18, 11, 4, 0.62); border: 1px solid var(--gold-deep);
+  border-radius: 18px; backdrop-filter: blur(8px);
+  box-shadow: 0 10px 40px rgba(0,0,0,.45);
+  pointer-events: auto; touch-action: pan-y;
+  transition: transform .3s ease, opacity .3s ease;
+}
+#catalog-rail { left: 12px; }
+#inventory-rail { right: 12px; }
+/* collapsed by the HUD toggle buttons — slide off their own edge */
+#catalog-rail.collapsed { transform: translateX(calc(-100% - 16px)); opacity: 0; pointer-events: none; }
+#inventory-rail.collapsed { transform: translateX(calc(100% + 16px)); opacity: 0; pointer-events: none; }
+.rail h2 {
+  font-size: 14px; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--gold); text-align: center;
+}
+
+/* catalog cards stacked vertically, scrollable */
+#catalog-list {
+  display: flex; flex-direction: column; gap: 10px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 2px;
+}
+.cat-card {
+  background: rgba(244, 230, 200, 0.05);
+  border: 1px solid rgba(232, 169, 72, 0.35); border-radius: 12px;
+  padding: 8px; text-align: center;
+}
+.cat-card .art { width: 100%; aspect-ratio: 7 / 5; }
+.cat-card .art svg { width: 100%; height: 100%; }
+/* trait hero: just this section's trait, centred in a framed plate */
+.cat-card .art.trait {
+  aspect-ratio: 4 / 3; display: grid; place-items: center; padding: 6px;
+  background: rgba(0, 0, 0, 0.22); border-radius: 10px; border: 1px solid rgba(232, 169, 72, 0.2);
+}
+.cat-card .art.trait svg { width: auto; height: 100%; max-height: 86px; }
+.cat-card h3 { margin: 5px 0 1px; font-size: 12px; letter-spacing: .06em; color: var(--gold); }
+.cat-card .diet { font-size: 11px; color: var(--cream-dim); margin: 6px 0; }
+.cat-card .cat-kind { font-size: 9.5px; line-height: 1.3; color: var(--gold); margin: -2px 0 6px; opacity: .9; }
+.cat-card .cat-note { font-size: 10px; line-height: 1.35; color: var(--cream); text-align: left;
+  background: rgba(0,0,0,.25); border-radius: 9px; padding: 6px 8px; }
+
+/* ---------- catalog cover (the sections menu) ---------- */
+.cat-cover { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 4px 2px 2px; }
+.cat-crest { width: 88px; height: 88px; }
+.cat-crest svg { width: 100%; height: 100%; }
+.cat-cover-title {
+  font-family: var(--serif); font-size: 19px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--gold);
+}
+.cat-cover-sub { font-size: 10px; letter-spacing: .04em; color: var(--cream-dim); margin-bottom: 8px; text-align: center; }
+.cat-sections { display: flex; flex-direction: column; gap: 9px; width: 100%; }
+.cat-row {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 9px 10px; cursor: pointer; font-family: var(--serif); color: var(--cream);
+  background: rgba(244, 230, 200, 0.05);
+  border: 1px solid rgba(232, 169, 72, 0.35); border-radius: 12px;
+  transition: border-color .2s, background .2s, transform .1s;
+}
+.cat-row:hover { border-color: var(--gold); background: rgba(244, 230, 200, .09); }
+.cat-row:active { transform: scale(.98); }
+.cat-row-ic { flex: 0 0 auto; width: 30px; height: 38px; display: grid; place-items: center; }
+.cat-row-ic svg { width: 100%; height: 100%; }
+.cat-row-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cat-row-title { font-size: 14px; letter-spacing: .08em; color: var(--gold); }
+.cat-row-blurb { font-size: 10px; line-height: 1.3; color: var(--cream-dim); }
+.cat-row-tag {
+  flex: 0 0 auto; align-self: flex-start; font-size: 9px; letter-spacing: .06em;
+  color: var(--cream-dim); background: rgba(0, 0, 0, .28); border-radius: 999px; padding: 3px 7px;
+}
+.cat-row.soon { opacity: .82; }
+.cat-row.soon .cat-row-tag { color: var(--gold); background: none; border: 1px solid var(--gold-deep); }
+
+/* ---------- catalog section view ---------- */
+.cat-back {
+  align-self: flex-start; font-family: var(--serif); font-size: 12px; letter-spacing: .04em;
+  color: var(--cream); background: rgba(20, 12, 4, .55);
+  border: 1px solid var(--gold-deep); border-radius: 999px; padding: 5px 12px;
+  margin-bottom: 4px; cursor: pointer; transition: border-color .2s;
+}
+.cat-back:hover { border-color: var(--gold); }
+.cat-section-head { display: flex; align-items: center; gap: 8px; padding: 2px 2px 4px; }
+.cat-section-ic { flex: 0 0 auto; width: 26px; height: 32px; }
+.cat-section-ic svg { width: 100%; height: 100%; }
+.cat-section-head h3 {
+  font-family: var(--serif); font-size: 15px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--gold);
+}
+.cat-section-body { display: flex; flex-direction: column; gap: 10px; }
+.cat-empty { text-align: center; padding: 16px 10px; color: var(--cream-dim); }
+.cat-empty-ic { width: 56px; height: 70px; margin: 0 auto 10px; opacity: .8; }
+.cat-empty-ic svg { width: 100%; height: 100%; }
+.cat-empty p { font-size: 11px; line-height: 1.5; }
+
+/* inventory grid of slots */
+#inventory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.inv-slot {
+  position: relative; aspect-ratio: 1; border-radius: 12px;
+  border: 1.5px dashed var(--gold-deep); background: rgba(20, 12, 4, 0.5);
   display: flex; align-items: center; justify-content: center;
-  transition: opacity .3s ease;
+  transition: border-color .3s, box-shadow .3s, transform .2s;
 }
-#catalog.hidden { opacity: 0; pointer-events: none; }
+.inv-slot.empty::after { content: "?"; color: var(--gold-deep); opacity: .45; font-size: 18px; }
+.inv-slot.filled {
+  border-style: solid; border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(232,169,72,.45); cursor: grab; touch-action: none;
+}
+.inv-slot.filled:active { cursor: grabbing; }
+.inv-slot.filled svg { width: 68%; height: 68%; pointer-events: none; }
+/* ⓘ "more details" badge in the slot corner */
+.inv-info {
+  position: absolute; top: -7px; right: -7px; width: 20px; height: 20px;
+  border-radius: 50%; border: 1px solid var(--gold); background: var(--ink);
+  color: var(--gold); font-family: Georgia, serif; font-style: italic; font-size: 12px;
+  line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+.inv-info:hover { background: var(--gold); color: var(--ink); }
 
-#catalog-panel {
-  width: min(960px, 94vw); max-height: 88vh; overflow: hidden;
-  background: linear-gradient(180deg, #173f47, var(--teal-deep));
-  border: 2px solid var(--gold-deep); border-radius: 20px;
-  box-shadow: 0 24px 80px rgba(0,0,0,.6);
-  display: flex; flex-direction: column;
+/* item "more details" drilldown (swaps in over the grid) */
+.hidden-inv { display: none !important; }
+#inventory-detail { display: flex; flex-direction: column; gap: 8px; }
+.inv-back {
+  align-self: flex-start; font-family: var(--serif); font-size: 12px; letter-spacing: .04em;
+  color: var(--cream); background: none; border: none; cursor: pointer; padding: 2px 0;
 }
-#catalog-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 22px; border-bottom: 1px solid rgba(232,169,72,.35);
+.inv-detail-art {
+  width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; padding: 6px;
+  background: rgba(0,0,0,.22); border-radius: 12px; border: 1px solid rgba(232,169,72,.25);
 }
-#catalog-head h2 { font-size: 20px; letter-spacing: .18em; font-weight: 600; color: var(--gold); }
-#catalog-close {
-  font-size: 18px; color: var(--cream); background: none;
-  border: 1px solid rgba(232,169,72,.5); border-radius: 50%;
-  width: 36px; height: 36px; cursor: pointer;
-}
+.inv-detail-art svg { width: auto; height: 100%; max-height: 168px; }
+.inv-detail-title { font-size: 16px; letter-spacing: .06em; color: var(--gold); text-align: center; }
+.inv-detail-found { font-size: 11px; line-height: 1.4; color: var(--cream-dim); text-align: center; }
+.inv-detail-found b { color: var(--cream); font-weight: 600; }
+.inv-slot.cue { animation: pulse 1.4s ease-in-out infinite; }
+.inv-slot.dragging { opacity: .3; }
+.inv-hint { margin-top: auto; font-size: 11px; line-height: 1.4; color: var(--cream-dim); text-align: center; }
 
-#catalog-cards {
-  display: flex; gap: 16px; padding: 18px; overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+/* drag ghost */
+#drag-ghost {
+  position: fixed; left: 0; top: 0; z-index: 60; width: 64px; height: 83px;
+  pointer-events: none; will-change: transform;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,.55));
 }
-.dino-card {
-  flex: 1 0 240px; max-width: 300px;
-  background: rgba(244, 230, 200, 0.06);
-  border: 1px solid rgba(232, 169, 72, 0.4); border-radius: 16px;
-  padding: 14px; text-align: center;
-}
-.dino-card .art { width: 100%; aspect-ratio: 7 / 5; }
-.dino-card .art svg { width: 100%; height: 100%; }
-.dino-card h3 { margin: 6px 0 2px; font-size: 17px; letter-spacing: .08em; color: var(--gold); }
-.dino-card .diet { font-size: 14px; color: var(--cream-dim); margin-bottom: 8px; }
-.dino-card .tooth-row {
-  display: flex; align-items: center; gap: 10px;
-  background: rgba(0,0,0,.25); border-radius: 12px; padding: 8px 10px;
-  text-align: left;
-}
-.dino-card .tooth-row svg { width: 38px; height: 46px; flex: 0 0 auto; }
-.dino-card .tooth-row span { font-size: 13.5px; line-height: 1.35; color: var(--cream); }
+#drag-ghost svg { width: 100%; height: 100%; }
+#drag-ghost.hidden { display: none; }
 
 /* ---------- success ---------- */
 #success {
   position: fixed; inset: 0; z-index: 30;
   background: rgba(8, 4, 0, 0.55); backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center;
+  /* let the dialog scroll if the card is taller than the screen, and keep it
+     clear of notches/home indicators so the action buttons stay reachable */
+  overflow-y: auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   transition: opacity .4s ease;
 }
 #success.hidden { opacity: 0; pointer-events: none; }
 #success-card {
   width: min(440px, 90vw); text-align: center;
+  /* never taller than the viewport — scroll inside the card so the buttons at
+     the bottom are always reachable on short / landscape phones */
+  max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
   background: linear-gradient(180deg, #3a2410, var(--wood));
   border: 2px solid var(--gold); border-radius: 22px;
   padding: 30px 26px; box-shadow: 0 0 60px rgba(232,169,72,.35);
 }
 #success-card .big { font-size: 26px; color: var(--gold); letter-spacing: .04em; }
 #success-card p { margin: 14px 0; font-size: 16px; line-height: 1.5; }
+
+/* success-video: the celebration clip, framed in gold */
+#success-video {
+  display: block; width: 100%; aspect-ratio: 16 / 9;
+  margin: 18px 0 4px; border-radius: 14px;
+  border: 2px solid var(--gold-deep);
+  background: rgba(0,0,0,.32);
+  object-fit: cover;
+}
 #fragment-badge {
   display: inline-block; margin-bottom: 18px;
   font-size: 13px; letter-spacing: .22em; color: var(--ink);
   background: linear-gradient(180deg, var(--gold), var(--gold-deep));
   border-radius: 999px; padding: 8px 18px;
 }
-#replay-btn {
-  display: block; margin: 0 auto; font-family: var(--serif); font-size: 16px;
-  color: var(--cream); background: none; border: 1px solid var(--gold-deep);
-  border-radius: 999px; padding: 10px 26px; cursor: pointer;
+/* the per-exhibit "complete" note appended under a success blurb */
+.exhibit-done {
+  display: block; margin-top: 12px;
+  font-size: 13px; letter-spacing: .14em; font-weight: 700;
+  color: var(--gold);
+}
+
+/* grand finale — the whole wing is solved */
+#success-card.finale {
+  border-color: var(--gold);
+  box-shadow: 0 0 90px rgba(232,169,72,.6);
+  animation: finale-pop .5s ease;
+}
+#success-card.finale .big { font-size: 30px; }
+@keyframes finale-pop { from { transform: scale(.9); } to { transform: scale(1); } }
+
+.success-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+#success-continue, #replay-btn {
+  font-family: var(--serif); font-size: 16px; cursor: pointer;
+  border-radius: 999px; padding: 10px 22px;
+}
+#success-continue {
+  color: var(--ink); border: none;
+  background: linear-gradient(180deg, var(--gold), var(--gold-deep));
+}
+#replay-btn { color: var(--cream); background: none; border: 1px solid var(--gold-deep); }
+
+/* short / landscape phones: tighten the card so title, video and buttons fit
+   on screen at once rather than the buttons spilling below the fold */
+@media (max-height: 680px) {
+  #success-card { padding: 18px 20px; }
+  #success-card .big { font-size: 22px; }
+  #success-video { margin: 12px 0 4px; max-height: 38vh; }
+  #success-card p { margin: 10px 0; font-size: 15px; }
+  #fragment-badge { margin-bottom: 12px; }
 }
 
 .hidden { display: revert; }
-#toast.hidden, #catalog.hidden, #success.hidden { /* fade via opacity */ }
-#back-btn.hidden, #tilt-btn.hidden { display: none; }
+#toast.hidden, #success.hidden { /* fade via opacity */ }
+#back-btn.hidden, #tilt-btn.hidden, #drag-ghost.hidden { display: none; }
 
-@media (max-width: 640px) {
+/* ---------- phones: panels open as roomy, scannable sheets ----------
+   On a small screen a thin 130px column hides the items. Only one panel is open
+   at a time here (see main.js), so we let it be a comfortable sheet instead: the
+   catalog browses items in a 2-up grid you can actually read, the inventory gets
+   big, grabbable slots. */
+@media (max-width: 820px), (max-height: 460px) {
   #hud-title { display: none; }
-  #catalog-cards { padding: 12px; }
+  /* tighter chrome so the buttons leave room for the world */
+  #hud { padding: calc(7px + env(safe-area-inset-top)) 10px 7px; }
+  .hud-btn { font-size: 12px; padding: 6px 11px; }
+  #fs-btn { font-size: 15px; padding: 5px 9px; }
+  #hud-left, #hud-right { gap: 7px; }
+
+  .rail {
+    padding: 12px 11px; gap: 11px;
+    top: calc(46px + env(safe-area-inset-top)); bottom: 12px;
+  }
+  /* catalog = wide browse sheet · inventory = compact but big-targeted */
+  #catalog-rail { width: min(82vw, 380px); }
+  #inventory-rail { width: min(58vw, 268px); }
+  .rail h2 { font-size: 13px; }
+
+  /* section items as a scannable grid with their full notes shown */
+  .cat-section-body {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 11px;
+  }
+  .cat-card { padding: 9px; }
+  .cat-card h3 { font-size: 13px; }
+  .cat-card .diet { font-size: 11px; }
+  .cat-card .tooth-row span { display: block; font-size: 10px; }
+
+  /* cover stays a centered "book front" — keep the blurbs, they fit here now */
+  .cat-crest { width: 72px; height: 72px; }
+  .cat-cover-title { font-size: 18px; letter-spacing: .1em; }
+
+  /* bigger inventory slots = easier to see and drag */
+  #inventory-grid { gap: 12px; }
+  .inv-slot.empty::after { font-size: 22px; }
+}
+
+/* very short landscape (small phones) — trim vertical bulk, keep items legible */
+@media (max-height: 380px) {
+  .cat-crest { width: 52px; height: 52px; }
+  .cat-cover-title { font-size: 15px; }
+  .cat-card .art { aspect-ratio: 16 / 10; }
 }
 
 /* ---------- rotate-to-landscape (phones held in portrait) ---------- */
