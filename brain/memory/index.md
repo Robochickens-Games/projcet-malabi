@@ -76,6 +76,7 @@ After writing a memory, add a one-line pointer below under the right section.
 
 ## Proposals (under review)
 - [dinosaur-section-mechanics](../proposals/dinosaur-section-mechanics.md) — 15 mechanic ideas for the dino wing; recommended trio: Time Lens + Fossil Detective Board + Living Diorama
+- [museum-mechanics-from-beloved-games](../proposals/museum-mechanics-from-beloved-games.md) — second wave of mechanics from famous games, all three wings, non-overlapping with the 15; build-first five led by Photo Safari + Hidden Object + Creature-Dex
 - [puzzle-brush-away-the-dust](../proposals/puzzle-brush-away-the-dust.md) — first dino puzzle: find brush → brush rock in layers → reveal out-of-place ammonite
 - [asset-generation-pipeline](../proposals/asset-generation-pipeline.md) — DECIDED: manifest-driven pipeline adopted, but free-local ComfyUI engine dropped (see 0004); manifest + post-process + product kept, paid API is the path
 
