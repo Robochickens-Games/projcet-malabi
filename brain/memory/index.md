@@ -31,6 +31,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [north-star](shared/north-star.md) — 🌟 our guiding goals (make money · make fun); align everything to it
 - [team](shared/team.md) — who's who, roles, contact, working norms
 - [architecture-of-the-brain](shared/architecture-of-the-brain.md) — how this whole system is structured
+- [coach-learning-loop](shared/coach-learning-loop.md) — the coach skill teaches lessons learned into the other skills'/agents' own definitions, so the system improves instead of repeating mistakes
 - [budget-constraint](shared/budget-constraint.md) — no spend on infra right now; default to free
 - [project-status](shared/project-status.md) — where we are: done / in progress / parked / next
 - [dudu-direction-note](shared/dudu-direction-note.md) — Dudu isn't going as Dor hoped; accepted, parked
