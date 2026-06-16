@@ -9,7 +9,7 @@ tags: [status, project, onboarding]
 
 # Project status — where we are
 
-_Living snapshot. **Last updated: 2026-06-11.** Refresh it any time with `/catchup`._
+_Living snapshot. **Last updated: 2026-06-16.** Refresh it any time with `/catchup`._
 
 > 🌟 **North star:** make us money · make it fun. ([[north-star]]) — everything below
 > should serve it.
@@ -53,6 +53,13 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
   every sync and closes them by commit. See [[daily-notes]].
 
 ## In progress / open ⏳
+- **Space Wing — plan READY, awaiting Dor to execute (2026-06-16, Gidi):** the
+  **second wing** is fully spec'd by Gidi (8-page comic) and has a detailed, ready-to-build
+  plan (`product/prototypes/museum-parallax/SPACE-WING-PLAN.md`). Same loop as the dino wing
+  (restore 5 dioramas) plus **three new systems** — an economy (Space Supply Desk: sell rocks
+  → buy tools), cross-room item dependencies, and new puzzle types + 5 mini-games. Wireframe
+  art now, painted later. **Gidi approves starting; Dor's design sign-off pending** before/while
+  building. See [[space-wing]]. <!-- resolved-when: path-exists:product/prototypes/museum-parallax/src/economy.js -->
 - **First playable prototype built (2026-06-11, Dor):** scenario 1 in the game's
   chosen format — **wide side-scrolling platformer parallax** (walk the lobby →
   tooth reveals from behind a planter → jungle trail → match the tooth in the
@@ -77,8 +84,9 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 - **No spend on infra** right now — free tools/hosting only. [[budget-constraint]]
 
 ## Next steps
+- **Dor:** review the Space Wing spec + plan ([[space-wing]]) → approve so execution starts.
 - **Ohad:** review ADR 0003 → agree or push back → move to accepted.
-- **Team:** once ADR 0003 accepted, start first initiative — create `brain/memory/projects/science-museum-mystery/`. <!-- resolved-when: path-exists:brain/memory/projects/science-museum-mystery -->
+- **Team:** first project folder now exists — `brain/memory/projects/science-museum-mystery/`. <!-- resolved-when: path-exists:brain/memory/projects/science-museum-mystery -->
 - **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub
   usernames in `.github/CODEOWNERS`. <!-- resolved-when: codeowners-filled -->
 

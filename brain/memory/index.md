@@ -84,4 +84,5 @@ After writing a memory, add a one-line pointer below under the right section.
 - [0004-drop-local-comfyui-engine](../decisions/0004-drop-local-comfyui-engine.md) — accepted: removed the local ComfyUI + SDXL engine (~22 GB freed, off-target quality); manifest/post-process/product kept engine-agnostic, paid hosted API when generation resumes
 
 ## Projects
-_(none yet — first initiative creates `memory/projects/<slug>/` and a section here)_
+### Science Museum Mystery
+- [space-wing](projects/science-museum-mystery/space-wing.md) — the Space Wing (second wing): Gidi's 8-page comic spec + ready-to-build wireframe plan; adds an economy, cross-room item deps, and 5 new mini-games; Gidi approved, Dor's design sign-off pending
