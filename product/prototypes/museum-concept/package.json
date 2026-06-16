@@ -1,0 +1,16 @@
+{
+  "name": "museum-concept",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Science Museum Mystery — asset-driven parallax concept test. Drop backgrounds/props/UI into public/assets and wire them in src/config.js.",
+  "scripts": {
+    "dev": "vite --host",
+    "prebuild": "node scripts/sync-layout.mjs",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

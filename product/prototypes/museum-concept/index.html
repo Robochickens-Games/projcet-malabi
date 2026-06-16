@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Science Museum Mystery — concept test</title>
+</head>
+<body>
+  <div id="stage">
+    <div id="world"></div>
+  </div>
+
+  <!-- ============ Top info banners (Museum-Placard UI) ============ -->
+  <header id="topbar">
+    <div id="titles" class="toon pill" style="--face:var(--cream); --edge:var(--cream-edge);">
+      <span id="title">SCIENCE MUSEUM MYSTERY</span>
+      <span id="subtitle">concept test</span>
+    </div>
+    <div id="scene-name" class="toon pill" style="--face:var(--purple); --edge:var(--purple-edge); color:#fbf0e6;"></div>
+  </header>
+
+  <!-- ============ Edge controls — small, split left / right (mobile thumbs) ============ -->
+  <div id="ctrl-left" class="ctrl">
+    <button id="back-btn" class="toon is-press btn btn--icon btn--cream hidden" aria-label="Back"><svg class="ico" aria-hidden="true"><use href="#i-back"></use></svg></button>
+    <button id="inv-btn" class="toon is-press btn btn--icon btn--yellow" aria-label="Inventory"><svg class="ico" aria-hidden="true"><use href="#i-bag"></use></svg><span id="inv-badge" class="badge hidden">0</span></button>
+  </div>
+  <div id="ctrl-right" class="ctrl">
+    <button id="menu-btn" class="toon is-press btn btn--icon btn--blue" aria-label="Menu"><svg class="ico" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+    <button id="edit-btn" class="toon is-press btn btn--icon btn--cream" aria-label="Edit layout (E)"><svg class="ico" aria-hidden="true"><use href="#i-edit"></use></svg></button>
+  </div>
+
+  <div id="walk-cue">walk →</div>
+  <div id="toast"></div>
+
+  <!-- ============ Overlays (Toon-3D panels) ============ -->
+  <div id="overlay" class="overlay hidden"></div>
+
+  <aside id="inventory" class="toon panel modal hidden" aria-label="Inventory">
+    <div class="panel__head">Inventory</div>
+    <div class="panel__body">
+      <p id="inv-hint" class="modal-hint">Tap clues in the museum to collect them.</p>
+      <div id="inv-grid" class="inv-grid"></div>
+      <button class="toon is-press btn btn--green btn--block js-close">Done</button>
+    </div>
+  </aside>
+
+  <aside id="menu" class="toon panel modal hidden" aria-label="Menu">
+    <div class="panel__head">Menu</div>
+    <div class="panel__body">
+      <button class="toon is-press btn btn--green btn--block js-close">Resume</button>
+      <div class="menu-row"><span>Sound</span><div class="toon toggle is-on js-toggle" data-setting="sound"><span class="toggle__knob"></span></div></div>
+      <div class="menu-row"><span>Music</span><div class="toon toggle js-toggle" data-setting="music"><span class="toggle__knob"></span></div></div>
+      <button id="menu-help" class="toon is-press btn btn--blue btn--block btn--sm">How to play</button>
+      <button id="menu-restart" class="toon is-press btn btn--cream btn--block btn--sm">Restart tour</button>
+    </div>
+  </aside>
+
+  <!-- ============ In-style vector icon set (thin warm museum linework) ============ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5L8 12l6.5 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-bag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5.5 9.5h13l-1 9.5h-11l-1-9.5z"/><path d="M8.5 9.5V7.5a3.5 3.5 0 0 1 7 0v2"/><path d="M9.5 13.5h5" stroke-linecap="round"/></g></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7.5h14"/><path d="M5 12h14"/><path d="M5 16.5h14"/></g></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4.5 19.5l1-4.2L15 5.8l3.2 3.2-9.5 9.5-4.2 1z"/><path d="M13.4 7.4l3.2 3.2" stroke-linecap="round"/></g></symbol>
+      <symbol id="i-bone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M8.6 8.6l6.8 6.8"/><circle cx="6.9" cy="7.1" r="2"/><circle cx="8.8" cy="5.2" r="2"/><circle cx="17.1" cy="16.9" r="2"/><circle cx="15.2" cy="18.8" r="2"/></g></symbol>
+    </defs>
+  </svg>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

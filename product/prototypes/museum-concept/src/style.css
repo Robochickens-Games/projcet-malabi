@@ -1,0 +1,250 @@
+/* =============================================================================
+   style.css — UI chrome + layer/hotspot look. Drop UI art into /assets/ui and
+   reference it here (e.g. background-image on .hud-btn) to skin the concept.
+============================================================================= */
+:root{
+  /* --ink / fonts now come from the shared Toon-3D design system (ui-3d.css).
+     These are prototype-only extras for the scene/placeholders. */
+  --letterbox:#231811; --paper:#f4e6c8; --gold:#e8a948; --line:rgba(244,230,200,.6);
+  --font: ui-rounded, "Segoe UI", system-ui, sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%; overflow:hidden; background:var(--letterbox); font-family:var(--font-ui, var(--font)); color:var(--paper)}
+body{ user-select:none; -webkit-user-select:none; touch-action:none; cursor:grab }
+body:active{ cursor:grabbing }
+
+/* ---------- stage: scaled design-height world ---------- */
+#stage{ position:fixed; inset:0; overflow:hidden }
+/* JS sets top + scale each layout() to vertically centre the 1080px design world */
+#world{ position:absolute; left:0; top:0; transform-origin:left top; will-change:transform }
+
+.scene{
+  position:absolute; left:0; top:0; height:1080px;
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .45s ease;
+}
+.scene.active{ opacity:1; visibility:visible; pointer-events:auto }
+.scene.entering{ animation:slideIn .5s ease }
+.scene.leaving{ animation:fadeOut .45s ease forwards }
+@keyframes slideIn{ from{ transform:translateX(60px) } to{ transform:translateX(0) } }
+@keyframes fadeOut{ to{ opacity:0 } }
+
+/* ---------- parallax layers ---------- */
+.layer{
+  position:absolute; left:0; top:0; height:1080px;
+  background-position:left center; will-change:transform;
+  pointer-events:none;   /* full-width transparent planes must not eat clicks;
+                            only prop imgs opt back in (in edit mode) */
+}
+
+/* placeholder shown until art is dropped */
+.layer.placeholder{
+  border:2px dashed rgba(244,230,200,.18);
+  background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,.015) 0 28px, transparent 28px 56px),
+    rgba(255,255,255,.012);
+  display:flex; align-items:center; justify-content:flex-start;
+}
+.ph-tag{
+  /* pinned near the left so the drop-path is visible at scene start, not lost
+     in the middle of a 2880px-wide layer */
+  margin-left:60px; text-align:left; opacity:.55; line-height:1.7; padding:18px 26px;
+  border:1px solid rgba(244,230,200,.2); border-radius:14px;
+  background:rgba(16,22,31,.55);
+}
+.ph-tag b{ display:block; font-size:30px; letter-spacing:.06em }
+.ph-tag span{ display:block; font-size:18px; color:var(--gold) }
+.ph-tag code{ display:block; font-size:14px; margin-top:6px; opacity:.7 }
+
+/* ---------- prop layers (positioned cut-outs) ---------- */
+.prop-layer{ background:none !important; border:0 !important }
+.prop{
+  position:absolute; width:auto; transform:translateX(-50%);
+  -webkit-user-drag:none; user-drag:none; pointer-events:none;
+  filter:drop-shadow(0 12px 16px rgba(0,0,0,.28));
+}
+/* a prop with an action is its own click target (hit area tracks the art) */
+.prop.interactive{ pointer-events:auto; cursor:pointer }
+
+/* LOW-FX (mobile): each drop-shadow forces a GPU backing store per prop; on iOS
+   the pile-up crashes the tab. Drop the filters + any blur/blend overlays. */
+.lowfx .prop{ filter:none }
+.lowfx #fx-vignette, .lowfx #fx-flare, .lowfx #fx-motes{ display:none !important }
+.lowfx #overlay{ backdrop-filter:none; -webkit-backdrop-filter:none }
+.ph-prop{
+  position:absolute; width:200px; transform:translateX(-50%);
+  border:2px dashed rgba(232,169,72,.5); border-radius:14px;
+  background:rgba(232,169,72,.06); opacity:.7;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; gap:4px; padding:10px;
+}
+.ph-prop b{ font-size:22px } .ph-prop span{ font-size:15px; color:var(--gold) } .ph-prop code{ font-size:12px; opacity:.7 }
+
+/* ---------- hotspots ---------- */
+.hotspots{ position:absolute; left:0; top:0; height:1080px; pointer-events:none }
+.hotspot{
+  position:absolute; pointer-events:auto; cursor:pointer;
+  background:transparent center/contain no-repeat; border:0; padding:0;
+  color:var(--paper); font-family:inherit;
+  display:flex; align-items:center; justify-content:center;
+}
+.hotspot:not(.has-art){
+  border:2px dashed rgba(232,169,72,.55); border-radius:14px;
+  background:rgba(232,169,72,.06);
+}
+.hotspot.has-art .hs-marker{ display:none }
+.hotspot.bare{ border:0; background:none } /* invisible hit area (art is on a prop layer) */
+.hotspot.collected{ opacity:0; pointer-events:none; transition:opacity .35s }
+.hs-marker{ display:flex; flex-direction:column; align-items:center; gap:6px; font-size:46px; pointer-events:none }
+.hs-marker em{ font-size:17px; font-style:normal; opacity:.85; background:rgba(16,22,31,.55); padding:3px 10px; border-radius:20px }
+.hotspot:hover .hs-marker{ transform:scale(1.06) }
+.hotspot.sparkle{ animation:bob 2.4s ease-in-out infinite }
+@keyframes bob{ 50%{ transform:translateY(-8px) } }
+
+/* ---------- cinematic FX: vignette + lens flare + dust (overlay only) ---------- */
+#fx-vignette{
+  position:fixed; inset:0; z-index:14; pointer-events:none; mix-blend-mode:multiply;
+  background:radial-gradient(125% 100% at 50% 42%, transparent 50%, rgba(14,8,3,.55) 100%);
+}
+#fx-motes{ position:fixed; inset:0; z-index:15; pointer-events:none; overflow:hidden; mix-blend-mode:screen }
+.mote{ position:absolute; left:0; top:0; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,242,214,.95), transparent 70%); will-change:transform,opacity }
+
+#fx-flare{ position:fixed; inset:0; z-index:16; pointer-events:none; overflow:hidden; mix-blend-mode:screen }
+#fx-flare > *{ position:absolute; left:0; top:0; will-change:transform,opacity }
+.fl-core{ width:130px; height:130px; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,244,214,.95), rgba(255,198,120,.5) 36%, transparent 70%); filter:blur(2px) }
+.fl-glow{ width:560px; height:560px; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,206,138,.4), transparent 64%); filter:blur(22px) }
+.fl-streak{ left:-25%; width:150%; height:3px; transform:translateY(-50%); filter:blur(1px);
+  background:linear-gradient(90deg, transparent, rgba(150,205,255,.45) 28%, rgba(255,240,210,.9) 50%, rgba(150,205,255,.45) 72%, transparent) }
+.fl-ghost{ border-radius:50% }
+.fl-g1{ width:64px; height:64px; background:radial-gradient(circle, rgba(120,200,255,.4), transparent 70%) }
+.fl-g2{ width:34px; height:34px; background:radial-gradient(circle, rgba(255,182,120,.45), transparent 68%);
+  box-shadow:inset 0 0 0 2px rgba(255,222,160,.3) }
+.fl-g3{ width:92px; height:92px; background:radial-gradient(circle, rgba(184,162,255,.28), transparent 70%) }
+@media (prefers-reduced-motion: reduce){ #fx-flare, #fx-motes{ display:none } }
+
+/* ---------- HUD: top info banners ---------- */
+#topbar{
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  display:flex; align-items:flex-start; justify-content:center; flex-wrap:wrap;
+  gap:10px; padding:max(12px, env(safe-area-inset-top)) 14px 0;
+  pointer-events:none;
+}
+#topbar > *{ pointer-events:auto }
+
+#titles{ display:flex; flex-direction:column; align-items:center; gap:0;
+  padding:7px 18px; line-height:1.1; text-align:center; max-width:60vw }
+#title{ font-family:var(--font-display); font-weight:700; font-size:15px; letter-spacing:.06em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; color:var(--ink) }
+#subtitle{ font-family:var(--font-ui); font-size:11px; letter-spacing:.22em; opacity:.6; text-transform:uppercase }
+
+#scene-name{ padding:9px 18px; font-family:var(--font-display); font-weight:700; font-size:15px; letter-spacing:.04em; }
+#scene-name:empty{ display:none }
+
+/* ---------- HUD: small edge controls, split left / right ---------- */
+.ctrl{
+  position:fixed; z-index:24; bottom:max(16px, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:9px;
+}
+#ctrl-left{ left:max(14px, env(safe-area-inset-left)) }
+#ctrl-right{ right:max(14px, env(safe-area-inset-right)) }
+
+/* smaller medallion buttons */
+.ctrl .btn--icon{ width:44px; height:44px; font-size:20px }
+.ico{ width:1.15em; height:1.15em; display:block; pointer-events:none }
+
+/* badge sits tighter on the smaller buttons */
+.ctrl .badge{ top:-6px; right:-6px; min-width:21px; height:21px; font-size:12px }
+
+.badge.hidden{ display:none !important }
+.hidden{ display:none !important }
+
+/* ---------- toast + walk cue ---------- */
+#toast{
+  position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px);
+  z-index:30; max-width:min(680px,86vw); text-align:center;
+  background:var(--cream); color:var(--ink);
+  border:var(--outline) solid var(--ink); border-radius:var(--r-lg);
+  box-shadow:0 var(--depth) 0 0 var(--cream-edge), var(--shadow), var(--gloss);
+  padding:14px 24px; font-size:17px; font-weight:500; line-height:1.4;
+  opacity:0; transition:opacity .3s, transform .3s; pointer-events:none;
+}
+#toast.show{ opacity:1; transform:translateX(-50%) translateY(0) }
+#walk-cue{
+  position:fixed; right:30px; bottom:50%; z-index:18; opacity:.7;
+  font-size:16px; letter-spacing:.2em; animation:nudge 1.4s ease-in-out infinite;
+}
+@keyframes nudge{ 50%{ transform:translateX(10px) } }
+
+/* ---------- overlays: inventory + menu modals (Toon-3D) ---------- */
+#overlay{ position:fixed; inset:0; z-index:35; background:rgba(35,24,17,.55);
+  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px) }
+#overlay.hidden{ display:none }
+
+.panel.modal{
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:36; width:min(380px,90vw);
+}
+.panel.modal.hidden{ display:none }
+.modal-hint{ text-align:center; color:var(--ink-soft); font-size:14px; margin:-4px 0 4px }
+
+/* inventory grid: collected items as tiles, plus empty parchment slots */
+.inv-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; justify-items:center }
+.inv-tile{ width:78px; height:78px; font-size:38px }
+.inv-slot{ width:78px; height:78px; border-radius:var(--r-lg);
+  border:3px dashed var(--cream-edge); background:rgba(205,181,136,.18) }
+
+/* menu rows (label + toggle) */
+.menu-row{ display:flex; align-items:center; justify-content:space-between;
+  padding:4px 4px; font-weight:600; font-size:17px; color:var(--ink) }
+
+/* ---------- edit mode ---------- */
+#edit-btn.on{ --face:var(--green); --edge:var(--green-edge); color:var(--ink) }
+body.editing{ cursor:default }
+body.editing .prop{ pointer-events:auto; cursor:grab }
+body.editing .prop:active{ cursor:grabbing }
+body.editing .hotspot{ pointer-events:none }          /* don't fight prop picking */
+body.editing .prop:hover{ outline:2px dashed rgba(63,154,147,.7); outline-offset:-2px }
+.prop.sel{ outline:3px solid var(--blue); outline-offset:-3px }
+
+/* editor panel styled as a Toon-3D chunk (parchment body, gold ribbon head) */
+#editor-panel{
+  position:fixed; top:78px; right:16px; z-index:40; width:286px;
+  background:var(--cream); color:var(--ink);
+  border:var(--outline) solid var(--ink); border-radius:var(--r-xl);
+  box-shadow:0 var(--depth) 0 0 var(--cream-edge), var(--shadow);
+  font-size:13px;
+}
+#editor-panel.hidden{ display:none }
+.ep-pad{ padding:12px 14px 14px }
+.ep-head{ display:flex; align-items:center; gap:8px; cursor:move; touch-action:none;
+  font-family:var(--font-display); font-weight:800; font-size:16px; }
+.ep-head #ep-close{ margin-left:auto }
+.ep-head button{ background:none; border:0; color:#fff; font-size:18px; cursor:pointer; opacity:.85; line-height:1 }
+.ep-status{ font-size:11px; letter-spacing:.04em; opacity:.9; font-weight:600 }
+.ep-status.saved{ color:#dffbe8 } .ep-status.error{ color:#ffd9d9 } .ep-status.saving{ color:#fff3d6 }
+.ep-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px }
+.ep-actions .btn{ flex:1 1 30% }
+#editor-panel label{ display:flex; align-items:center; gap:8px; margin:8px 0 }
+#editor-panel .ep-row select, #editor-panel input[type=number]{
+  flex:1; min-width:0; background:#fffaf0; color:var(--ink);
+  border:2px solid var(--cream-edge); border-radius:9px; padding:5px 8px; font-family:inherit; font-weight:500;
+}
+#editor-panel input[type=range]{ flex:1; accent-color:var(--blue) }
+#editor-panel input[type=number]{ max-width:74px }
+.ep-fields > label > span, #editor-panel label{ white-space:nowrap }
+.ep-check{ cursor:pointer }
+.ep-z{ display:flex; gap:6px; align-items:center; margin-top:8px }
+.ep-z .btn{ flex:1 }
+.ep-src-row{ display:flex; gap:6px; align-items:center }
+.ep-src-row input, .ep-src-row select{ flex:1; min-width:0 }
+.ep-del{ width:100%; margin-top:8px; background:#e7563f; color:#fff; border-color:#b53a28 }
+.ep-del:hover{ background:#d8412b }
+.ep-empty{ color:var(--ink-soft); font-size:12px; margin:6px 0 }
+#ep-out{
+  width:100%; height:88px; margin-top:10px; resize:vertical;
+  background:#fffaf0; color:#5b4a2a; border:2px solid var(--cream-edge); border-radius:10px;
+  padding:8px; font:12px/1.4 ui-monospace, Menlo, monospace;
+}

@@ -1,0 +1,7 @@
+node_modules
+dist
+.DS_Store
+*.local
+# edit-mode working save; `npm run build` bakes it into public/layout.json for deploy
+.layout.json
+.vercel
