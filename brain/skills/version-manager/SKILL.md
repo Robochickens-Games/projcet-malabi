@@ -49,4 +49,7 @@ Push automatically after:
 ## Notes
 - Follow CLAUDE.md and the sync protocol (`brain/processes/sync-protocol.md`); this skill is
   the *write/push* half of staying in sync, `/sync` is the *read/catch-up* half.
+- This skill is what the **AI** does with git. The **team's** plain-language, no-experience-needed
+  side — the safe daily loop, not stepping on each other, never losing work — lives in
+  [[safe-git]]. When a human is unsure or hits a conflict, that skill tells them to hand it here.
 - Keep commit messages tool-agnostic and about the change, not the tool.
