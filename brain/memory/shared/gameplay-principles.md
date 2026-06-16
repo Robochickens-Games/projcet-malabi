@@ -15,9 +15,15 @@ mitigations in [[click-to-play-engagement-concern]] (Dor, 2026-06-11): the
 click-to-play exploration loop only engages if these hold. Treat them as
 non-negotiable design checks, not nice-to-haves.
 
-1. **Every tap rewards.** No empty taps — every interactive object gives back
-   juice (animation + sound + a small reveal). Reward curiosity on *every*
-   interaction, not just on puzzle solves.
+1. **Every tap rewards — make the whole world pokeable.** No empty taps. Every
+   object gives back juice (animation + sound + a small reveal), and we make
+   *most* things look tappable. This holds **even off the critical path** — décor,
+   background creatures, menu buttons, the title/loading screens, the settings
+   cog. The ambient stuff counts double: rewarding curiosity on things that don't
+   matter is what makes the world feel alive and teaches kids that touching is
+   always safe and always rewarded. Cheap juice (a ~200ms tween + one-shot sound),
+   not new systems; never punish the poke. See the mobile-game-builder skill's
+   "make everything reactive" cross-cutting rule.
 
 2. **A steady drip of "aha."** Pace discovery as many small reveals, not one big
    gated puzzle. The player should always be moments away from the next little win.
