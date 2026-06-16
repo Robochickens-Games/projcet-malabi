@@ -5,6 +5,7 @@ owner: gidi
 scope: project
 project: science-museum-mystery
 created: 2026-06-16
+image: brain/images/space-wing/page-1.jpg
 tags: [product, space, wing, spec, prototype, plan, economy]
 ---
 
@@ -47,7 +48,16 @@ had**. Gidi delivered the full design as an 8-page comic spec.
    Token awarded, doorway to the next wing. Reinforces the loop: Explore → Collect Rocks
    → Trade for Tools → Solve Mini-Games → Restore Dioramas → Unlock the Next Wing.
 
-(The comic source is Gidi's; the full transcription lives in the build plan, below.)
+### The full comic spec (Gidi, 8 pages)
+
+![Space Wing — Page 1: The Space Wing](../../../images/space-wing/page-1.jpg)
+![Space Wing — Page 2: Space Supply Desk](../../../images/space-wing/page-2.jpg)
+![Space Wing — Page 3: Solar System — The Planet Path Puzzle](../../../images/space-wing/page-3.jpg)
+![Space Wing — Page 4: Mars — Rover Repair Mission](../../../images/space-wing/page-4.jpg)
+![Space Wing — Page 5: Moon Missions — Rebuild the Landing Sequence](../../../images/space-wing/page-5.jpg)
+![Space Wing — Page 6: Space Station — Fix the Airlock](../../../images/space-wing/page-6.jpg)
+![Space Wing — Page 7: James Webb — Align the Golden Mirrors](../../../images/space-wing/page-7.jpg)
+![Space Wing — Page 8: The Space Wing Restored](../../../images/space-wing/page-8.jpg)
 
 ## Three net-new systems (vs. the dino wing)
 

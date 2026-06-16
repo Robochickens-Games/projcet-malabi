@@ -10,7 +10,7 @@
 // Run: node scripts/build-wiki.mjs   (output: site/index.html)
 // The build-wiki GitHub Action runs this on every push to main touching brain/**.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, copyFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, copyFileSync, cpSync, existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
@@ -418,6 +418,20 @@ function creditsFor(subject, files) {
     skills: [...skills].map(([name, kind]) => ({ name, kind, emoji: skillEmoji(name) })),
   };
 }
+
+// Body-embedded images point at the brain images dir with file-relative paths
+// (e.g. ../../images/foo.png, ../../../images/space-wing/page-1.jpg, or brain/images/foo.png).
+// The whole brain/images tree is published to site/images (below), so rewrite any such
+// markdown image to a site-root-relative images/… path so it resolves on GitHub Pages.
+function rewriteBodyImages(body) {
+  if (!body) return body;
+  return body.replace(/(!\[[^\]]*\]\()([^)]+)(\))/g, (m, pre, url, post) => {
+    const mm = url.trim().match(/^(?:\.\.\/)*(?:brain\/)?images\/(.+)$/);
+    return mm ? `${pre}images/${mm[1]}${post}` : m;
+  });
+}
+for (const arr of [memories, decisions, proposals, researchDocs])
+  for (const it of arr) it.body = rewriteBodyImages(it.body);
 
 // Map each changed file to a human one-liner, so dispatches can describe themselves.
 const fileDesc = {};
@@ -961,6 +975,10 @@ for (const m of members) {
 }
 // Coach Rami's portrait for his learning-log "about the coach" intro.
 try { copyFileSync(join(BRAIN, "images", "coach-rami.png"), join(OUT_DIR, "people", "coach-rami.png")); } catch {}
+
+// The whole brain images tree → site/images, so body-embedded images (rewritten
+// to images/… above) resolve on the published site (e.g. the Space Wing comic pages).
+try { cpSync(join(BRAIN, "images"), join(OUT_DIR, "images"), { recursive: true }); } catch {}
 
 // News images (project-local + cached Wikipedia photos) into site/news.
 mkdirSync(join(OUT_DIR, "news"), { recursive: true });
