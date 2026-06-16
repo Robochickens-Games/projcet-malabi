@@ -23,6 +23,10 @@ turns `brain/**` into a single, always-current page the whole team can skim.
   what changed, when, by whom, with the touched files (click → opens the memory).
   This is the "see what & when changed" view.
 - **Status** — the live `project-status.md`, typeset.
+- **Coach Rami** — the team's learning log, in plain human language. Each lesson is a
+  card with three beats: *What happened · The mistake · What we'll do differently*, newest
+  first. Built from [[coach-rami-log]] (`brain/memory/shared/coach-rami-log.md`) — add a
+  dated `##` entry there and a new card prints on the next deploy.
 - **Knowledge Map** — a d3 force graph of memories + decisions, linked by `[[wikilinks]]`.
 - **Decisions** — the ADR ledger with status badges (proposed / accepted / abandoned).
 - **The Team** — Dor / Gidi / Ohad masthead.

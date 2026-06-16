@@ -234,6 +234,39 @@ function readDoc(relPath) {
 const northStarBody = readDoc("brain/memory/shared/north-star.md");
 let statusBody = readDoc("brain/memory/shared/project-status.md");
 
+// ---- Coach Rami's learning log --------------------------------------------
+// A plain-language record of lessons, told as What happened / The mistake /
+// What we'll do differently. Each `## YYYY-MM-DD — title` block becomes a card
+// in the "Coach Rami" section. Newest first (we sort by date, descending).
+function parseCoachLog(md) {
+  const grab = (body, label) => {
+    // pull everything after **<label>:** up to the next bolded label or end
+    const re = new RegExp("\\*\\*" + label + ":\\*\\*\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\*[^*]+:\\*\\*|$)", "i");
+    const m = body.match(re);
+    return m ? m[1].trim() : "";
+  };
+  const out = [];
+  const parts = md.split(/^##\s+/m);
+  for (let i = 1; i < parts.length; i++) {
+    const seg = parts[i];
+    const nl = seg.indexOf("\n");
+    const heading = (nl === -1 ? seg : seg.slice(0, nl)).trim();
+    const body = (nl === -1 ? "" : seg.slice(nl + 1)).trim();
+    const dm = heading.match(/^(\d{4}-\d{2}-\d{2})\s*[—–-]\s*(.+)$/);
+    const date = dm ? dm[1] : "";
+    const title = dm ? dm[2].trim() : heading;
+    const happened = grab(body, "What happened");
+    const mistake = grab(body, "The mistake") || grab(body, "What was the mistake");
+    const differently = grab(body, "What we'll do differently") || grab(body, "What we will do differently");
+    // Only keep blocks that look like real entries (dated + at least one beat).
+    if (!date || !(happened || mistake || differently)) continue;
+    out.push({ date, title, happened, mistake, differently });
+  }
+  out.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  return out;
+}
+const coachLog = parseCoachLog(readDoc("brain/memory/shared/coach-rami-log.md"));
+
 // Split the status doc into ## sections so the front page can show a
 // "where things stand" board (TL;DR, Done, In progress, Parked, Next…).
 function splitSections(md) {
@@ -891,6 +924,7 @@ const payload = {
   northStarBody,
   statusBody,
   statusSections,
+  coachLog,
   memories,
   decisions,
   proposals,
@@ -925,6 +959,8 @@ for (const m of members) {
   if (!m.avatar) continue;
   copyFileSync(join(memberDir, m.slug, "avatar.jpg"), join(OUT_DIR, "people", `${m.slug}.jpg`));
 }
+// Coach Rami's portrait for his learning-log "about the coach" intro.
+try { copyFileSync(join(BRAIN, "images", "coach-rami.png"), join(OUT_DIR, "people", "coach-rami.png")); } catch {}
 
 // News images (project-local + cached Wikipedia photos) into site/news.
 mkdirSync(join(OUT_DIR, "news"), { recursive: true });
@@ -1120,6 +1156,44 @@ function renderHtml(dataJson) {
   .kcard strong { color: var(--ink); font-weight: 700; }
   .kcard code { background: var(--paper); font-size: 12px; padding: 0 5px; }
   .kcard.empty { color: var(--faint); text-align: center; border-left-color: var(--line2); }
+
+  /* ---- Coach Rami's learning log ---- */
+  /* about-the-coach intro (author-style bio) */
+  .coach-about { display: grid; grid-template-columns: 200px 1fr; gap: 26px; align-items: center;
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 42%, #1e40af 100%);
+    border-radius: 16px; padding: 24px 28px; margin: -4px 0 24px; color: #fff; box-shadow: 0 6px 26px rgba(29,78,216,.22); overflow: hidden; }
+  .coach-portrait { margin: 0; }
+  .coach-portrait img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 14px;
+    border: 3px solid rgba(255,255,255,.85); box-shadow: 0 4px 16px rgba(0,0,0,.28); display: block; background: #0f172a; }
+  .coach-portrait figcaption { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; text-align: center; margin-top: 9px; color: rgba(255,255,255,.92); }
+  .coach-kicker { font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #fde047; }
+  .coach-bio h3 { font-family: var(--display); font-weight: 900; font-size: 30px; line-height: 1.08; margin: 5px 0 12px; letter-spacing: -.4px; color: #fff; }
+  .coach-bio p { font-family: var(--serif); font-size: 15.5px; line-height: 1.58; margin: 0 0 10px; color: rgba(255,255,255,.94); }
+  .coach-bio p b { color: #fff; }
+  .coach-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .coach-tags span { font-family: var(--sans); font-size: 12px; font-weight: 700; background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.28); border-radius: 999px; padding: 4px 12px; color: #fff; }
+  @media (max-width: 620px) { .coach-about { grid-template-columns: 1fr; text-align: center; gap: 16px; }
+    .coach-portrait img { max-width: 200px; margin: 0 auto; } .coach-tags { justify-content: center; } }
+
+  .coach-blurb { font-family: var(--serif); font-size: 16px; line-height: 1.55; color: var(--ink2); max-width: 760px; margin: -6px 0 22px; }
+  .coach-blurb b { color: var(--ink); }
+  .coach-log { display: flex; flex-direction: column; gap: 18px; }
+  .clesson { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px 20px;
+    position: relative; overflow: hidden; box-shadow: 0 2px 14px rgba(28,25,23,.05); }
+  .clesson::before { content: "🧢"; position: absolute; right: 16px; top: 12px; font-size: 26px; opacity: .14; }
+  .clesson-date { font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+  .clesson h3 { font-family: var(--display); font-weight: 700; font-size: 23px; line-height: 1.18; margin: 4px 0 14px; letter-spacing: -.2px; padding-right: 34px; }
+  .cbeat { display: grid; grid-template-columns: 152px 1fr; gap: 14px; padding: 11px 0; border-top: 1px solid var(--line); }
+  .cbeat:first-of-type { border-top: 0; }
+  .cbeat-label { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: .03em; display: flex; align-items: flex-start; gap: 6px; color: var(--ink); }
+  .cbeat-body { font-family: var(--serif); font-size: 15px; line-height: 1.55; color: var(--ink2); }
+  .cbeat-body b, .cbeat-body strong { color: var(--ink); }
+  .cbeat.beat-diff .cbeat-label { color: #166534; }
+  .cbeat.beat-diff .cbeat-body { color: var(--ink); }
+  @media (max-width: 620px) { .cbeat { grid-template-columns: 1fr; gap: 3px; } }
+  .coach-log .empty { color: var(--faint); font-family: var(--serif); font-style: italic; }
 
   /* hero = latest dispatch */
   .hero { display: flex; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px 22px; position: relative; overflow: hidden; box-shadow: 0 2px 14px rgba(28,25,23,.05); }
@@ -1712,6 +1786,7 @@ function renderHtml(dataJson) {
   <nav class="tabs">
     <button data-tab="front" class="active">Front Page</button>
     <button data-tab="status">Status</button>
+    <button data-tab="coach">Coach Rami</button>
     <button data-tab="map">Knowledge Map</button>
     <button data-tab="decisions">Decisions</button>
     <button data-tab="team">The Team</button>
@@ -1741,6 +1816,33 @@ function renderHtml(dataJson) {
     <details class="status-full"><summary>Full status notes &amp; constraints</summary>
       <div class="card markdown" id="status-md"></div>
     </details>
+  </section>
+
+  <section class="view" id="coach">
+    <h2 class="section-head">🧢 Coach Rami's Learning Log</h2>
+
+    <div class="coach-about">
+      <figure class="coach-portrait">
+        <img src="people/coach-rami.png" alt="Coach Rami — the team's learning coach" loading="lazy" />
+        <figcaption>Coach Rami</figcaption>
+      </figure>
+      <div class="coach-bio">
+        <div class="coach-kicker">About the coach</div>
+        <h3>Meet Coach Rami</h3>
+        <p>Big hair, bigger whistle. Rami is the team's <b>learning coach</b> — the friendly voice in the
+          locker room who turns every stumble into a play we run better next time. He doesn't do blame and
+          he doesn't do jargon; he tells it straight, like a teammate.</p>
+        <p>His whole job lives below: take what just happened, name the mistake honestly, and pin down the
+          one thing we'll do differently. Every flop logged here is a saved hour for whoever hits the same
+          wall next. <b>Lose the rep, keep the lesson.</b> 🌟</p>
+        <div class="coach-tags"><span>📣 Plain language</span><span>🩹 No blame</span><span>🧭 One takeaway at a time</span></div>
+      </div>
+    </div>
+
+    <p class="coach-blurb">Where we track what we learn — out loud, in plain language. Every lesson is a
+      short story: <b>what happened</b>, <b>the mistake</b>, and <b>what we'll do differently</b> next time.
+      Newest first.</p>
+    <div class="coach-log" id="coach-log"></div>
   </section>
 
   <section class="view" id="map">
@@ -1904,6 +2006,28 @@ boardEl.innerHTML = boardDefs.map(d=>{
     '<div class="kcol-body">'+cards+'</div></div>';
 }).join('');
 wireWikilinks(boardEl);
+
+// ---- Coach Rami's learning log ----
+const coachEl = document.getElementById('coach-log');
+if (coachEl) {
+  const beats = [
+    { key:'happened',    emoji:'🎬', label:'What happened',          cls:'' },
+    { key:'mistake',     emoji:'🩹', label:'The mistake',            cls:'beat-mistake' },
+    { key:'differently', emoji:'🧭', label:"What we'll do differently", cls:'beat-diff' },
+  ];
+  const log = DATA.coachLog || [];
+  coachEl.innerHTML = log.length ? log.map(e=>{
+    const rows = beats.filter(b=> e[b.key]).map(b=>
+      '<div class="cbeat '+b.cls+'">'+
+        '<div class="cbeat-label">'+b.emoji+' '+b.label+'</div>'+
+        '<div class="cbeat-body">'+renderInline(e[b.key])+'</div>'+
+      '</div>').join('');
+    return '<article class="clesson">'+
+      '<div class="clesson-date">'+escapeHtml(longDate(e.date))+'</div>'+
+      '<h3>'+escapeHtml(e.title)+'</h3>'+ rows +'</article>';
+  }).join('') : '<div class="empty">No lessons logged yet — the first flop that teaches us something lands here.</div>';
+  wireWikilinks(coachEl);
+}
 
 // ---- what happened: hero + narrated timeline ----
 function relDay(d){
