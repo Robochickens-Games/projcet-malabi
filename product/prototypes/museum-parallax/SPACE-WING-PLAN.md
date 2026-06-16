@@ -1,5 +1,9 @@
 # Plan — Add the Space Wing to the parallax wireframe museum
 
+> **Source spec:** [`product/Science Museum Mystery- space wing spec .txt`](../../Science%20Museum%20Mystery-%20space%20wing%20spec%20.txt)
+> — the canonical Space Wing brief (5 dioramas, Supply Desk, mini-games). This plan
+> implements it; if the two ever disagree, the spec is the source of truth.
+
 ## Context
 
 The museum prototype (`product/prototypes/museum-parallax/`) currently ships **one

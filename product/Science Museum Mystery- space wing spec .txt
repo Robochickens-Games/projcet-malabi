@@ -1,0 +1,93 @@
+﻿attaching the spec for our second space wing. let's plan to update our parallax wireframe museum with all these additions: 
+
+Here is a overall spec for the Space Wing that can feel different from the Dinosaur Wing, while still using the same core language: dioramas, inventory, catalog/knowledge, riddles, mini games, and exploration.
+The player’s goal, like in dino wing, is to fix/complete the 5 dioramas to progress to the next wing.
+The space wing lobby also includes:
+ The Space Supply Desk / Lost Astronaut Kiosk
+A charming “museum gift shop meets mission control” place where the player can trade items in exchange for space rocks he will find in the space lobby and each diorama room. In the catalog book the player can see an index of possible space rock and the amount of coins he will get for them
+Diorama 1: Solar System — “The Planet Path Puzzle”
+Theme: Orbits, planet order, size, distance.
+Scene: A beautiful mechanical solar system room with brass orbit rings, floating planets.
+Puzzle concept:
+The planets are missing or out of order. The player must use the Catalog’s Star Atlas to place them correctly.
+Some planets are inside the diorama room and 2 are in other diorama rooms.
+In the room the player can also find 2 space rocks. 
+One plant can be bought in the supply desk.
+One planet will be received after completing mini game mentioned below  
+mechanics:
+* Drag planets onto orbit rings.
+* Use clues found in catalog: like “the red planet is fourth,” “the giant with rings is sixth,” “the hottest planet is not closest to the Sun.”
+Inventory items found:
+* Brass Sun Gear
+* Planet Token
+* Broken Orbit Ring
+* Ice Crystal from Neptune display
+* Red Dust Sample
+Mini game idea:
+“Orbit Balance” — a small satellite in orbit around a planet. use phone accelerator - get one of the planets 
+
+
+Diorama 2: Mars — “Rover Repair Mission”
+Theme: Rovers, samples, terrain, tools, signals.
+Scene: A red Mars landscape diorama with a stuck rover, rocks, dust storms, solar panels, and a distant habitat model.
+Puzzle concept:
+The rover is stuck and missing parts, The player must repair it so it can scan a rock.
+Steps:
+1. Find the broken rover wheel in other diorama.
+2. Clean dust off the solar panel- Use the catalog to identify dusting is needed and tool in the supply desk.
+3. Trade for a “Solar Brush” at the lobby store.
+4. Mini game- Send the rover to the correct rock.
+Mini game idea:
+“Rover Route” — draw or tap a path through craters while avoiding soft sand and rocks. Similar to a simple maze/path-planning game.
+Catalog clue:
+The Star Atlas shows different rock types: basalt, iron-rich red rock, ice-bearing soil, meteorite. The player must match the rock clue visually.
+
+
+Diorama 3: Moon Missions — “Rebuild the Landing Sequence”
+Theme: Apollo Lunar Module, Moon gravity, footprints, landing, samples.
+Scene: Apollo-style moon diorama with Lunar Module, astronaut footprints, flag, moon rocks, Earth in the sky.
+Puzzle concept:
+Sequence:
+1. The rocket launch 
+2. Rocket separates 
+3. gravity pull/push,
+4. Command Module orbits Moon, 
+5. Lunar Module lands, 
+6. Astronaut collects samples, 
+7. Lunar Module lifts off.
+8. Docks again. 
+9. Back to earth, 
+10. ocean splash
+Display in cards and the player needs to arrange them in sequence. The player must reconstruct it. There are background colors to each card. In the right side of the diorama room there is light showing colors one after the other. The color sequins is a clue to the order of the cards
+The player finds mission cards around the diorama, one must be exchanged at the Space Supply Desk, one is given after a mini game.
+Mini game idea:
+Build a rocket- see different parts (booster, separator, steering, lunar module, etc’) of a rocket and assemble in any order- press play will activate the rocket, each piece in order- to see the result, try to find the right order to make the rocket launch and land a lunar module. 
+
+
+Diorama 4: Space Station & Space Walk — “Fix the Airlock”
+Theme: orbit, spacewalks, tools, oxygen, solar panels, docking.
+Scene: A side-view space station diorama with a huge Earth backdrop, floating astronaut, tether cable, loose tool bag, and broken solar wing.
+Puzzle concept:
+The astronaut is outside on a spacewalk but the airlock is jammed. The player must restore the station systems.
+Steps:
+1. Find the missing oxygen hose in another diorama. (clue in catalog)
+2. Reconnect the astronaut tether.
+3. Rotate solar panels toward the Sun- find rotate key on supply desk (clue in catalog)”
+Mini game idea:
+“Spacewalk Drift” — tap thrusters to guide an astronaut along a tether path and grab floating tools.
+Diorama 5: James Webb / Deep Space Telescope — “Align the Golden Mirrors”
+Theme: telescopes, mirrors, infrared light, distant galaxies.
+Scene: A dark, magical deep-space room with a golden segmented telescope mirror, star fields, nebulae, and galaxy images.
+Diorama concept:
+The telescope mirror is misaligned. The player must rotate mirror segments to focus.
+“Focus the Stars” — adjust sliders/rotation until blurry stars become sharp points.
+
+
+
+
+Possible mechanics:
+* Find a mirror in another diorama room and in supply desk
+* Rotate hexagonal mirror tiles.
+* Adjust focus using a lens wheel.
+* Match a blurry galaxy image to its sharp version.
+* Adjusting the mirrors will change the background behind the mirror accordingly (merge into the parallax layer behind the telescope)
