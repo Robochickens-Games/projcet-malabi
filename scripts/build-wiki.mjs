@@ -1671,8 +1671,8 @@ function renderHtml(dataJson) {
   }
   .gaz-date-strip a { color: var(--gaz-gold); }
   .gaz-date-strip a:hover { color: var(--gaz-ink); }
-  .gaz-ed-nav { display: inline-flex; align-items: center; gap: 10px; }
-  .gaz-ed-nav .ed-nav { padding: 3px 10px; font-size: 9.5px; }
+  .gaz-edition { display: flex; justify-content: center; align-items: center; gap: 18px;
+    flex-wrap: wrap; padding: 2px 0 12px; margin-bottom: 8px; border-bottom: 1px solid var(--gaz-rule); }
 
   /* ---- Gazette section heads + ornamental rules ---- */
   .gaz-sec-head {
@@ -1746,6 +1746,10 @@ function renderHtml(dataJson) {
   }
   .gaz-fig.tilt-cw  { transform: rotate( 1.4deg); margin: 12px 0 12px  4px; }
   .gaz-fig.tilt-ccw { transform: rotate(-1.2deg); margin: 12px 4px 12px 0;   }
+  /* Compact thumbnails for the smaller tiers so tall/portrait art doesn't dominate */
+  .gaz-brief .gaz-fig img    { height: 132px; object-fit: cover; object-position: center 28%; }
+  .gaz-4col-item .gaz-fig img { height: 96px;  object-fit: cover; object-position: center 28%; }
+  .gaz-4col-item .gaz-fig    { margin: 0 0 8px; }
 
   /* ---- Sidebar briefs ---- */
   .gaz-brief { border-top: 1px solid var(--gaz-rule); padding: 11px 0; }
@@ -2606,6 +2610,13 @@ function renderGazetteFront(items) {
   // Outer border + inner padding
   h += '<div class="gazette-inner">';
 
+  // Daily-edition navigator — its own separated row, above the masthead
+  h += '<div class="gaz-edition">' +
+    '<button class="ed-nav" data-dir="older" aria-label="Older edition">‹ Older</button>' +
+    '<span class="ed-label"></span>' +
+    '<button class="ed-nav" data-dir="newer" aria-label="Newer edition">Newer ›</button>' +
+    '</div>';
+
   var gazetteToggle =
     '<div class="mast-view-toggle gaz-mast-toggle">' +
     '<button class="vtb-btn" data-mode="classic">Classic</button>' +
@@ -2629,13 +2640,9 @@ function renderGazetteFront(items) {
     stats.articles + ' dispatches · ' + stats.memories + ' memories · ' + stats.decisions + ' decisions</div>' +
     '</div>';
 
-  // Date strip — doubles as the daily-edition navigator in Gazette mode
+  // Date strip
   h += '<div class="gaz-date-strip">' +
-    '<span class="gaz-ed-nav">' +
-      '<button class="ed-nav" data-dir="older" aria-label="Older edition">‹ Older</button>' +
-      '<span class="ed-label"></span>' +
-      '<button class="ed-nav" data-dir="newer" aria-label="Newer edition">Newer ›</button>' +
-    '</span>' +
+    '<span>' + longDate(edDate) + '</span>' +
     '<span>“Make us money. Make it fun.” 🌟</span>' +
     '<span><a href="' + DATA.repoUrl + '" target="_blank" rel="noopener">Repository ↗</a></span>' +
     '</div>';
@@ -2662,6 +2669,7 @@ function renderGazetteFront(items) {
         gazKicker(c) +
         gazHed(c, 'sm') +
         gazByline(c) +
+        gazImg(c, '') +
         gazBriefBody(c, 140) +
         '</div>';
     }).join('') +
@@ -2694,6 +2702,7 @@ function renderGazetteFront(items) {
     h += '<div class="gaz-4col">';
     briefItems.forEach(function(c) {
       h += '<div class="gaz-4col-item">' +
+        gazImg(c, '') +
         gazKicker(c) +
         gazHed(c, 'sm') +
         gazByline(c) +
