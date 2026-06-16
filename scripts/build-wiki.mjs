@@ -1079,6 +1079,22 @@ function renderHtml(dataJson) {
     .mast-view-toggle { flex-basis: 100%; justify-content: center; margin-top: 3px; }
   }
 
+  /* ---- daily-edition navigator (front page only) ---- */
+  .mast-edition { display: none; align-items: center; justify-content: center; gap: 16px;
+    padding: 7px 0 9px; margin-bottom: 2px; border-bottom: 1px solid var(--line2); }
+  body.tab-front .mast-edition { display: flex; }
+  .ed-nav { font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); background: none; border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 13px; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
+  .ed-nav:hover:not(:disabled) { color: var(--ink); border-color: var(--rule); background: var(--tint); }
+  .ed-nav:disabled { opacity: .3; cursor: default; }
+  .ed-label { font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); min-width: 16ch; text-align: center; }
+  body.mode-gazette .ed-nav { color: var(--gaz-gold); border-color: var(--gaz-rule); background: var(--gaz-light); }
+  body.mode-gazette .ed-nav:hover:not(:disabled) { color: var(--gaz-ink); border-color: var(--gaz-ink); background: var(--gaz-paper); }
+  body.mode-gazette .ed-label { color: var(--gaz-gold); }
+  @media (max-width: 640px) { .ed-label { min-width: 0; font-size: 10px; } .mast-edition { gap: 10px; } }
+
   section.view { display: none; }
   section.view.active { display: block; animation: fade .25s ease; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -1655,6 +1671,8 @@ function renderHtml(dataJson) {
   }
   .gaz-date-strip a { color: var(--gaz-gold); }
   .gaz-date-strip a:hover { color: var(--gaz-ink); }
+  .gaz-ed-nav { display: inline-flex; align-items: center; gap: 10px; }
+  .gaz-ed-nav .ed-nav { padding: 3px 10px; font-size: 9.5px; }
 
   /* ---- Gazette section heads + ornamental rules ---- */
   .gaz-sec-head {
@@ -1776,9 +1794,14 @@ function renderHtml(dataJson) {
   }
 </style>
 </head>
-<body>
+<body class="tab-front">
 <div class="wrap">
   <header class="masthead">
+    <div class="mast-edition">
+      <button class="ed-nav" data-dir="older" aria-label="Older edition">‹ Older</button>
+      <span class="ed-label"></span>
+      <button class="ed-nav" data-dir="newer" aria-label="Newer edition">Newer ›</button>
+    </div>
     <div class="mast-top">
       <span id="mt-left">Malabi · Shared Brain</span>
       <span>Vol. I</span>
@@ -2135,8 +2158,7 @@ function flashCard(c, cls, style){
     assetsHtml(c)+'</div></div>';
 }
 
-if(lastChange)
-  document.getElementById('hero').innerHTML = flashCard(lastChange, 'hero', '--hero:'+desk(lastChange.desk).color);
+// The hero + feed are rendered per daily edition by renderClassic() below.
 
 // ---- newspaper layout engine ----
 function sizeFor(c){
@@ -2191,23 +2213,82 @@ function newsItemHtml({c,span,strip}){
     '</div>';
 }
 
-const groups=[]; let cur=null;
-for(const c of DATA.history.slice(1)){
-  if(!cur||cur.date!==c.date){cur={date:c.date,items:[]};groups.push(cur);}
-  cur.items.push(c);
+// ---- Classic view: render one day's edition (lead story + the rest of that day) ----
+function renderClassic(items){
+  const heroEl = document.getElementById('hero');
+  const feedEl = document.getElementById('feed');
+  if(!items || !items.length){
+    heroEl.innerHTML = '';
+    feedEl.innerHTML = '<p class="standfirst">No dispatches in this edition.</p>';
+    return;
+  }
+  const head = items[0];
+  heroEl.innerHTML = flashCard(head, 'hero', '--hero:'+desk(head.desk).color);
+  const rest = items.slice(1);
+  const rows = packRows(rest);
+  feedEl.innerHTML = rows.length
+    ? '<div class="news-day">'+rows.map(row=>'<div class="news-row">'+row.map(item=>newsItemHtml(item)).join('')+'</div>').join('')+'</div>'
+    : '';
+  wireWikilinks(heroEl);
+  wireWikilinks(feedEl);
 }
-document.getElementById('feed').innerHTML = groups.map(g=>{
-  const rel=relDay(g.date), rows=packRows(g.items);
-  return '<div class="news-day">'+
-    '<div class="news-dayband"><span class="nd-rule"></span>'+
-    '<span class="nd-label">'+(rel?rel+' · ':'')+longDate(g.date)+'</span>'+
-    '<span class="nd-rule"></span></div>'+
-    rows.map(row=>'<div class="news-row">'+row.map(item=>newsItemHtml(item)).join('')+'</div>').join('')+
-    '</div>';
-}).join('');
 
-wireWikilinks(document.getElementById('hero'));
-wireWikilinks(document.getElementById('feed'));
+// ---- Daily editions: group every dispatch by its day (newest day first) and let
+// the reader page between days with the ‹ › navigator. Each "edition" is one day,
+// and the whole front page (any view mode) shows just that day's dispatches. ----
+const EDITIONS = (function(){
+  const out=[]; let c=null;
+  for(const it of DATA.history){
+    if(!c || c.date!==it.date){ c={date:it.date, items:[]}; out.push(c); }
+    c.items.push(it);
+  }
+  return out;
+})();
+let selEd = 0;            // 0 = newest day
+let currentMode = 'classic';
+function currentItems(){ return (EDITIONS[selEd] && EDITIONS[selEd].items) || []; }
+
+function renderActiveFront(){
+  const items = currentItems();
+  if(currentMode==='paper'){ buildTimesFront(items); }
+  else if(currentMode==='gazette'){
+    const g = document.getElementById('gazette-front');
+    g.innerHTML = renderGazetteFront(items);
+    wireWikilinks(g);
+  } else { renderClassic(items); }
+  renderEditionMeta(); // refresh labels/arrows (incl. any nav just rendered into the gazette strip)
+}
+
+function renderEditionMeta(){
+  const ed = EDITIONS[selEd];
+  const dEl = document.getElementById('mt-date');
+  if(dEl) dEl.textContent = ed ? ((relDay(ed.date)? relDay(ed.date)+' · ':'')+longDate(ed.date)) : longDate(DATA.buildDate);
+  const n = ed ? ed.items.length : 0;
+  const labelTxt = EDITIONS.length
+    ? 'Edition '+(selEd+1)+' of '+EDITIONS.length+' · '+n+' dispatch'+(n===1?'':'es')
+    : '';
+  document.querySelectorAll('.ed-label').forEach(el => el.textContent = labelTxt);
+  // index 0 is the newest day: › steps to newer (lower index), ‹ steps to older (higher index)
+  document.querySelectorAll('.ed-nav[data-dir="newer"]').forEach(b => b.disabled = selEd<=0);
+  document.querySelectorAll('.ed-nav[data-dir="older"]').forEach(b => b.disabled = selEd>=EDITIONS.length-1);
+}
+
+function goEdition(dir){
+  const next = selEd + (dir==='older' ? 1 : -1);
+  if(next<0 || next>=EDITIONS.length) return;
+  selEd = next;
+  renderActiveFront();
+  window.scrollTo({top:0});
+}
+
+// Delegated so the arrows work whether they live in the masthead or the gazette strip.
+document.addEventListener('click', function(e){
+  const b = e.target.closest('.ed-nav');
+  if(b && !b.disabled) goEdition(b.getAttribute('data-dir'));
+});
+
+// Initial paint (classic is the default; a saved paper/gazette mode re-renders below).
+renderActiveFront();
 
 // ---- "Newspaper" front: a NYT-style three-column front page over the same
 // dispatches, offered as an alternate edition behind the Classic/Newspaper switch. ----
@@ -2463,6 +2544,7 @@ document.querySelectorAll('nav.tabs button[data-tab]').forEach(b=>
   b.addEventListener('click', ()=>{ const tab=b.getAttribute('data-tab');
     document.querySelectorAll('nav.tabs button[data-tab]').forEach(x=>x.classList.toggle('active', x===b));
     document.querySelectorAll('section.view').forEach(s=>s.classList.toggle('active', s.id===tab));
+    document.body.classList.toggle('tab-front', tab==='front');
     window.scrollTo({top:0}); if(tab==='map') drawGraph(); }));
 
 // ---- gazette front-page renderer ----
@@ -2517,6 +2599,7 @@ function renderGazetteFront(items) {
   var midItems  = items.slice(4, 7);
   var briefItems= items.slice(7, 11);
   var stats     = DATA.stats;
+  var edDate    = (items[0] && items[0].date) || DATA.buildDate;
 
   var h = '';
 
@@ -2536,7 +2619,7 @@ function renderGazetteFront(items) {
     '<span>Malabi · Shared Brain · Est. 2026</span>' +
     '<span>Vol. I, No. ' + stats.changes + '</span>' +
     '<div class="gaz-date-toggle">' +
-    '<span>' + longDate(DATA.buildDate) + '</span>' +
+    '<span>' + longDate(edDate) + '</span>' +
     gazetteToggle +
     '</div>' +
     '</div>' +
@@ -2546,9 +2629,13 @@ function renderGazetteFront(items) {
     stats.articles + ' dispatches · ' + stats.memories + ' memories · ' + stats.decisions + ' decisions</div>' +
     '</div>';
 
-  // Date strip
+  // Date strip — doubles as the daily-edition navigator in Gazette mode
   h += '<div class="gaz-date-strip">' +
-    '<span>' + longDate(DATA.buildDate) + '</span>' +
+    '<span class="gaz-ed-nav">' +
+      '<button class="ed-nav" data-dir="older" aria-label="Older edition">‹ Older</button>' +
+      '<span class="ed-label"></span>' +
+      '<button class="ed-nav" data-dir="newer" aria-label="Newer edition">Newer ›</button>' +
+    '</span>' +
     '<span>“Make us money. Make it fun.” 🌟</span>' +
     '<span><a href="' + DATA.repoUrl + '" target="_blank" rel="noopener">Repository ↗</a></span>' +
     '</div>';
@@ -2661,14 +2748,12 @@ function nytArt(c, cls, opts){
     nytByline(c)+
     '</article>';
 }
-var _timesBuilt = false;
-function buildTimesFront(){
-  if(_timesBuilt) return; _timesBuilt = true;
+function buildTimesFront(items){
   const ft = document.getElementById('front-times');
   const used = new Set();
   const take = c => { if(c) used.add(c.hash); return c; };
-  const all = DATA.history.slice();
-  if(!all.length){ ft.innerHTML = '<p class="standfirst">No dispatches yet.</p>'; return; }
+  const all = (items || DATA.history).slice();
+  if(!all.length){ ft.innerHTML = '<p class="standfirst">No dispatches in this edition.</p>'; return; }
   const nextImg = () => all.find(c => c.image && !used.has(c.hash));
   // The genuinely newest dispatch is the lead story: it takes the prominent
   // centre slot AND the "Latest" kicker, so the front never labels an older
@@ -2696,10 +2781,9 @@ function buildTimesFront(){
 }
 
 // ---- view mode switching ----
-var _gazetteRendered = false;
-
 function applyViewMode(mode) {
   mode = mode || 'classic';
+  currentMode = mode;
   document.body.classList.remove('mode-gazette');
   if (mode === 'gazette') document.body.classList.add('mode-gazette');
 
@@ -2707,27 +2791,12 @@ function applyViewMode(mode) {
     b.classList.toggle('active', b.getAttribute('data-mode') === mode);
   });
 
-  var classicEl = document.getElementById('front-classic');
-  var timesEl   = document.getElementById('front-times');
-  var gazetteEl = document.getElementById('gazette-front');
+  document.getElementById('front-classic').hidden = mode !== 'classic';
+  document.getElementById('front-times').hidden   = mode !== 'paper';
+  document.getElementById('gazette-front').hidden = mode !== 'gazette';
 
-  classicEl.hidden = mode !== 'classic';
-  timesEl.hidden   = mode !== 'paper';
-  gazetteEl.hidden = mode !== 'gazette';
-
-  if (mode === 'paper') buildTimesFront();
-
-  if (mode === 'gazette' && !_gazetteRendered) {
-    gazetteEl.innerHTML = renderGazetteFront(DATA.history);
-    wireWikilinks(gazetteEl);
-    gazetteEl.querySelectorAll('[data-open]').forEach(function(el) {
-      el.addEventListener('click', function(e) {
-        e.preventDefault();
-        openEntry(el.getAttribute('data-open'));
-      });
-    });
-    _gazetteRendered = true;
-  }
+  // Render the now-visible view for the selected day's edition.
+  renderActiveFront();
 
   try { localStorage.setItem('gazette-view-mode', mode); } catch(e) {}
 }
