@@ -27,6 +27,31 @@ say so and adapt it for kids/premium rather than copying the number.
 
 ---
 
+## ★ Cross-cutting rule: make everything reactive
+This governs **every** section below — it's not one feature, it's a baseline the whole game holds to.
+
+- **If it looks tappable, it must do something.** And in a kids' explore game, **make most things
+  look tappable.** The cloud, the potted plant, the painting on the wall, the title-screen logo,
+  the loading-screen dino — tapping it should return *fun feedback*: a wiggle, a squash-and-stretch,
+  a sparkle, a chirp, a tiny hidden reveal. A dead tap (nothing happens) is the single most common
+  way an explore game feels broken to a child.
+- **Off the critical path counts double.** The puzzle objects will get juice anyway. The win is the
+  *ambient* stuff — décor, background creatures, menu buttons, the pause screen, the settings cog.
+  Rewarding curiosity on the things that *don't* matter is exactly what makes the world feel alive
+  and trains the child that **touching is always safe and always rewarded** — which is what carries
+  the explore loop ([[click-to-play-engagement-concern]]).
+- **Feedback budget, not feature budget.** This is cheap juice, not new systems: a 150–300ms tween,
+  a one-shot sound, a particle. Build a small reusable "react on tap" helper and apply it broadly
+  rather than hand-authoring each. Every interactive screen — including non-gameplay ones (menus,
+  loaders, dialogs) — should pass a **"can a kid poke it and giggle?"** check before it ships.
+- **Never punish the poke.** Reactions delight, never block or fail. No state is made worse by
+  curiosity — fits "no dead ends, no fail states" ([[gameplay-principles]]).
+
+This is principle 1 ("every tap rewards") taken to its conclusion: not just *no empty taps on the
+golden path*, but **a living, pokeable world end to end.**
+
+---
+
 ## 1. Core loop & mechanics
 The single most important thing. Polish, content, and progression can't save a loop that isn't fun.
 - **Keep the core action short and tight** — the repeatable beat should resolve in **under ~10s**;
@@ -112,6 +137,16 @@ D1 retention is mostly decided here.
   small. Slow load = lost D1.
 - **Test on a real mid-range phone in a WebView**, not just desktop Chrome — that's the actual
   runtime ([[mobile-shipping-webview-wrap]]).
+- **Build efficient layers — composited surfaces are GPU memory.** Anything you animate with a
+  transform (`translate3d`, parallax layers, anything `will-change`) gets promoted to its own GPU
+  layer whose backing store ≈ *its pixel area*, not its visible content. Size each layer to its
+  **content**, never to the whole scrollable world: a cut-out prop or a few buttons must not live on
+  a full-world (e.g. 7560×1080) surface. A pile of full-world layers silently OOM-kills the tab on
+  mobile Safari while desktop Chrome shrugs it off ([[parallax-mobile-compositing-oom]]).
+- **A silent, mobile-only crash with no JS error is almost always a memory/compositing OOM**, not a
+  code bug — the OS killed the tab. Diagnose by *counting composited layers and their pixel area*
+  (Playwright + an iPhone profile + CDP `LayerTree` exposes the layer sizes) before hunting for a
+  thrown exception.
 
 ## 8. Playtest, measure, launch
 - **Watch real kids play, early.** The [[click-to-play-engagement-concern]] is exactly the kind of
