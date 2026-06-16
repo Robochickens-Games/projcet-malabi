@@ -1,0 +1,348 @@
+/* ============================================================================
+   MUSEUM-PLACARD UI — Design System
+   A tactile UI language tuned to the game's PAINTERLY art: aged brass, carved
+   wood, parchment, Art-Deco framing, engraved gold-leaf titles. Depth reads as
+   *carved/embossed* (soft inner shadow + a short edge), NOT glossy plastic.
+   Thin, warm linework — never thick cartoon black.
+
+   Everything is token-driven. Same component class API as before; only the
+   *feel* changed, so existing markup keeps working.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+
+/* ----------------------------------------------------------------------------
+   1. TOKENS
+   ---------------------------------------------------------------------------- */
+:root {
+  /* — Type — engraved deco caps for titles, warm old-style serif for UI — */
+  --font-display: 'Cinzel', 'Cochin', Georgia, serif;      /* titles, engraved */
+  --font-ui:      'Fraunces', 'Cochin', Georgia, serif;     /* labels, body    */
+
+  /* — Ink (linework + text). Warm sepia-bistre, NOT black. Thin. — */
+  --ink:        #3a2818;
+  --ink-soft:   #7a5f44;
+
+  /* — Surfaces — candlelit wood backdrop, aged-parchment panels — */
+  --bg:         #3f2818;   /* deep aged-wood backdrop */
+  --bg-2:       #6e4626;   /* candle glow toward the top */
+  --surface:    #ece0c2;   /* parchment panel / nav bar */
+  --surface-edge:#c4ad82;  /* its carved edge           */
+
+  /* — Brand / semantic fills — muted, painterly, museum-aged (face + edge) — */
+  --red:        #a8503c;   --red-edge:    #7e3526;   /* faded exhibit red    */
+  --green:      #7d8a42;   --green-edge:  #5d6730;   /* display-felt moss    */
+  --blue:       #4b8a86;   --blue-edge:   #356360;   /* space-wing verdigris */
+  --yellow:     #c8972f;   --yellow-edge: #976c18;   /* antique brass / gold */
+  --cream:      #ece0c2;   --cream-edge:  #c4ad82;   /* parchment            */
+  --purple:     #8a5a32;   --purple-edge: #66401f;   /* aged walnut / brass  */
+
+  /* — Engraved gold-leaf for titles — */
+  --gold-hi:    #f4e0a4;
+  --gold-mid:   #d3a544;
+  --gold-lo:    #a9781f;
+
+  /* — Geometry — architectural, crisper than the toon set — */
+  --r-sm: 7px;
+  --r-md: 11px;
+  --r-lg: 15px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+
+  --outline:    2px;       /* thin warm line                */
+  --depth:      4px;       /* short carved edge, not a lip   */
+  --depth-sm:   3px;
+
+  /* — Shadows — soft, warm, painterly contact shadow — */
+  --shadow:     0 8px 18px rgba(40, 26, 14, .28);
+  --shadow-sm:  0 5px 11px rgba(40, 26, 14, .22);
+
+  /* — "Gloss" tokens kept for back-compat, but now a SUBTLE carved emboss:
+       a faint top sheen + inner bottom shadow, no plastic highlight. — */
+  --gloss:      inset 0 1px 0 rgba(255, 250, 235, .35), inset 0 -3px 6px rgba(58, 40, 24, .14);
+  --gloss-soft: inset 0 1px 0 rgba(255, 250, 235, .22), inset 0 -2px 4px rgba(58, 40, 24, .10);
+
+  /* — A hairline inner frame line (Art-Deco placard) — */
+  --deco-line:  rgba(151, 108, 24, .45);
+
+  /* — Motion — */
+  --press: 90ms cubic-bezier(.3, .7, .4, 1);
+}
+
+/* ----------------------------------------------------------------------------
+   2. BASE
+   ---------------------------------------------------------------------------- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background:
+    radial-gradient(120% 90% at 50% -10%, var(--bg-2), var(--bg) 62%);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ----------------------------------------------------------------------------
+   3. THE CORE PRIMITIVE — .toon
+   A carved/embossed chunk: thin warm border, a short colored edge below, a soft
+   parchment sheen on top and a faint inner shadow (so it reads as pressed wood /
+   brass, not plastic). Set --face / --edge to recolor.
+   ---------------------------------------------------------------------------- */
+.toon {
+  --face: var(--cream);
+  --edge: var(--cream-edge);
+  position: relative;
+  border: var(--outline) solid var(--ink);
+  border-radius: var(--r-lg);
+  /* a gentle top-light sheen baked into the fill — painterly, not glossy */
+  background:
+    linear-gradient(180deg, rgba(255, 252, 242, .14), rgba(58, 40, 24, .05)),
+    var(--face);
+  color: var(--ink);
+  box-shadow:
+    0 var(--depth) 0 0 var(--edge),   /* short carved edge */
+    var(--shadow),                    /* warm contact shadow */
+    var(--gloss);                     /* sheen + inner shadow */
+  transition: transform var(--press), box-shadow var(--press);
+}
+
+/* Pressable — sinks into its carved edge. */
+.toon.is-press { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+.toon.is-press:active,
+.toon.is-press.is-down {
+  transform: translateY(calc(var(--depth) - 1px));
+  box-shadow:
+    0 1px 0 0 var(--edge),
+    var(--shadow-sm),
+    var(--gloss-soft);
+}
+
+/* ----------------------------------------------------------------------------
+   4. BUTTONS  — .btn  (+ color modifiers, + sizes)
+   ---------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  padding: 13px 26px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+.btn:focus-visible { outline: 2px dashed var(--ink); outline-offset: 4px; }
+
+.btn--red    { --face: var(--red);    --edge: var(--red-edge);    color: #fdf3ec; }
+.btn--green  { --face: var(--green);  --edge: var(--green-edge);  color: #fbfbef; }
+.btn--blue   { --face: var(--blue);   --edge: var(--blue-edge);   color: #f4fbfa; }
+.btn--yellow { --face: var(--yellow); --edge: var(--yellow-edge); color: #2e1f10; }
+.btn--cream  { --face: var(--cream);  --edge: var(--cream-edge);  color: var(--ink); }
+.btn--purple { --face: var(--purple); --edge: var(--purple-edge); color: #fbf0e6; }
+
+.btn--sm  { padding: 8px 15px;  font-size: 14px; border-radius: var(--r-md); }
+.btn--lg  { padding: 17px 38px; font-size: 21px; }
+.btn--block { display: flex; width: 100%; }
+
+/* Round icon button — a brass medallion */
+.btn--icon {
+  width: 58px; height: 58px; padding: 0;
+  border-radius: var(--r-pill);
+  font-size: 24px;
+}
+
+/* Disabled */
+.btn[disabled], .toon.is-disabled {
+  filter: grayscale(.5) brightness(.98);
+  opacity: .65; cursor: not-allowed; pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------------
+   5. BANNER / TITLE CARD  — a framed museum placard
+   ---------------------------------------------------------------------------- */
+.banner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 220px;
+  padding: 22px 30px;
+  border-radius: var(--r-xl);
+}
+/* Art-Deco hairline inner frame */
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid var(--deco-line);
+  border-radius: calc(var(--r-xl) - 6px);
+  pointer-events: none;
+}
+.banner__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: 1.5px;
+}
+.banner__sub {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 18px;
+  opacity: .85;
+}
+/* Engraved gold-leaf title text (gradient fill + thin cut shadow) */
+.title-gold {
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold-mid) 58%, var(--gold-lo));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(46, 31, 16, .55)) drop-shadow(0 2px 1px rgba(0,0,0,.2));
+}
+
+/* ----------------------------------------------------------------------------
+   6. NAV BAR  — parchment tray; selected tab is a carved brass tile
+   ---------------------------------------------------------------------------- */
+.navbar {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 11px;
+  border-radius: var(--r-xl);
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 72px;
+  padding: 11px 10px;
+  border: var(--outline) solid transparent;
+  border-radius: var(--r-md);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: transform var(--press), background var(--press), color var(--press);
+}
+.nav-tab__icon { font-size: 29px; line-height: 1; }
+.nav-tab__label { opacity: 0; height: 0; transition: opacity var(--press); }
+
+.nav-tab.is-active {
+  color: #2e1f10;
+  border-color: var(--ink);
+  background: linear-gradient(180deg, rgba(255,252,242,.18), rgba(58,40,24,.06)), var(--yellow);
+  box-shadow: 0 var(--depth-sm) 0 0 var(--yellow-edge), var(--gloss-soft);
+}
+.nav-tab.is-active .nav-tab__label { opacity: 1; height: auto; }
+.nav-tab:not(.is-active):active { transform: translateY(2px); }
+
+/* ----------------------------------------------------------------------------
+   7. TILE  — framed display chip
+   ---------------------------------------------------------------------------- */
+.tile {
+  display: grid;
+  place-items: center;
+  width: 84px; height: 84px;
+  border-radius: var(--r-md);
+  font-size: 40px;
+}
+
+/* ----------------------------------------------------------------------------
+   8. PILL / BADGE  — brass plaque / counters
+   ---------------------------------------------------------------------------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px 7px 12px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 16px;
+}
+.pill__icon { font-size: 21px; line-height: 1; }
+.badge {
+  position: absolute;
+  top: -7px; right: -7px;
+  min-width: 24px; height: 24px;
+  padding: 0 6px;
+  display: grid; place-items: center;
+  border: var(--outline) solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--red);
+  color: #fdf3ec;
+  font-weight: 700; font-size: 13px;
+  box-shadow: var(--gloss-soft);
+}
+
+/* ----------------------------------------------------------------------------
+   9. PROGRESS BAR
+   ---------------------------------------------------------------------------- */
+.progress {
+  height: 22px;
+  padding: 0;
+  border-radius: var(--r-pill);
+  background: #d9c8a2;
+  overflow: hidden;
+}
+.progress__fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(var(--yellow), var(--yellow-edge));
+  box-shadow: var(--gloss);
+  transition: width 300ms ease;
+}
+
+/* ----------------------------------------------------------------------------
+   10. PANEL / DIALOG  — parchment placard with an engraved header
+   ---------------------------------------------------------------------------- */
+.panel {
+  width: min(420px, 92vw);
+  padding: 0;
+  border-radius: var(--r-xl);
+  overflow: visible;
+}
+.panel__head {
+  margin: calc(var(--outline) * -1) calc(var(--outline) * -1) 0;
+  padding: 15px 24px;
+  border: var(--outline) solid var(--ink);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: linear-gradient(180deg, rgba(255,252,242,.12), rgba(58,40,24,.06)), var(--red);
+  color: #fdf3ec;
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 22px; letter-spacing: 1px;
+  text-align: center;
+  box-shadow: var(--gloss-soft);
+}
+.panel__body { padding: 22px; display: grid; gap: 15px; }
+
+/* ----------------------------------------------------------------------------
+   11. TOGGLE
+   ---------------------------------------------------------------------------- */
+.toggle {
+  --face: #d9c8a2; --edge: var(--cream-edge);
+  width: 70px; height: 38px;
+  border-radius: var(--r-pill);
+  padding: 0;
+  cursor: pointer;
+}
+.toggle__knob {
+  position: absolute; top: 50%; left: 4px;
+  width: 27px; height: 27px;
+  transform: translateY(-50%);
+  border: var(--outline) solid var(--ink);
+  border-radius: var(--r-pill);
+  background: #fffaf0;
+  box-shadow: var(--gloss-soft);
+  transition: left var(--press), background var(--press);
+}
+.toggle.is-on { --face: var(--green); --edge: var(--green-edge); }
+.toggle.is-on .toggle__knob { left: calc(100% - 31px); background: #fffaf0; }

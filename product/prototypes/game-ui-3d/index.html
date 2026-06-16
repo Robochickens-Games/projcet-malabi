@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Toon-3D Game UI — Design System</title>
+  <link rel="stylesheet" href="design-system.css" />
+  <style>
+    /* ---- page chrome only (not part of the DS) ---- */
+    .page { max-width: 960px; margin: 0 auto; padding: 28px 18px 80px; }
+    .page__title {
+      font-family: var(--font-display); font-weight: 800; font-size: 34px;
+      color: var(--title-gold); margin: 8px 0 2px; text-align: center;
+      text-shadow: 0 2px 0 rgba(0,0,0,.3);
+    }
+    .page__lead { text-align: center; color: #e4cfa6; margin: 0 0 28px; font-weight: 500; }
+
+    section { margin: 0 0 38px; }
+    .sec-h {
+      font-family: var(--font-display); font-weight: 700; font-size: 20px;
+      color: #f0e2c2; margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .sec-h::before { content: ""; width: 14px; height: 14px; border-radius: 4px;
+      background: var(--yellow); border: 2px solid var(--ink); }
+    .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+
+    /* the recreated game hub screen */
+    .scene {
+      position: relative; padding: 30px 24px 26px; border-radius: var(--r-xl);
+      background:
+        radial-gradient(120% 80% at 50% 0%, rgba(242,199,90,.18), transparent 60%),
+        linear-gradient(var(--bg-2), var(--bg));
+      border: var(--outline) solid rgba(0,0,0,.25);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.06);
+      display: grid; gap: 18px;
+    }
+    .scene__banners { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1 class="page__title">🏛️ Toon-3D Game UI</h1>
+    <p class="page__lead">A chunky, extruded UI language for the games — warm museum palette, token-driven.</p>
+
+    <!-- ============ GAME HUB SCREEN ============ -->
+    <section>
+      <h2 class="sec-h">Game hub screen</h2>
+      <div class="scene">
+        <div class="scene__banners">
+          <div class="toon banner" style="--face:var(--red); --edge:var(--red-edge);">
+            <span class="banner__title title-gold">DINO WING</span>
+            <span class="banner__sub title-gold" style="font-style:italic;">New exhibit</span>
+          </div>
+          <div class="toon banner" style="--face:var(--yellow); --edge:var(--yellow-edge);">
+            <span class="banner__title">LONDON</span>
+            <span class="banner__sub" style="color:var(--ink-soft);">Level 121</span>
+          </div>
+        </div>
+
+        <nav class="toon navbar js-nav">
+          <button class="nav-tab"><span class="nav-tab__icon">🖼️</span><span class="nav-tab__label">Gallery</span></button>
+          <button class="nav-tab is-active"><span class="nav-tab__icon">🏠</span><span class="nav-tab__label">Home</span></button>
+          <button class="nav-tab"><span class="nav-tab__icon">🏪</span><span class="nav-tab__label">Shop</span></button>
+          <button class="nav-tab"><span class="nav-tab__icon">⚙️</span><span class="nav-tab__label">Settings</span></button>
+        </nav>
+      </div>
+    </section>
+
+    <!-- ============ BUTTONS ============ -->
+    <section>
+      <h2 class="sec-h">Buttons</h2>
+      <div class="row">
+        <button class="toon is-press btn btn--red">Play</button>
+        <button class="toon is-press btn btn--green">Continue</button>
+        <button class="toon is-press btn btn--blue">Settings</button>
+        <button class="toon is-press btn btn--yellow">★ Claim</button>
+        <button class="toon is-press btn btn--purple">Boost</button>
+        <button class="toon is-press btn btn--cream" disabled>Locked</button>
+      </div>
+      <div class="row" style="margin-top:16px;">
+        <button class="toon is-press btn btn--green btn--sm">Small</button>
+        <button class="toon is-press btn btn--green">Regular</button>
+        <button class="toon is-press btn btn--green btn--lg">Large</button>
+        <button class="toon is-press btn btn--red btn--icon">✕</button>
+        <button class="toon is-press btn btn--blue btn--icon">＋</button>
+      </div>
+    </section>
+
+    <!-- ============ TILES & PILLS ============ -->
+    <section>
+      <h2 class="sec-h">Tiles, pills & badges</h2>
+      <div class="row">
+        <div class="toon is-press tile" style="--face:var(--cream); --edge:var(--cream-edge);">🖼️</div>
+        <div class="toon is-press tile" style="--face:var(--blue); --edge:var(--blue-edge);">🏪</div>
+        <div class="toon is-press tile" style="--face:var(--purple); --edge:var(--purple-edge);">⚙️</div>
+        <div class="toon is-press tile" style="--face:var(--yellow); --edge:var(--yellow-edge); position:relative;">🎁<span class="badge">3</span></div>
+
+        <span class="toon pill" style="--face:var(--yellow); --edge:var(--yellow-edge);"><span class="pill__icon">🪙</span>1,250</span>
+        <span class="toon pill" style="--face:var(--red); --edge:var(--red-edge); color:#fff;"><span class="pill__icon">❤️</span>5</span>
+        <span class="toon pill" style="--face:var(--green); --edge:var(--green-edge);"><span class="pill__icon">⭐</span>Lv 121</span>
+      </div>
+    </section>
+
+    <!-- ============ PROGRESS ============ -->
+    <section>
+      <h2 class="sec-h">Progress</h2>
+      <div class="toon progress" style="max-width:420px;"><div class="progress__fill" style="width:68%;"></div></div>
+    </section>
+
+    <!-- ============ DIALOG & TOGGLE ============ -->
+    <section>
+      <h2 class="sec-h">Dialog & controls</h2>
+      <div class="row" style="align-items:flex-start;">
+        <div class="toon panel">
+          <div class="panel__head">Level Complete!</div>
+          <div class="panel__body">
+            <div class="row" style="justify-content:center; font-size:38px;">⭐⭐⭐</div>
+            <button class="toon is-press btn btn--green btn--block">Next Level</button>
+            <button class="toon is-press btn btn--cream btn--block btn--sm">Replay</button>
+          </div>
+        </div>
+        <div class="row" style="flex-direction:column; align-items:flex-start; gap:14px;">
+          <div class="row"><div class="toon toggle is-on js-toggle"><span class="toggle__knob"></span></div> Sound</div>
+          <div class="row"><div class="toon toggle js-toggle"><span class="toggle__knob"></span></div> Music</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // nav tabs
+    document.querySelectorAll('.js-nav').forEach(nav => {
+      const tabs = nav.querySelectorAll('.nav-tab');
+      tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(x => x.classList.remove('is-active'));
+        t.classList.add('is-active');
+      }));
+    });
+
+    // toggles
+    document.querySelectorAll('.js-toggle').forEach(t =>
+      t.addEventListener('click', () => t.classList.toggle('is-on')));
+
+    // press feedback on touch (so :active reads on mobile reliably)
+    document.querySelectorAll('.is-press').forEach(el => {
+      const down = () => el.classList.add('is-down');
+      const up = () => el.classList.remove('is-down');
+      el.addEventListener('pointerdown', down);
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointerleave', up);
+      el.addEventListener('pointercancel', up);
+    });
+  </script>
+</body>
+</html>
