@@ -56,6 +56,14 @@ a saved hour for the next person who reaches for "just let Blender do it."
   [0004](../../decisions/0004-drop-local-comfyui-engine.md)); free-local-Blender
   joins free-local-ComfyUI on the "tried it, off-target" shelf.
 
+**Team call (2026-06-16, from Letters to the Editor):** we are **not** treating asset
+generation as something to do at scale or automatically. Gidi and Dor agree these
+auto-gen runs are **exploration only**, and the results **aren't good enough**. We're
+fine **spending money for a great visual result** — a paid hosted image API or
+commissioned art — over chasing a free auto-pipeline. Consistent with
+[0004](../../decisions/0004-drop-local-comfyui-engine.md): a great visual result beats
+a zero-cost generator we have to fight.
+
 **Verdict:** 🎈 *Adorable. Not a Triceratops.* Filed, laughed at, moved on.
 
 ---
