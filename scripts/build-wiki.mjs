@@ -319,6 +319,7 @@ const repoUrl = "https://github.com/Robochickens-Games/projcet-malabi";
 // Map a conventional-commit-ish prefix to a newspaper "desk".
 function deskFor(subject) {
   const p = (subject.split(":")[0] || "").toLowerCase().trim();
+  if (p.startsWith("coach") || p.startsWith("learn")) return "Learning";
   if (p.startsWith("decision") || p.startsWith("adr")) return "Decisions";
   if (p.startsWith("research")) return "Research";
   if (p.startsWith("proposal")) return "Proposals";
@@ -335,6 +336,54 @@ function deskFor(subject) {
 function headline(subject) {
   const i = subject.indexOf(":");
   return (i > -1 && i < 16 ? subject.slice(i + 1) : subject).trim();
+}
+
+// ---- skills & agents credit ("which capability produced this dispatch") -----
+// Known skills/agents → a chip glyph for the Daily. Unknowns get a generic tool.
+const SKILL_EMOJI = {
+  coach: "🎓", paleontologist: "🦴", "product-designer": "🎨",
+  "project-management": "📋", "version-manager": "🔀", "brain-dump": "🧠",
+  braindump: "🧠", "deep-research": "🔬", decide: "⚖️", sync: "🔄",
+  catchup: "📭", standup: "🗣️", "mobile-game-builder": "🎮", verify: "✅",
+};
+const skillEmoji = (n) => SKILL_EMOJI[n] || "🛠️";
+// conventional-commit prefix → the skill that owns that kind of work
+const PREFIX_SKILL = {
+  coach: "coach", decision: "decide", adr: "decide", proposal: "brain-dump",
+  research: "deep-research", status: "project-management", sync: "sync",
+};
+// Infer which skills/agents were active for a commit + whether it's a "learning"
+// dispatch (the coach skill taught a lesson back into the system). Signals, most
+// explicit first: [skill:x]/[agent:y] markers, the commit prefix, and any
+// skill/agent DEFINITION files touched (coach's signature is teaching definitions).
+function creditsFor(subject, files) {
+  const sub = subject.toLowerCase();
+  const skills = new Map();                                  // name -> kind
+  const add = (n, k) => { n = (n || "").trim(); if (n && !skills.has(n)) skills.set(n, k); };
+
+  for (const m of subject.matchAll(/\[(skill|agent):([a-z0-9,_ -]+)\]/gi))
+    for (const n of m[2].split(",")) add(n.toLowerCase(), m[1].toLowerCase());
+
+  const prefix = (sub.split(":")[0] || "").trim();
+  if (PREFIX_SKILL[prefix]) add(PREFIX_SKILL[prefix], "skill");
+
+  let taughtDefinition = false;
+  for (const f of files) {
+    let mm = f.match(/brain\/skills\/([^/]+)\/SKILL\.md$/i);
+    if (mm) { add(mm[1].toLowerCase(), "skill"); taughtDefinition = true; continue; }
+    mm = f.match(/brain\/agents\/([^/]+)\.md$/i);
+    if (mm && mm[1].toLowerCase() !== "readme") { add(mm[1].toLowerCase(), "agent"); taughtDefinition = true; }
+  }
+
+  const learning =
+    prefix === "coach" ||
+    /\[(learning|coach)\]/i.test(subject) ||
+    (taughtDefinition && /\b(teach|taught|lesson|learn|coach)\b/i.test(sub));
+
+  return {
+    learning,
+    skills: [...skills].map(([name, kind]) => ({ name, kind, emoji: skillEmoji(name) })),
+  };
 }
 
 // Map each changed file to a human one-liner, so dispatches can describe themselves.
@@ -608,6 +657,7 @@ try {
       headline: cleanHead(headline(subject)),
       desk: deskFor(subject),
       files,
+      credits: creditsFor(subject, files),
       url: `${repoUrl}/commit/${hash}`,
     };
     item.summary = narrate(item);
@@ -652,6 +702,9 @@ function gazetteScore(item) {
 
   // Real project images (not desk covers)
   if (item.files.some((f) => f.startsWith("brain/images/") && !/\/cover-/.test(f))) score += 2;
+
+  // Learning dispatches (coach taught a lesson into the system) are high-value news
+  if (prefix === "coach" || item.credits?.learning) score += 3;
 
   // Commit prefix value
   if (["decision", "adr", "research", "proposal", "direction"].includes(prefix)) score += 3;
@@ -1083,6 +1136,28 @@ function renderHtml(dataJson) {
   .flash-meta .who { font-weight: 700; color: var(--muted); }
   .flash-meta .commit { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--faint); margin-left: auto; }
   .flash-meta .commit:hover { color: var(--ink); }
+
+  /* ---- skills & agents credit chips (which capability produced a dispatch) ---- */
+  .credits { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .credits-label { font-family: var(--sans); font-size: 9px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); }
+  .credit { font-family: var(--sans); font-size: 10.5px; font-weight: 700; letter-spacing: .01em;
+    padding: 1.5px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(31,122,109,.10); color: #1b6b5f; border: 1px solid rgba(31,122,109,.30); }
+  .credit i { font-style: normal; font-weight: 600; opacity: .65; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+  .credit-agent { background: rgba(157,70,100,.10); color: #8c3e57; border-color: rgba(157,70,100,.30); }
+
+  /* ---- learning dispatch: a lesson the coach taught back into the system ---- */
+  .learn-ribbon { display: inline-flex; align-items: baseline; gap: 9px; font-family: var(--sans);
+    font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #14564c;
+    background: linear-gradient(90deg, rgba(31,122,109,.16), rgba(31,122,109,.04));
+    border-left: 3px solid #1f7a6d; padding: 7px 12px; border-radius: 0 6px 6px 0; margin: 0 0 12px; }
+  .learn-ribbon .lr-sub { font-weight: 600; letter-spacing: .02em; text-transform: none; font-style: italic;
+    color: #4f7c74; font-size: 11.5px; }
+  .ni.learning, .hero.learning { background:
+    linear-gradient(135deg, rgba(31,122,109,.055), rgba(31,122,109,0) 60%), var(--card);
+    border-color: rgba(31,122,109,.34); box-shadow: 0 2px 16px rgba(31,122,109,.10); }
+  .hero.learning::before { background: repeating-linear-gradient(45deg, #1f7a6d, #1f7a6d 7px, #2e9183 7px, #2e9183 14px); }
 
   .summary { font-size: 15px; line-height: 1.55; color: var(--ink2); margin: 8px 0 9px; }
   .summary strong { color: var(--ink); font-weight: 700; }
@@ -1737,6 +1812,7 @@ document.getElementById('repo-link').href = DATA.repoUrl;
 
 // desk → emoji + colour (warm, readable on the stone paper)
 const DESK = {
+  Learning:   { emoji: '🎓',  color: '#1f7a6d' },
   Decisions:  { emoji: '⚖️',  color: '#9d4664' },
   Research:   { emoji: '🔬',  color: '#3f5a8a' },
   Proposals:  { emoji: '💡',  color: '#6b5c9e' },
@@ -1819,10 +1895,22 @@ function relDay(d){
   if(diff<31) return Math.round(diff/7)+' weeks ago'; return '';
 }
 function pill(c){ const k=desk(c.desk); return '<span class="deskpill" style="background:'+k.color+'">'+k.emoji+' '+c.desk+'</span>'; }
+// chips showing which skills / agents produced this dispatch (Malabi Daily visibility)
+function creditsHtml(c){
+  const sk=(c.credits&&c.credits.skills)||[]; if(!sk.length) return '';
+  return '<span class="credits"><span class="credits-label">via</span>'+ sk.map(s=>
+    '<span class="credit credit-'+s.kind+'" title="'+s.kind+': '+escapeHtml(s.name)+'">'+
+    s.emoji+' '+escapeHtml(s.name)+(s.kind==='agent'?' <i>agent</i>':'')+'</span>').join('') +'</span>';
+}
+function learnRibbon(c){
+  return (c.credits&&c.credits.learning)
+    ? '<div class="learn-ribbon">🎓 Lesson Learned<span class="lr-sub">the team got smarter</span></div>' : '';
+}
 function flashMeta(c){
   return '<div class="flash-meta">'+pill(c)+
     '<span class="when">'+relDay(c.date)+' · '+longDate(c.date)+'</span>'+
     '<span class="who">'+escapeHtml(c.author)+'</span>'+
+    creditsHtml(c)+
     '<a class="commit" href="'+c.url+'" target="_blank" rel="noopener" title="View commit '+c.hash+'">↗</a></div>';
 }
 function assetChip(a){
@@ -1872,8 +1960,10 @@ function flashCard(c, cls, style){
   const titleLink = readable
     ? '<a data-open="'+readable.name+'">'+escapeHtml(c.headline)+'</a>'
     : '<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
-  return '<div class="'+cls+'" style="'+style+'">'+
+  const learn = (c.credits&&c.credits.learning) ? ' learning' : '';
+  return '<div class="'+cls+learn+'" style="'+style+'">'+
     '<div class="'+(hero?'hero-main':'')+'">'+
+    learnRibbon(c)+
     (hero ? figureHtml(c,'hero-photo') : figureHtml(c,'thumb'))+
     flashMeta(c)+
     '<h3>'+titleLink+'</h3>'+
@@ -1887,7 +1977,7 @@ if(lastChange)
 
 // ---- newspaper layout engine ----
 function sizeFor(c){
-  if(['Proposals','Research','Direction','Decisions'].includes(c.desk)) return 'lg';
+  if(['Learning','Proposals','Research','Direction','Decisions'].includes(c.desk)) return 'lg';
   if(['Features','Assets'].includes(c.desk)) return 'md';
   return 'sm';
 }
@@ -1926,9 +2016,10 @@ function newsItemHtml({c,span,strip}){
   const titleLink=readable
     ?'<a data-open="'+readable.name+'">'+escapeHtml(c.headline)+'</a>'
     :'<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
-  const cls='ni s'+span+(strip?' strip':'');
+  const cls='ni s'+span+(strip?' strip':'')+((c.credits&&c.credits.learning)?' learning':'');
   const readLink=readable?'<a class="ni-read" data-open="'+readable.name+'">Read full article →</a>':'';
   return '<div class="'+cls+'">'+
+    learnRibbon(c)+
     niCoverHtml(c,span)+
     flashMeta(c)+
     '<div class="ni-head">'+titleLink+'</div>'+
