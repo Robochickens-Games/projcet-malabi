@@ -47,6 +47,43 @@ wherever you drop them, and you can keep adjusting until it clicks.
 
 Implemented in `product/prototypes/museum-parallax/src/main.js` (`buildFootStage`
 full-screen overlay, `buildFootEntry` room plinth, `openFootPuzzle`/`closeFootPuzzle`,
-move/rotate drag handlers). Bones carry a gold "twist grip" at the tip; pieces are
-~1.7× scale; lock needs pos < ~70px and angle < ~11°. See
+move/rotate drag handlers). Bones carry a gold "twist grip" at the tip; lock needs
+pos < ~78px and angle < ~13° (`FOOT_POS_TOL`/`FOOT_ANG_TOL`). See
 [[clue-design-deduction-not-naming]] for the sibling rule on clue design.
+
+**Art upgrade (2026-06-16, Dor).** Swapped the abstract SVG bones for **real
+photographed fossil art** and gave the stage a **background**:
+- Stage backdrop is now a sandstone "dig" texture (`public/img/foot-bg.jpg`,
+  cover-scaled) under a dark wash + warm spotlight, instead of a flat dark panel.
+- The loose bones are **5 individual fossil bones** — metatarsal + 3 toes + a back
+  dewclaw — sliced out of one "exploded bone kit" source image via alpha
+  connected-component analysis (Python/PIL/scipy), saved to `public/img/foot/`
+  (`metatarsal/toe-a/toe-b/toe-c/claw.png`).
+- Because these bones are an *exploded kit* (not one assembled photo), each bone's
+  seated pose is **hand-authored** in `bonesCfg` (`dx,dy,ang` = centre offset +
+  rotation from the foot centre); locking all 5 rebuilds a posed theropod foot.
+  Per-bone target angle (`bc.ang`), not 0 — the SVG-era "everything upright"
+  assumption is gone. Scale is `FOOT_SC` (~0.62). Pose was tuned by screenshotting
+  a temporary `__solveFoot` preview hook (removed) and adjusting offsets/angles.
+- To add/replace bones: re-run the component slice on the source kit, drop PNGs in
+  `public/img/foot/`, add a `bonesCfg` row, and tune `dx/dy/ang` against a solved
+  screenshot. A raster `imgTexture(url)` helper (next to `svgTexture`) loads them.
+
+**Solution in the catalog + connected joints (2026-06-16, Dor).** Two follow-ups:
+- The reference is now the **assembled foot itself**, shown in the catalog. Added a
+  `T-rex Foot` catalog section (`FOOT_GUIDE_SECTION`) — a single card with an
+  `assembled.png` of the rebuilt skeleton + a labelled note. `openFootPuzzle` jumps
+  straight to it (`openCatalogSection('trex-foot')`). This refines the earlier
+  "reference = Footprints track" framing: the catalog now shows the *actual* goal
+  shape, not just a track. Still catalog-only (no on-pedestal hints), so it stays
+  inside the "match the reference, don't telegraph slots" rule.
+- `assembled.png` is **composited from the exact same `bonesCfg` numbers** (a small
+  PIL script mirrors the pixi transform: scale → rotate `-deg(ang)` → place at
+  `dx*SC,dy*SC`). So the catalog picture and the in-game solved foot are guaranteed
+  identical — change the config, regenerate the image, both move together.
+- **Connected joints matter.** First pass had toes floating with gaps. Fix: orient
+  each toe so its claw points its fan direction, then position so its *joint end*
+  (opposite the claw, found via PCA axis extreme) meets the metatarsal base — toes
+  radiate from one hub. Tuned in a fast offline render loop (`/tmp` PIL preview),
+  not the full game. Don't anchor a wide block (metatarsal) by its axis-extreme
+  point — it lands off-centre; place it by eye and hang the toes off its base.

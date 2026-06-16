@@ -2,7 +2,7 @@ import { Application, Container, Sprite, Graphics, Texture, Text } from 'pixi.js
 import { gsap } from 'gsap'
 import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
-  eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, boneSVG,
+  eggSVG, pycnofiberSVG, footprintSVG, coveringSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -97,6 +97,14 @@ async function svgTexture(svg) {
   const tex = Texture.from(img)
   URL.revokeObjectURL(url)
   return tex
+}
+
+/* ---------- raster image (png/jpg) → texture ---------- */
+async function imgTexture(url) {
+  const img = new Image()
+  img.src = url
+  await img.decode()
+  return Texture.from(img)
 }
 
 /* ---------- game state ---------- */
@@ -750,9 +758,9 @@ function roomHotspots(mainL, scene, S, t) {
 /* ---------- T-REX ROOM (dim conifer forest) ---------- */
 async function buildTrex() {
   const S = TREX_SPOTS
-  const [skyT, farT, midT, mainT, fernT, toothT, eggT, boneAT, boneBT, boneCT, footIconT] = await Promise.all(
+  const [skyT, farT, midT, mainT, fernT, toothT, eggT, footIconT] = await Promise.all(
     [trexSkySVG(), trexFarSVG(), trexMidSVG(), trexMainSVG(), trexFernSVG(), toothSVG('blade', 64, 82), eggSVG('round', 60, 78),
-      boneSVG(66, 100, 150), boneSVG(98, 100, 180), boneSVG(80, 100, 160), footprintSVG('three-toe', 96, 120)].map(svgTexture),
+      footprintSVG('three-toe', 96, 120)].map(svgTexture),
   )
   const skyL = bgLayer(0.15, skyT, 2200 / 2)
   const farL = bgLayer(0.3, farT, 2600 / 2)
@@ -785,8 +793,27 @@ async function buildTrex() {
   }
 
   // foot-assembly puzzle: a lit plinth in the room opens a full-screen, immersive
-  // stage where the player rebuilds the 3-toed foot to match a reference card.
-  const bonesCfg = [{ len: 66, tex: boneAT }, { len: 98, tex: boneBT }, { len: 80, tex: boneCT }]
+  // stage where the player rebuilds a real T-rex foot from a kit of separate fossil
+  // bones (metatarsal + toes + dewclaw), scattered on a sandstone dig backdrop.
+  const [metaT, toeAT, toeBT, toeCT, clawT, footBgT] = await Promise.all([
+    imgTexture('/img/foot/metatarsal.png'), imgTexture('/img/foot/toe-a.png'),
+    imgTexture('/img/foot/toe-b.png'), imgTexture('/img/foot/toe-c.png'),
+    imgTexture('/img/foot/claw.png'), imgTexture('/img/foot-bg.jpg'),
+  ])
+  // each bone's home in the assembled foot: dx/dy = centre offset (design px) from
+  // the foot centre, ang = its rotation when seated. Tuned so the metatarsal stands
+  // at the top and three toes splay below with their claws pointing down.
+  // dx/dy/ang tuned so each bone's joint meets the metatarsal base — the toes
+  // fan from one hub and the whole thing reads as a connected foot (matches the
+  // catalog's assembled reference, which is composited from these same numbers).
+  // Order = z-order (back→front): dewclaw sits behind the toes.
+  const bonesCfg = [
+    { tex: metaT, w: 394, h: 404, dx: 0, dy: -177, ang: -0.732 },  // metatarsal (core, vertical)
+    { tex: clawT, w: 197, h: 113, dx: -87, dy: -10, ang: 1.36 },   // back dewclaw (points up-left)
+    { tex: toeAT, w: 427, h: 243, dx: -123, dy: 148, ang: -0.767 }, // inner toe (claw down-left)
+    { tex: toeBT, w: 334, h: 254, dx: 10, dy: 177, ang: -1.015 },  // middle toe (longest, claw down)
+    { tex: toeCT, w: 126, h: 185, dx: 87, dy: 107, ang: 2.30 },    // outer toe (claw down-right)
+  ]
   buildFootEntry(mainL, S, footIconT)
 
   trex.addChild(skyL, farL, midL, mainL, clueL, foreL)
@@ -795,7 +822,7 @@ async function buildTrex() {
   makeDust(trex, 24, TREX_W, 0x9fce9f)
 
   // the full-screen overlay lives on top of every scene (added to root, hidden)
-  footStage = buildFootStage(bonesCfg)
+  footStage = buildFootStage(bonesCfg, footBgT)
   root.addChild(footStage)
 }
 
@@ -1329,24 +1356,19 @@ function showSuccess(d, meta = {}) {
 
 /* ---------- T-rex foot-assembly puzzle (full-screen, immersive) ----------
    Tapping the lit plinth in the T-rex room opens a dedicated full-screen stage:
-   a dark, spotlit pedestal with the loose toe bones and NO on-stage answer. The
+   a real T-rex foot skeleton (one photographed specimen sliced into its three
+   fossil bones) scattered on a sandstone dig backdrop, with NO on-stage answer. The
    player consults the CATALOG (Footprints → T-rex three-toed track) to work out
-   the shape, then recreates it: drag each bone into place AND twist its gold tip
-   to the right angle. There are no placement clues on the pedestal. A bone only locks when
-   BOTH its position and rotation match. POS_TOL / ANG_TOL set the slack. */
-const FOOT_SC = 1.7           // pieces are big for a full-screen feel
-const FOOT_POS_TOL = 70       // px of slack on placement (scales with the bigger pieces)
-const FOOT_ANG_TOL = 0.20     // ~11° of slack on rotation
+   the shape, then recreates it: drag each bone into place AND twist it to its seated
+   angle. A bone only locks when BOTH its position and rotation match the pose its
+   config describes — together they rebuild a complete theropod foot.
+   POS_TOL / ANG_TOL set the slack. */
+const FOOT_SC = 0.62          // scales the fossil bone kit to a full-screen foot
+const FOOT_POS_TOL = 78       // px of slack on placement
+const FOOT_ANG_TOL = 0.22     // ~13° of slack on rotation
 const angDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b))
 const MX = 1230, MY = 720     // mount (pedestal) centre, in design space
-
-// the assembled theropod pose relative to the mount: side toes splayed, middle
-// toe longest and near-vertical. `ang` is the bone's rotation (0 = upright).
-const FOOT_TOES = [
-  { dx: -150, dy: -82, ang: -0.5 },  // inner toe, splayed left
-  { dx: 0, dy: -196, ang: 0 },       // middle toe (longest), straight up
-  { dx: 150, dy: -82, ang: 0.5 },    // outer toe, splayed right
-]
+const FCX = MX, FCY = MY - 120 // assembled foot's centre (claws rest on the pedestal)
 
 function makeBone(bc, scale) {
   const sp = new Sprite(bc.tex)
@@ -1374,20 +1396,29 @@ function buildFootEntry(mainL, S, footTex) {
 }
 
 // build the hidden full-screen overlay once; it lives on top of every scene
-function buildFootStage(bonesCfg) {
+function buildFootStage(bonesCfg, bgTex) {
   const stage = new Container()
   stage.visible = false
   stage.alpha = 0
   stage.eventMode = 'static'
 
-  // --- atmospheric backdrop: dark wash + warm spotlight on the pedestal ---
-  const dark = new Graphics().rect(-3000, -2000, 6000, 4000).fill({ color: 0x0d1411, alpha: 0.95 })
-  placeAt(dark, 960, 540)
-  dark.eventMode = 'static' // swallow taps so the room beneath never reacts
-  stage.addChild(dark)
-  const spot = new Graphics().ellipse(0, 0, 760, 600).fill({ color: 0x293a32, alpha: 0.6 })
-  placeAt(spot, MX, MY - 130); stage.addChild(spot)
-  const spot2 = new Graphics().ellipse(0, 0, 380, 320).fill({ color: 0xffd98a, alpha: 0.10 })
+  // --- atmospheric backdrop: a sandstone dig texture, darkened, with a warm
+  //     spotlight pooling on the pedestal so the bones read clearly ---
+  const bg = new Sprite(bgTex)
+  bg.anchor.set(0.5)
+  bg.scale.set(Math.max(DESIGN_W / bgTex.width, DESIGN_H / bgTex.height) * 1.02)
+  placeAt(bg, 960, 540)
+  bg.eventMode = 'static' // swallow taps so the room beneath never reacts
+  stage.addChild(bg)
+  // darken + cool the stone so the warm spotlight and bones pop
+  const dark = new Graphics().rect(-3000, -2000, 6000, 4000).fill({ color: 0x12100a, alpha: 0.5 })
+  placeAt(dark, 960, 540); stage.addChild(dark)
+  // edge vignette to focus the eye on the pedestal
+  const vig = new Graphics().rect(-3000, -2000, 6000, 4000).fill({ color: 0x000000, alpha: 0 })
+  placeAt(vig, 960, 540); stage.addChild(vig)
+  const spot = new Graphics().ellipse(0, 0, 820, 660).fill({ color: 0x3a2f1c, alpha: 0.45 })
+  placeAt(spot, MX, MY - 130); spot.blendMode = 'add'; stage.addChild(spot)
+  const spot2 = new Graphics().ellipse(0, 0, 420, 360).fill({ color: 0xffd98a, alpha: 0.14 })
   placeAt(spot2, MX, MY - 170); spot2.blendMode = 'add'; stage.addChild(spot2)
 
   // floating dust motes for depth
@@ -1403,29 +1434,40 @@ function buildFootStage(bonesCfg) {
   // --- title + subtitle ---
   const title = new Text({ text: 'REBUILD THE T-REX FOOT', style: { fontFamily: SERIF, fontSize: 50, fontWeight: '700', fill: 0xe8a948, letterSpacing: 3 } })
   title.anchor.set(0.5); placeAt(title, 960, 178); stage.addChild(title)
-  const sub = new Text({ text: 'Open the CATALOG (Footprints) to find the T-rex track, then recreate it — drag each bone into place and twist the gold tip to its angle.', style: { fontFamily: SERIF, fontSize: 23, fill: 0xd9c9a6, align: 'center' } })
+  const sub = new Text({ text: 'See how it fits together in the CATALOG (T-rex Foot), then recreate it — drag each bone into place and twist its gold grip to the right angle.', style: { fontFamily: SERIF, fontSize: 23, fill: 0xd9c9a6, align: 'center' } })
   sub.anchor.set(0.5); placeAt(sub, 960, 228); stage.addChild(sub)
 
-  // No reference card on the stage — the player consults the CATALOG (Footprints →
-  // T-rex three-toed track) to work out the right shape for themselves.
+  // No reference card on the stage — the player consults the CATALOG (T-rex Foot →
+  // the assembled-skeleton guide) and matches it on the bare pedestal.
 
   // --- pedestal (NO placement clues — bare mount) ---
-  const shadow = new Graphics().ellipse(0, 0, 220, 40).fill({ color: 0x000000, alpha: 0.4 })
+  const shadow = new Graphics().ellipse(0, 0, 240, 44).fill({ color: 0x000000, alpha: 0.45 })
   placeAt(shadow, MX, MY + 116); stage.addChild(shadow)
-  const heel = new Graphics().roundRect(-84, 0, 168, 98, 20)
-    .fill({ color: 0x34454f, alpha: 0.6 }).stroke({ color: 0xece0c2, width: 5 })
+  const heel = new Graphics().roundRect(-96, 0, 192, 98, 20)
+    .fill({ color: 0x241c10, alpha: 0.66 }).stroke({ color: 0xece0c2, width: 5, alpha: 0.85 })
   placeAt(heel, MX, MY); stage.addChild(heel)
 
-  const footGlow = new Graphics().roundRect(-240, -450, 480, 540, 30)
+  // a faint halo sized to the assembled foot — lights up when it's rebuilt
+  const fW = bonesCfg.reduce((m, b) => Math.max(m, Math.abs(b.dx) + b.w / 2), 0) * 2 * FOOT_SC
+  const fH = bonesCfg.reduce((m, b) => Math.max(m, Math.abs(b.dy) + b.h / 2), 0) * 2 * FOOT_SC
+  const footGlow = new Graphics().roundRect(-fW / 2 - 26, -fH / 2 - 26, fW + 52, fH + 52, 30)
     .fill({ color: 0xffd98a, alpha: 0.12 }).stroke({ color: 0xffd98a, width: 8, alpha: 0.8 })
-  placeAt(footGlow, MX, MY); footGlow.alpha = 0; footGlow.blendMode = 'add'; stage.addChild(footGlow)
+  placeAt(footGlow, FCX, FCY); footGlow.alpha = 0; footGlow.blendMode = 'add'; stage.addChild(footGlow)
 
-  const targets = bonesCfg.map((bc, i) => ({
-    len: bc.len, wx: MX + FOOT_TOES[i].dx, wy: MY + FOOT_TOES[i].dy, ang: FOOT_TOES[i].ang,
+  // each bone's home: its centre-offset (from the foot centre) scaled onto the
+  // pedestal, at its seated angle. Locking all of them rebuilds the foot.
+  const targets = bonesCfg.map((bc) => ({
+    wx: FCX + bc.dx * FOOT_SC, wy: FCY + bc.dy * FOOT_SC, ang: bc.ang,
   }))
 
   // bones scattered around the pedestal, each clearly mis-rotated — drag + twist
-  const starts = [{ x: 770, y: 905, ang: -1.15 }, { x: MX, y: 935, ang: 0.9 }, { x: 1660, y: 905, ang: 2.3 }]
+  const starts = [
+    { x: 1230, y: 905, ang: 2.6 },   // metatarsal
+    { x: 1670, y: 905, ang: -2.1 },  // dewclaw
+    { x: 610, y: 640, ang: -1.3 },   // toe-a
+    { x: 1690, y: 620, ang: 1.9 },   // toe-b
+    { x: 600, y: 905, ang: 0.6 },    // toe-c
+  ]
   bonesCfg.forEach((bc, i) => {
     const sp = makeBone(bc, FOOT_SC)
     const st = starts[i]
@@ -1433,14 +1475,16 @@ function buildFootStage(bonesCfg) {
     sp.rotation = st.ang
     sp.eventMode = 'static'
     sp.cursor = 'grab'
-    sp._bone = { len: bc.len, startX: st.x, startY: st.y, sprite: sp, placed: false, target: targets[i] }
+    sp._bone = { startX: st.x, startY: st.y, sprite: sp, placed: false, target: targets[i] }
     sp.on('pointerdown', () => startBoneDrag(sp, 'move'))
 
-    // twist grip at the bone's tip — grab it and swing to rotate the bone
+    // twist grip just above the toe's top — grab it and swing to rotate. It's
+    // counter-scaled so it stays a comfortable, finger-sized target on screen.
     const grip = new Graphics()
-    grip.circle(0, 0, 18).fill({ color: 0xe8a948, alpha: 0.95 }).stroke({ color: 0x3a2c1a, width: 3 })
-    grip.arc(0, 0, 9, -2.2, 1.1).stroke({ color: 0x3a2c1a, width: 3, cap: 'round' }) // curved arrow hint
-    grip.position.set(0, -(bc.len / 2 + 30))
+    grip.circle(0, 0, 22).fill({ color: 0xe8a948, alpha: 0.95 }).stroke({ color: 0x3a2c1a, width: 3 })
+    grip.arc(0, 0, 11, -2.2, 1.1).stroke({ color: 0x3a2c1a, width: 3, cap: 'round' }) // curved arrow hint
+    grip.position.set(0, -(bc.h / 2 + 48))
+    grip.scale.set(1 / FOOT_SC)
     grip.eventMode = 'static'
     grip.cursor = 'grab'
     grip.on('pointerdown', (e) => { e.stopPropagation(); startBoneDrag(sp, 'rotate') })
@@ -1471,6 +1515,7 @@ function openFootPuzzle() {
   cam().vel = 0
   setRail('inventory-rail', true)
   setRail('catalog-rail', false) // open the field guide — it's the only reference now
+  openCatalogSection('trex-foot') // jump straight to the assembled-foot solution
   $('walk-arrow').classList.add('hidden') // no room chrome over the full-screen stage
   footStage.visible = true
   gsap.killTweensOf(footStage)
@@ -1478,7 +1523,7 @@ function openFootPuzzle() {
   sfx.whoosh()
   if (!trex._foot.hinted) {
     trex._foot.hinted = true
-    toast('Check the CATALOG → Footprints for the T-rex’s three-toed track, then rebuild it on the pedestal — drag a bone, then grab its gold tip to TWIST it to the right angle.', 6000)
+    toast('The CATALOG → T-rex Foot shows how the bones fit together. Rebuild it on the pedestal — drag a bone, then grab its gold grip to TWIST it into place.', 6000)
   }
 }
 
@@ -1536,7 +1581,7 @@ function endBoneDrag(x, y) {
   } else if (distOk && !angOk) {
     // right spot, wrong tilt — nudge them to twist it (leave it where it is)
     sfx.wrong()
-    toast('Almost! It’s in the right spot but tilted wrong — grab the gold tip and TWIST it to match the catalog’s track.', 3800)
+    toast('Almost! It’s in the right spot but tilted wrong — grab the gold grip and TWIST it upright to match the catalog’s track.', 3800)
   }
   // otherwise: leave the bone wherever they dropped it — this is a posing puzzle, not a tray
 }
@@ -1668,6 +1713,21 @@ const SECTION = (id, title, blurb, icon, trait, note) => ({
   id, title, blurb, icon, tag: `${DINOS.length} entries`, ready: true,
   render: () => DINOS.map((d) => catalogCard(d, trait, note)).join(''),
 })
+// the T-rex foot "rebuild guide" — a single static reference card showing the
+// assembled skeleton (the puzzle's solution), so the player can match it.
+const FOOT_GUIDE_SECTION = {
+  id: 'trex-foot', title: 'T-rex Foot', blurb: 'How the toe-bones fit together.',
+  icon: footprintSVG('three-toe', 34, 42), tag: 'rebuild guide', ready: true,
+  render: () => `
+    <div class="cat-card">
+      <div class="art foot"><img src="/img/foot/assembled.png" alt="assembled T-rex foot skeleton"></div>
+      <div class="diet">Tyrannosaurus rex — left foot</div>
+      <div class="cat-note">The tall <b>metatarsal</b> (ankle bones) stands upright. Below it,
+        <b>three toes</b> fan out — each tipped with a <b>claw</b> pointing down, and the
+        <b>middle toe is the longest</b>. A small <b>dewclaw</b> sits high on the inside, turned
+        back. Match this on the pedestal: bones joined at the base, claws down.</div>
+    </div>`,
+}
 const CATALOG_SECTIONS = [
   SECTION('teeth', 'Teeth', 'A tooth tells you what a dinosaur ate.', toothSVG('leaf', 34, 42),
     (d) => toothSVG(d.tooth, 96, 120), (d) => d.toothNote),
@@ -1675,6 +1735,7 @@ const CATALOG_SECTIONS = [
     (d) => coveringSVG(d.covering, 96, 120), (d) => d.coveringNote),
   SECTION('footprints', 'Footprints', 'Every dino left a different track.', footprintSVG('three-toe', 34, 42),
     (d) => footprintSVG(d.footprint, 96, 120), (d) => d.footprintNote),
+  FOOT_GUIDE_SECTION,
   SECTION('eggs', 'Eggs', 'Round, long, or leathery — eggs tell tales too.', eggSVG('round', 34, 42),
     (d) => eggSVG(d.egg, 96, 120), (d) => d.eggNote),
 ]
