@@ -31,6 +31,23 @@ Every entry is a short story with three beats:
 
 ---
 
+## 2026-06-16 — Midjourney paints lovely backdrops, then fumbles the actual scene
+
+**What happened:** We've been leaning on Midjourney for art, and it's genuinely good at the
+painterly, mood-setting stuff — backgrounds and atmosphere come out beautiful. But when we
+needed a *specific, accurate* scene or subject, it kept drifting: pretty, but not the thing
+we actually asked for.
+
+**The mistake:** We treated one tool as if it were good at everything. Midjourney's strength
+(vibe, backdrops) isn't the same as the thing we most need for our museum — subjects that are
+*correct*, not just attractive. Stretching it past what it's good at gave us off-brief output.
+
+**What we'll do differently:** Right tool for the right layer. Keep Midjourney for backgrounds
+and ambience, and go find a better option for accurate assets — we're going to evaluate GPT
+image generation (or another tool) for the precise, subject-correct pieces. The open question
+was never the money; it's which tool actually hits the accuracy bar. See
+[[midjourney-good-bg-not-scenes]].
+
 ## 2026-06-15 — We asked Blender to "make a Triceratops" and got a balloon animal
 
 **What happened:** We're still hunting for an art pipeline that doesn't cost money, so Dor
