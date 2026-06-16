@@ -1440,6 +1440,27 @@ function renderHtml(dataJson) {
   }
 
   /* ============================================================
+     PER-TYPE FRAMING — each desk wears its colour (--deskc), so article
+     types are distinct at a glance: a coloured cap on classic cards, a
+     coloured top-rule + emoji kicker on the paper front, learning gets its
+     own teal wash. --deskc is set inline per card from the desk palette.
+  ============================================================ */
+  .ni { border-top: 3px solid var(--deskc, var(--line)); }
+  .ni.strip { border-top-width: 2px; }
+  .ni.learning { border-top-color: #1f7a6d; }
+  /* paper / NYT front: colour the kicker everywhere + a top section-rule on the
+     prominent slots and the bottom grid (not the stacked column briefs, to avoid
+     doubling the divider rules) */
+  #front-times .nyt-lead, #front-times .nyt-feature,
+  #front-times .nyt-grid .nyt-art { border-top: 3px solid var(--deskc); padding-top: 13px; }
+  #front-times .nyt-center { border-top: 5px solid var(--deskc); padding-top: 14px; }
+  #front-times .nyt-kicker .nyt-kdesk { margin-left: 9px; letter-spacing: .1em; }
+  #front-times .nyt-art.learning { background: linear-gradient(135deg, rgba(31,122,109,.07), rgba(31,122,109,0) 55%); }
+  #front-times .nyt-art.learning .learn-ribbon { margin-bottom: 10px; }
+  /* the credit chips sit quietly under the summary on the paper front */
+  #front-times .nyt-art .credits { margin: 8px 0 2px; }
+
+  /* ============================================================
      GAZETTE MODE — antique broadsheet, sepia newsprint
   ============================================================ */
   :root {
@@ -1820,7 +1841,7 @@ const DESK = {
   Status:     { emoji: '📊',  color: '#b07219' },
   Features:   { emoji: '✨',  color: '#4d7c2f' },
   Assets:     { emoji: '🖼️', color: '#7a5a44' },
-  Brain:      { emoji: '🧠',  color: '#7a5a44' },
+  Brain:      { emoji: '🧠',  color: '#4a6670' },
   Fixes:      { emoji: '🔧',  color: '#b4531f' },
   Docs:       { emoji: '📄',  color: '#6b6660' },
   Updates:    { emoji: '📌',  color: '#8a8076' },
@@ -2016,9 +2037,9 @@ function newsItemHtml({c,span,strip}){
   const titleLink=readable
     ?'<a data-open="'+readable.name+'">'+escapeHtml(c.headline)+'</a>'
     :'<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
-  const cls='ni s'+span+(strip?' strip':'')+((c.credits&&c.credits.learning)?' learning':'');
+  const cls='ni s'+span+(strip?' strip':'')+((c.credits&&c.credits.learning)?' learning':'')+' desk-'+c.desk;
   const readLink=readable?'<a class="ni-read" data-open="'+readable.name+'">Read full article →</a>':'';
-  return '<div class="'+cls+'">'+
+  return '<div class="'+cls+'" style="--deskc:'+desk(c.desk).color+'">'+
     learnRibbon(c)+
     niCoverHtml(c,span)+
     flashMeta(c)+
@@ -2055,11 +2076,13 @@ function nytHeadLink(c){
     : '<a href="'+c.url+'" target="_blank" rel="noopener">'+escapeHtml(c.headline)+'</a>';
 }
 function nytKicker(c, live){
+  const k = DESK[c.desk] || DESK.Updates;
   if(live){
     const when = relDay(c.date) || longDate(c.date);
-    return '<div class="nyt-kicker live"><span class="live-dot">●</span> Latest · '+escapeHtml(when)+'</div>';
+    return '<div class="nyt-kicker live"><span class="live-dot">●</span> Latest · '+escapeHtml(when)+
+      ' <span class="nyt-kdesk" style="color:'+k.color+'">'+k.emoji+' '+escapeHtml(c.desk)+'</span></div>';
   }
-  return '<div class="nyt-kicker">'+escapeHtml(c.desk)+'</div>';
+  return '<div class="nyt-kicker" style="color:'+k.color+'">'+k.emoji+' '+escapeHtml(c.desk)+'</div>';
 }
 function nytFigure(c, wide){
   if(!c.image) return '';
@@ -2078,11 +2101,15 @@ function nytByline(c){
 }
 function nytArt(c, cls, opts){
   opts = opts || {};
-  return '<article class="nyt-art '+(cls||'')+'">'+
+  const k = DESK[c.desk] || DESK.Updates;
+  const learn = (c.credits&&c.credits.learning) ? ' learning' : '';
+  return '<article class="nyt-art desk-'+c.desk+learn+' '+(cls||'')+'" style="--deskc:'+k.color+'">'+
+    learnRibbon(c)+
     (opts.image ? nytFigure(c, opts.wide) : '')+
     nytKicker(c, opts.live)+
     '<h3 class="nyt-hl">'+nytHeadLink(c)+'</h3>'+
     (opts.sum !== false && c.summary ? '<p class="nyt-sum">'+renderInline(c.summary)+'</p>' : '')+
+    creditsHtml(c)+
     nytByline(c)+
     '</article>';
 }
@@ -2480,11 +2507,15 @@ function nytByline(c){
 }
 function nytArt(c, cls, opts){
   opts = opts || {};
-  return '<article class="nyt-art '+(cls||'')+'">'+
+  const k = DESK[c.desk] || DESK.Updates;
+  const learn = (c.credits&&c.credits.learning) ? ' learning' : '';
+  return '<article class="nyt-art desk-'+c.desk+learn+' '+(cls||'')+'" style="--deskc:'+k.color+'">'+
+    learnRibbon(c)+
     (opts.image ? nytFigure(c, opts.wide) : '')+
     nytKicker(c, opts.live)+
     '<h3 class="nyt-hl">'+nytHeadLink(c)+'</h3>'+
     (opts.sum !== false && c.summary ? '<p class="nyt-sum">'+renderInline(c.summary)+'</p>' : '')+
+    creditsHtml(c)+
     nytByline(c)+
     '</article>';
 }
@@ -2497,7 +2528,10 @@ function buildTimesFront(){
   const all = DATA.history.slice();
   if(!all.length){ ft.innerHTML = '<p class="standfirst">No dispatches yet.</p>'; return; }
   const nextImg = () => all.find(c => c.image && !used.has(c.hash));
-  const center  = take(nextImg() || all[0]);
+  // The genuinely newest dispatch is the lead story: it takes the prominent
+  // centre slot AND the "Latest" kicker, so the front never labels an older
+  // item as the latest (history is newest-first, so all[0] is the newest).
+  const center  = take(all[0]);
   const feature = take(nextImg());
   const rest    = all.filter(c => !used.has(c.hash));
   const lead     = rest.shift();
@@ -2505,10 +2539,10 @@ function buildTimesFront(){
   const rightMore= rest.splice(0, 2);
   const bottom   = rest.slice(0, 8);
   const left = '<div class="nyt-col left">'+
-    (lead ? nytArt(lead, 'nyt-lead', {live:true}) : '')+
+    (lead ? nytArt(lead, 'nyt-lead', {}) : '')+
     leftMore.map(c => nytArt(c, '')).join('')+'</div>';
   const mid = '<div class="nyt-col center">'+
-    nytArt(center, 'nyt-center', {image:true, wide:true})+'</div>';
+    nytArt(center, 'nyt-center', {image:true, wide:true, live:true})+'</div>';
   const right = '<div class="nyt-col right">'+
     (feature ? nytArt(feature, 'nyt-feature', {image:true}) : '')+
     rightMore.map(c => nytArt(c, '')).join('')+'</div>';
