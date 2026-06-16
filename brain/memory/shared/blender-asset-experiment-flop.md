@@ -51,6 +51,15 @@ a saved hour for the next person who reaches for "just let Blender do it."
   guidance (silhouette, proportions, horn/frill placement) before it's worth a render.
 - **Multi-view consistency is the bar.** If front and side disagree, there's no
   asset — only two unrelated pictures.
+- **Both headless-Blender approaches hit the same wall.** Blender runs fully
+  scriptable (`--background --python`), and we tried two routes: *parts-based
+  procedural* (skin-modifier skeleton + modeled frill/horns) and *reference-trace →
+  inflate* (silhouette of a side image, inflated by distance-from-outline). The
+  trace gives a silhouette-perfect **side**, but a single side reference inflates
+  **symmetrically into a lump** — the front/width is undefined without a true
+  multi-view carve or hand sculpting. So the headless path doesn't escape the
+  multi-view bar above; it just reaches it faster. (Files dropped 2026-06-16 — the
+  experiment is the lesson, not the artifacts.)
 - This nudges us back toward the decided direction: the **manifest-driven pipeline
   with a paid hosted image API** is still the path (see
   [0004](../../decisions/0004-drop-local-comfyui-engine.md)); free-local-Blender
