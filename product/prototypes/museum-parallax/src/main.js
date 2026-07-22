@@ -1129,15 +1129,29 @@ function onSceneEnter(target) {
   const ready = hasClue(cfg.item) && drop && !drop.done
   if (ready) {
     if (isCompact()) setRail('inventory-rail', false)
+    showPouch(pouchOf(cfg.item))   // a cue in a hidden pouch cues nobody
     invSlotFor(cfg.item)?.classList.add('cue')
     if (target === 'grove') gsap.to(trayGlow, { alpha: 0.8, duration: 1, delay: 1, yoyo: true, repeat: 3 })
   }
   setTimeout(() => toast(ready ? cfg.ready : cfg.explore, 6500), 700)
 }
 
-const invSlot = (i) => document.querySelectorAll('#inventory-grid .inv-slot')[i]
-const invSlotFor = (item) => [...document.querySelectorAll('#inventory-grid .inv-slot')].find((s) => s.dataset.item === item)
-const nextEmptyInvSlot = () => [...document.querySelectorAll('#inventory-grid .inv-slot')].find((s) => !s.classList.contains('filled'))
+/* ---------- the bag's two pouches ----------
+   FINDS holds the puzzle items you drag onto exhibits; ROCKS holds the Space
+   Wing's currency, which is only ever sold at the Supply Desk. They share one
+   rail as two tabs rather than becoming a second panel: screen space on a phone
+   is the scarcest thing we have, and rocks crowding out quest items in a 6-slot
+   grid was the real problem. An item's pouch follows from what it IS, so nothing
+   has to remember to file it correctly. */
+const pouchOf = (itemId) => (isRock(itemId) ? 'rocks' : 'finds')
+const gridSel = (pouch) => (pouch === 'rocks' ? '#rock-grid' : '#inventory-grid')
+const slotsIn = (pouch) => [...document.querySelectorAll(`${gridSel(pouch)} .inv-slot`)]
+const allSlots = () => [...slotsIn('finds'), ...slotsIn('rocks')]
+
+const invSlot = (i) => slotsIn('finds')[i]
+const invSlotFor = (item) => allSlots().find((s) => s.dataset.item === item)
+const nextEmptySlotIn = (pouch) => slotsIn(pouch).find((s) => !s.classList.contains('filled'))
+const nextEmptyInvSlot = (itemId) => nextEmptySlotIn(pouchOf(itemId))
 
 // every collectible clue → how it's drawn (inventory icon · drag ghost · placed sprite).
 // Space rocks and tools draw themselves from the economy's own art.
@@ -1197,15 +1211,18 @@ function openItemDetail(itemId) {
     <h3 class="inv-detail-title">${info.name}</h3>
     <p class="inv-detail-found">Found in <b>${info.found}</b></p>
     ${info.worth ? `<p class="inv-detail-found">Sells for <b>${info.worth} coins</b> at the Supply Desk</p>` : ''}`
-  $('inventory-grid').classList.add('hidden-inv')
-  document.querySelector('#inventory-rail .inv-hint')?.classList.add('hidden-inv')
+  // the detail view takes over the grid area; the tabs stay put so the child can
+  // always see where they are and get back with one tap
+  for (const el of document.querySelectorAll('.inv-grid, .inv-hint')) el.classList.add('hidden-inv')
   $('inventory-detail').classList.remove('hidden-inv')
 }
 
 function closeItemDetail() {
   $('inventory-detail').classList.add('hidden-inv')
-  $('inventory-grid').classList.remove('hidden-inv')
-  document.querySelector('#inventory-rail .inv-hint')?.classList.remove('hidden-inv')
+  // restore whichever pouch is open, not always Finds
+  for (const el of document.querySelectorAll('.inv-grid, .inv-hint')) {
+    el.classList.toggle('hidden-inv', el.dataset.tab !== activePouch)
+  }
 }
 
 // clues currently hidden in the world: itemId → { sprite, sparkle }
@@ -1273,14 +1290,59 @@ function fillInvSlot(slotEl, itemId) {
   slotEl.innerHTML = slotInner(itemId)
 }
 
+/* ---------- pouch tabs ----------
+   The Rocks tab stays hidden until the first rock is found, so the Dinosaur Wing's
+   rail is exactly as it was. Switching is instant and free — nothing is ever lost
+   by poking the other tab. */
+let activePouch = 'finds'
+
+function showPouch(pouch) {
+  activePouch = pouch
+  for (const el of document.querySelectorAll('#inv-tabs .inv-tab')) {
+    const on = el.dataset.tab === pouch
+    el.classList.toggle('active', on)
+    el.setAttribute('aria-selected', String(on))
+    if (on) el.classList.remove('nudge')
+  }
+  for (const el of document.querySelectorAll('.inv-grid, .inv-hint')) {
+    el.classList.toggle('hidden-inv', el.dataset.tab !== pouch)
+  }
+  closeItemDetail()
+}
+
+function revealRockPouch() {
+  const tab = document.querySelector('#inv-tabs .inv-tab[data-tab="rocks"]')
+  if (!tab || !tab.classList.contains('hidden')) return
+  tab.classList.remove('hidden')
+  $('inv-tabs').classList.add('two')
+}
+
+// the rock count + what the pouch is worth: the child can see their pile growing
+// without opening it, and reads the total before deciding to walk to the desk
+function updatePouchTotals() {
+  const rocks = Object.keys(state.has).filter(isRock)
+  const countEl = document.querySelector('#inv-tabs .inv-tab[data-tab="rocks"] .inv-tab-count')
+  if (countEl) countEl.textContent = String(rocks.length)
+  const totalEl = $('rock-total')
+  if (totalEl) totalEl.textContent = String(rocks.reduce((sum, id) => sum + (rockOf(id)?.value ?? 0), 0))
+}
+
 function grantItem(itemId) {
   if (hasClue(itemId)) return false
-  const slotEl = nextEmptyInvSlot()
-  if (!slotEl) { toast('Your bag is full — use something first.', 4000); return false }
+  const pouch = pouchOf(itemId)
+  const slotEl = nextEmptySlotIn(pouch)
+  if (!slotEl) {
+    toast(pouch === 'rocks'
+      ? 'Your rock pouch is full — sell some at the Supply Desk!'
+      : 'Your bag is full — use something first.', 4500)
+    return false
+  }
   state.has[itemId] = true
   sfx.pickup()
+  if (pouch === 'rocks') revealRockPouch()
   fillInvSlot(slotEl, itemId)
   gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
+  updatePouchTotals()
   return true
 }
 
@@ -1294,6 +1356,7 @@ function removeItem(itemId) {
     slotEl.innerHTML = ''
     delete slotEl.dataset.item
   }
+  updatePouchTotals()
   return true
 }
 
@@ -1302,13 +1365,21 @@ function pickUpClue(itemId) {
   if (hasClue(itemId)) return
   const clue = CLUES[itemId]
   if (!clue) return
+  const pouch = pouchOf(itemId)
+  if (pouch === 'rocks' && !nextEmptySlotIn('rocks')) {
+    toast('Your rock pouch is full — sell some at the Supply Desk first!', 4500)
+    return
+  }
   state.has[itemId] = true
   sfx.pickup()
-  // open the inventory so the clue has a visible slot to fly into
+  // open the inventory so the clue has a visible slot to fly into, on the pouch
+  // that's about to receive it — the find must land somewhere the child can see
   openRailInstant('inventory-rail')
+  if (pouch === 'rocks') revealRockPouch()
+  showPouch(pouch)
 
   const gp = clue.sprite.getGlobalPosition()
-  const slotEl = nextEmptyInvSlot()
+  const slotEl = nextEmptyInvSlot(itemId)
   if (slotEl) {
     const slot = slotEl.getBoundingClientRect()
     const fly = document.createElement('div')
@@ -1327,6 +1398,7 @@ function pickUpClue(itemId) {
           slotEl.dataset.item = itemId
           slotEl.innerHTML = slotInner(itemId)
           gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
+          updatePouchTotals()
         },
       })
   }
@@ -1948,8 +2020,8 @@ function setupCatalog() {
 
 /* ---------- inventory drag wiring (pointer events, mouse + touch) ---------- */
 function setupInventoryDrag() {
-  const grid = $('inventory-grid')
-  grid.addEventListener('pointerdown', (e) => {
+  // FINDS: a slot is grabbed and dragged onto an exhibit
+  $('inventory-grid').addEventListener('pointerdown', (e) => {
     // the ⓘ badge opens the item's "more details" drilldown (not a drag)
     const info = e.target.closest('.inv-info')
     if (info) { e.preventDefault(); e.stopPropagation(); openItemDetail(info.closest('.inv-slot').dataset.item); return }
@@ -1958,6 +2030,27 @@ function setupInventoryDrag() {
     e.preventDefault()        // suppress the compatibility mouse/touch events
     startItemDrag(e.clientX, e.clientY, slot)
   })
+
+  // ROCKS: never dragged — they're sold, not used. Tapping one opens its details
+  // (what it is, what it's worth) rather than starting a drag that could only
+  // ever fail. A rock is still a *find*, so the tap has to reward, not rebuff.
+  $('rock-grid').addEventListener('pointerdown', (e) => {
+    const slot = e.target.closest('.inv-slot.filled')
+    if (!slot) return
+    e.preventDefault()
+    sfx.tap()
+    openItemDetail(slot.dataset.item)
+  })
+
+  // the two pouch tabs
+  $('inv-tabs').addEventListener('pointerdown', (e) => {
+    const tab = e.target.closest('.inv-tab')
+    if (!tab || tab.classList.contains('active')) return
+    e.preventDefault()
+    sfx.tap()
+    showPouch(tab.dataset.tab)
+  })
+
   $('inventory-detail').addEventListener('pointerdown', (e) => {
     if (e.target.closest('.inv-back')) { sfx.tap(); closeItemDetail() }
   })

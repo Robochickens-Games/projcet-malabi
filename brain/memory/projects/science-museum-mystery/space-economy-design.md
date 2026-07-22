@@ -52,12 +52,27 @@ read off a table.
   *instance* (`lunarChip@solar`) — the inventory is keyed by item id, and without
   instances only the first Lunar Chip in the game could ever be picked up.
 
-## Open — needs a call
-**The inventory is 6 slots and the Space Wing will overflow it.** Five tools, plus
-cross-room quest items, plus rocks in hand. It can't hard-lock (rocks are always
-sellable, which frees space), but a child *will* hit "bag full". Options: grow the
-bag for this wing, auto-bank rocks as coins-on-pickup, or give rocks their own pouch
-separate from quest items. Not decided.
+## The bag: two pouches, one rail (decided 2026-07-22, Gidi)
+The 6-slot inventory would have overflowed — five tools, plus cross-room quest
+items, plus rocks in hand. **Rocks got their own pouch, surfaced as a second tab in
+the existing inventory rail** rather than as a second panel.
+
+- **Two tabs, not two rails.** Screen space on a phone is the scarcest thing we
+  have, and a child should never have to hunt for a second panel.
+- **FINDS** (6 slots) holds puzzle items you drag onto exhibits. **ROCKS** (8 slots,
+  scrolls) holds currency you sell at the desk. A full rock pouch can therefore
+  never block picking up a quest item — the thing that made this a real problem.
+- **Rocks are tapped, not dragged.** They're sold, never used on an exhibit, so a
+  tap opens the rock's details instead of starting a drag that could only ever
+  fail. Curiosity still gets rewarded, per "every tap rewards".
+- **The tab carries the count; the pouch carries the total worth** ("worth 44 🪙").
+  A child sees the pile growing without opening it, and reads the total before
+  deciding to walk to the desk — the collection layer, doing double duty as the
+  economy's feedback.
+- **The Rocks tab is hidden until the first rock is found**, so the Dinosaur Wing's
+  rail is untouched. Same treatment as the coin purse in the HUD.
+- **An item's pouch follows from what it is** (`pouchOf()`), so no code has to
+  remember to file a find correctly.
 
 Built in `product/prototypes/museum-parallax/src/economy.js`; guarantees are
 regression-tested by `scripts/verify-economy.mjs` (`npm run verify`).

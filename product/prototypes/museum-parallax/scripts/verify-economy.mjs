@@ -52,6 +52,23 @@ await page.evaluate(() => { window.__giveRock('lunarChip', 'solar'); window.__gi
 const bagAfterDupes = await page.evaluate(() => window.__bag().filter((i) => i.startsWith('lunarChip')))
 check('same rock type from two rooms both land in the bag', bagAfterDupes.length === 2, bagAfterDupes.join(', '))
 
+// ---- 2b. the two pouches: rocks must not crowd out quest items ----
+const pouch = await page.evaluate(() => ({
+  rocksTabVisible: !document.querySelector('.inv-tab[data-tab="rocks"]').classList.contains('hidden'),
+  rocksInRockGrid: [...document.querySelectorAll('#rock-grid .inv-slot.filled')].map((s) => s.dataset.item),
+  findsGridUsed: [...document.querySelectorAll('#inventory-grid .inv-slot.filled')].length,
+  count: document.querySelector('.inv-tab[data-tab="rocks"] .inv-tab-count').textContent,
+  worth: document.getElementById('rock-total').textContent,
+}))
+check('the Rocks tab appears once a rock is found', pouch.rocksTabVisible)
+check('rocks land in the rock pouch, not the finds grid',
+  pouch.rocksInRockGrid.length === 2 && pouch.findsGridUsed === 0,
+  `rocks ${pouch.rocksInRockGrid.length}, finds used ${pouch.findsGridUsed}`)
+check('the tab shows how many rocks are held', pouch.count === '2', pouch.count)
+check('the pouch shows what it is worth', pouch.worth === '12', `${pouch.worth} (2 × lunarChip @6)`)
+check('rocks cannot be dragged onto an exhibit', await page.evaluate(() =>
+  getComputedStyle(document.querySelector('#rock-grid .inv-slot.filled')).cursor === 'pointer'))
+
 // ---- 3. selling pays what the rock is worth ----
 await page.evaluate(() => window.__openDesk())
 await page.waitForTimeout(400)
@@ -102,6 +119,20 @@ await page.evaluate(() => window.__closeDesk())
 await page.waitForTimeout(300)
 check('desk closes', (await page.evaluate(() => window.__deskOpen())) === false)
 check('coins survive closing the desk', (await page.evaluate(() => window.__coins())) === 100 - price)
+
+// ---- 8. a full rock pouch never blocks a quest item ----
+await page.evaluate(() => {
+  // fill every rock slot, then try to take one more rock and one more find
+  const types = ['starShard', 'marsRock', 'meteorite', 'stardust', 'lunarChip']
+  for (let i = 0; i < 12; i++) window.__giveRock(types[i % types.length], `fill${i}`)
+})
+await page.waitForTimeout(200)
+const full = await page.evaluate(() => ({
+  rockSlotsFree: [...document.querySelectorAll('#rock-grid .inv-slot')].filter((s) => !s.classList.contains('filled')).length,
+  findsFree: [...document.querySelectorAll('#inventory-grid .inv-slot')].filter((s) => !s.classList.contains('filled')).length,
+}))
+check('the rock pouch fills up rather than growing forever', full.rockSlotsFree === 0)
+check('a FULL rock pouch still leaves room for quest items', full.findsFree > 0, `${full.findsFree} find slots free`)
 
 check('no uncaught page errors', errors.length === 0, errors.join(' | '))
 

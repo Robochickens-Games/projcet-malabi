@@ -32,10 +32,16 @@
     <div id="catalog-list"></div>
   </aside>
 
-  <!-- right rail: inventory — drag a find onto the exhibit to use it -->
+  <!-- right rail: the bag. Two pouches share it — FINDS are the puzzle items you
+       drag onto exhibits, ROCKS are the Space Wing's currency you sell at the
+       Supply Desk. Keeping them apart stops rocks from crowding out quest items.
+       The Rocks tab only appears once the player picks up their first rock. -->
   <aside id="inventory-rail" class="rail">
-    <h2>🎒 Inventory</h2>
-    <div id="inventory-grid">
+    <div id="inv-tabs" role="tablist">
+      <button class="inv-tab active" data-tab="finds" role="tab" aria-selected="true">🎒 Finds</button>
+      <button class="inv-tab hidden" data-tab="rocks" role="tab" aria-selected="false">🪨 Rocks<span class="inv-tab-count">0</span></button>
+    </div>
+    <div id="inventory-grid" class="inv-grid" data-tab="finds">
       <div class="inv-slot empty"></div>
       <div class="inv-slot empty"></div>
       <div class="inv-slot empty"></div>
@@ -43,7 +49,18 @@
       <div class="inv-slot empty"></div>
       <div class="inv-slot empty"></div>
     </div>
-    <p class="inv-hint">drag a find onto the exhibit · tap ⓘ for details</p>
+    <div id="rock-grid" class="inv-grid hidden-inv" data-tab="rocks">
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+    </div>
+    <p class="inv-hint" data-tab="finds">drag a find onto the exhibit · tap ⓘ for details</p>
+    <p class="inv-hint hidden-inv" data-tab="rocks">sell at the Supply Desk<br>worth <b id="rock-total">0</b> 🪙</p>
     <div id="inventory-detail" class="hidden-inv"></div>
   </aside>
 
