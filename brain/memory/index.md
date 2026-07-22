@@ -30,6 +30,7 @@ After writing a memory, add a one-line pointer below under the right section.
 ## Shared (team-wide truth)
 - [north-star](shared/north-star.md) — 🌟 our guiding goals (make money · make fun); align everything to it
 - [team](shared/team.md) — who's who, roles, contact, working norms
+- [gidi-sole-poc](shared/gidi-sole-poc.md) — ⚠️ as of 2026-07-22 Gidi is the single point of contact for ALL calls; don't route to Dor/Ohad or block on their sign-off until further notice
 - [architecture-of-the-brain](shared/architecture-of-the-brain.md) — how this whole system is structured
 - [coach-learning-loop](shared/coach-learning-loop.md) — the coach skill teaches lessons learned into the other skills'/agents' own definitions, so the system improves instead of repeating mistakes
 - [coach-rami-log](shared/coach-rami-log.md) — Coach Rami's learning log: the team's running record of lessons in plain language (What happened / The mistake / What we'll do differently), printed as its own section in The Malabi Daily
