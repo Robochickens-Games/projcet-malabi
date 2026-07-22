@@ -1132,7 +1132,7 @@ export function marsForeSVG() {
    board on the left holds the landing sequence, and a workbench on the right runs
    Build-a-Rocket. */
 
-export const MOON_W = 3800
+export const MOON_W = 4300
 
 export const MOON_SPOTS = {
   backPost: { x: 130, y: 600, w: 220, h: 300 },
@@ -1142,11 +1142,12 @@ export const MOON_SPOTS = {
   bench: { x: 2960, w: 320, h: 250 },      // the BUILD-A-ROCKET workbench
   cardA: { x: 880, y: 902 },               // three mission cards hidden in the room
   cardB: { x: 1700, y: 906 },
-  cardC: { x: 3400, y: 900 },
+  cardC: { x: 3280, y: 900 },
+  lamp: { x: 3760, y: 470 },               // the SIGNAL LAMP — the sequence clue
   tether: { x: 2560, y: 902 },             // the Space Station's safety tether
   rockA: { x: 1520, y: 904 },
   rockB: { x: 2760, y: 908 },
-  hint: { x: 3620, y: 1000 },
+  hint: { x: 4120, y: 1000 },
 }
 
 const L_LINE = '#c7ccd2'
@@ -1233,6 +1234,17 @@ export function moonMainSVG() {
       ${[0, 1, 2, 3, 4].map((i) => `<ellipse cx="${120 + i * 34}" cy="${906 + (i % 2) * 10}" rx="11" ry="6" fill="${L_FAR}" opacity="0.8"/>`).join('')}
     </g>
 
+    <!-- the signal lamp: a mast on the right of the diorama, flashing its
+         colour sequence. Its lit face is a sprite so main.js can cycle it. -->
+    <g transform="translate(${S.lamp.x},0)">
+      <rect x="-16" y="${S.lamp.y}" width="32" height="${880 - S.lamp.y}" fill="${L_MID}" stroke="${L_LINE}" stroke-width="4"/>
+      <rect x="-96" y="840" width="192" height="46" rx="8" fill="${L_MID}" stroke="${L_LINE}" stroke-width="4"/>
+      <path d="M-86,${S.lamp.y + 118} L0,${S.lamp.y + 60} L86,${S.lamp.y + 118}"
+        fill="none" stroke="${L_LINE}" stroke-width="4" opacity="0.7"/>
+      ${tag(0, S.lamp.y - 168, 'SIGNAL LAMP', L_LINE, 20)}
+      ${tag(0, 812, 'MISSION BEACON', L_LINE, 15)}
+    </g>
+
     <!-- the Build-a-Rocket workbench -->
     <g transform="translate(${S.bench.x},0)">
       <rect x="-160" y="630" width="320" height="250" rx="12" fill="${L_MID}" stroke="${GOLD}" stroke-width="5"/>
@@ -1251,13 +1263,13 @@ export function moonMainSVG() {
 }
 
 export function moonForeSVG() {
-  const W = 4100
+  const W = 4600
   const boulder = (x, s) => `
     <g transform="translate(${x},0) scale(${s})">
       <path d="M0,1080 L34,946 L106,906 L186,962 L214,1080 Z" fill="${L_FORE}" stroke="${L_LINE}" stroke-width="4"/>
     </g>`
   return `${svgOpen(W, 1080)}
-    ${boulder(160, 1)}${boulder(1980, 0.85)}${boulder(3720, 1.05)}
+    ${boulder(160, 1)}${boulder(1980, 0.85)}${boulder(3320, 1.05)}
     ${speedTag('LAYER: FOREGROUND ROCKS · 1.35x')}
   ${'</svg>'}`
 }

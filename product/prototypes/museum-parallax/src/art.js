@@ -1187,34 +1187,34 @@ export function solarPanelSVG(dust = 1, w = 180, h = 120) {
    common Apollo mistake in kids' media. */
 export const MOON_STEPS = [
   {
-    id: 'liftoff', order: 1, name: 'Lift-off', color: '#e8a948',
+    id: 'liftoff', order: 1, name: 'Lift-off', color: '#e8737f', shape: 'circle',
     blurb: 'The Saturn V leaves the pad.',
-    atlas: 'On <b>16 July 1969</b> the Saturn V — still the most powerful rocket ever flown — lifted Apollo 11 off Launch Complex 39A in Florida.',
+    atlas: 'The <b>Saturn V</b> — still the most powerful rocket ever flown — heaves Apollo 11 off the pad in Florida. Most of that giant is fuel, and most of it is used up in minutes.',
   },
   {
-    id: 'onTheWay', order: 2, name: 'On the way', color: '#c9d86a',
+    id: 'onTheWay', order: 2, name: 'On the way', color: '#7fd8e8', shape: 'triangle',
     blurb: 'The engine fires again to leave Earth behind.',
-    atlas: 'After a lap and a half around the Earth, the third stage fired a second time to fling the spacecraft out of Earth orbit and toward the Moon. It took about <b>three days</b> to get there.',
+    atlas: 'Out of Earth orbit and coasting toward the Moon. The crossing takes about <b>three days</b>, with the spacecraft slowly rolling so the Sun heats it evenly.',
   },
   {
-    id: 'eagleSeparates', order: 3, name: 'Eagle separates', color: '#7fd8c9',
+    id: 'eagleSeparates', order: 3, name: 'Eagle separates', color: '#e8a948', shape: 'square',
     blurb: 'The lander leaves the mothership.',
-    atlas: 'Only <b>once they were already circling the Moon</b> did Armstrong and Aldrin move into the lunar module <b>Eagle</b> and undock. <b>Michael Collins stayed behind</b> in the command module <i>Columbia</i> — he never walked on the Moon.',
+    atlas: 'Armstrong and Aldrin move into the lunar module <b>Eagle</b> and cast off from the command module <i>Columbia</i>. <b>Michael Collins stays aboard Columbia</b> — he never walks on the Moon.',
   },
   {
-    id: 'touchdown', order: 4, name: 'Touchdown', color: '#7fb6e8',
+    id: 'touchdown', order: 4, name: 'Touchdown', color: '#c9a0e8', shape: 'diamond',
     blurb: 'Eagle lands on the grey dust.',
-    atlas: '<b>20 July 1969.</b> Eagle came down in the <b>Sea of Tranquility</b> — a flat, dusty plain, not a sea at all. “The Eagle has landed.”',
+    atlas: 'Eagle settles onto the <b>Sea of Tranquility</b> — a flat, dusty plain, not a sea at all. Armstrong flies it past a boulder field with seconds of fuel to spare.',
   },
   {
-    id: 'firstSteps', order: 5, name: 'First steps', color: '#c9a0e8',
+    id: 'firstSteps', order: 5, name: 'First steps', color: '#8ce09a', shape: 'star',
     blurb: 'Boots on the Moon.',
-    atlas: 'Armstrong stepped down first, then Aldrin. They were outside for about <b>two and a half hours</b>. Their footprints are still there — with no wind or rain, nothing wipes them away.',
+    atlas: 'Boots on the Moon. The two of them are outside for about <b>two and a half hours</b>. Their footprints are still there: with no wind and no rain, nothing wipes them away.',
   },
   {
-    id: 'splashdown', order: 6, name: 'Splashdown', color: '#e88f7f',
+    id: 'splashdown', order: 6, name: 'Splashdown', color: '#6f8ee8', shape: 'hex',
     blurb: 'Home, in the middle of the ocean.',
-    atlas: 'On <b>24 July 1969</b> Columbia parachuted into the Pacific Ocean and a ship came to pick the crew up. Every Apollo crew came home by splashing into the sea.',
+    atlas: 'Columbia parachutes into the <b>Pacific Ocean</b> and a ship comes to collect the crew. Every Apollo crew came home by splashing into the sea.',
   },
 ]
 export const MOON_STEP_BY_ID = Object.fromEntries(MOON_STEPS.map((s) => [s.id, s]))
@@ -1254,8 +1254,9 @@ export function missionCardSVG(id, w = 150, h = 200) {
   }[id]
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 150 200">
     <rect x="4" y="4" width="142" height="192" rx="12" fill="${TEAL_DEEP}" stroke="${GOLD_DEEP}" stroke-width="3"/>
-    <rect x="4" y="4" width="142" height="26" rx="12" fill="${s.color}"/>
-    <rect x="4" y="22" width="142" height="10" fill="${s.color}"/>
+    <rect x="4" y="4" width="142" height="34" rx="12" fill="${s.color}"/>
+    <rect x="4" y="26" width="142" height="12" fill="${s.color}"/>
+    <g transform="translate(59,3)">${stepGlyphInner(s.shape, '#0b1018', 32)}</g>
     ${art}
     <text x="75" y="182" text-anchor="middle" font-family="${SERIF}" font-size="17" fill="${CREAM}">${s.name}</text>
   </svg>`
@@ -1329,5 +1330,61 @@ export function wingTokenSVG(w = 120, h = 156, glyph = '🚀') {
       return `<line x1="${50 + Math.cos(a) * 34}" y1="${88 + Math.sin(a) * 34}" x2="${50 + Math.cos(a) * 40}" y2="${88 + Math.sin(a) * 40}" stroke="${GOLD}" stroke-width="3.5" stroke-linecap="round"/>`
     }).join('')}
     <text x="50" y="99" text-anchor="middle" font-size="30">${glyph}</text>
+  </svg>`
+}
+
+/* The signal shape that goes with each mission card's colour. Colour alone is not
+   readable for every child — red/green especially — and this puzzle is entirely
+   about matching a colour sequence, so each colour is paired with a shape shown
+   BOTH on the card's band and on the room's signal lamp. Shape carries no
+   ordering information, so accessibility costs the puzzle nothing. */
+export function stepGlyphInner(shape, fill, size = 100) {
+  const c = size / 2, r = size * 0.34
+  const poly = (n, rot = -Math.PI / 2) => {
+    const pts = [...Array(n).keys()].map((i) => {
+      const a = rot + (Math.PI * 2 * i) / n
+      return `${(c + r * Math.cos(a)).toFixed(1)},${(c + r * Math.sin(a)).toFixed(1)}`
+    }).join(' ')
+    return `<polygon points="${pts}" fill="${fill}"/>`
+  }
+  switch (shape) {
+    case 'triangle': return poly(3)
+    case 'square': return `<rect x="${c - r * 0.82}" y="${c - r * 0.82}" width="${r * 1.64}" height="${r * 1.64}" rx="${r * 0.14}" fill="${fill}"/>`
+    case 'diamond': return poly(4)
+    case 'hex': return poly(6)
+    case 'star': {
+      const pts = [...Array(10).keys()].map((i) => {
+        const rr = i % 2 ? r * 0.46 : r
+        const a = -Math.PI / 2 + (Math.PI * i) / 5
+        return `${(c + rr * Math.cos(a)).toFixed(1)},${(c + rr * Math.sin(a)).toFixed(1)}`
+      }).join(' ')
+      return `<polygon points="${pts}" fill="${fill}"/>`
+    }
+    default: return `<circle cx="${c}" cy="${c}" r="${r}" fill="${fill}"/>`
+  }
+}
+
+export function stepGlyphSVG(shape, fill, size = 100) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    ${stepGlyphInner(shape, fill, size)}
+  </svg>`
+}
+
+// the signal lamp's face, lit in one step's colour+shape (or dark between flashes)
+export function signalLampSVG(step = null, size = 240) {
+  const c = size / 2
+  const glow = step
+    ? `<circle cx="${c}" cy="${c}" r="${size * 0.46}" fill="${step.color}" opacity="0.28"/>
+       <circle cx="${c}" cy="${c}" r="${size * 0.36}" fill="${step.color}" opacity="0.5"/>` : ''
+  const face = step
+    ? `<circle cx="${c}" cy="${c}" r="${size * 0.29}" fill="${step.color}"/>
+       <g transform="translate(${c - size * 0.19},${c - size * 0.19})">
+         ${stepGlyphInner(step.shape, '#0b1018', size * 0.38)}
+       </g>`
+    : `<circle cx="${c}" cy="${c}" r="${size * 0.29}" fill="#1b232c" stroke="#3d4956" stroke-width="${size * 0.02}"/>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    ${glow}
+    <circle cx="${c}" cy="${c}" r="${size * 0.335}" fill="none" stroke="#c7ccd2" stroke-width="${size * 0.025}"/>
+    ${face}
   </svg>`
 }

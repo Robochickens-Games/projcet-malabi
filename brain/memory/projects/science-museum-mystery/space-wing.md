@@ -122,9 +122,25 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
   **Build-a-Rocket**. Two halves: **gather** six mission cards from four different
   places (three in the room, one over in the Mars bay, one sold at the desk, one won
   by stacking a Saturn V correctly), then **order** them the way Apollo 11 actually
-  went. CHECK locks the cards already in the right place and hands the rest back, so
-  it converges without being trivial. Michael Collins stays in orbit throughout —
-  "all three walked on the Moon" is the commonest Apollo mistake in kids' media.
+  went. Michael Collins stays in orbit throughout — "all three walked on the Moon" is
+  the commonest Apollo mistake in kids' media.
+
+  **The clue is the SIGNAL LAMP (Gidi, 2026-07-22).** A beacon on the right of the
+  room flashes the six card colours, on a loop, in the true mission order. Nobody
+  says what it's for — realising that the lamp and the cards share a palette *is* the
+  puzzle. The catalog was giving the order away ("too direct") and no longer does: it
+  keeps every fact about each step but carries no dates and no phrase that fixes one
+  step relative to another. Three consequences worth remembering:
+  - **The board has no replay.** Gidi's call: watch the lamp, walk over, lay the
+    cards out from memory, walk back if you lose it.
+  - **CHECK had to change.** It used to lock the cards already in the right place,
+    which quietly became the real solution — six or eight presses converged on the
+    answer without ever looking at the lamp. It now reports *how many* are right and
+    never which, and takes nothing off the board.
+  - **Colour is paired with SHAPE** (circle/triangle/square/diamond/star/hex) on both
+    the lamp and each card's band. Six colours including red and green is not
+    readable for every child, and shape carries no ordering information — so the
+    accessibility fix costs the puzzle nothing.
 - ✅ **Room 4 — Space Station (Fix the Airlock)** + its mini-game, **Spacewalk
   Drift**. Two repairs of different kinds: clip the **safety tether** back on (it's
   over in the Moon room) and use the **Rotate Key** from the desk to turn the solar
@@ -156,9 +172,7 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
 - **Lost Astronaut Kiosk** (spec p.1) — never designed past the name; the Supply Desk
   currently does everything the economy needs. Needs a purpose before it needs code.
 - **Doorway to the next wing** (spec p.8) — waiting on the Inventions wing existing.
-- **The Moon room's colour-light cycle as the order clue** (spec p.5) — deliberately
-  replaced by the Star Atlas: colour-matching would teach colours, not the Apollo
-  sequence. Could return as an optional hint.
+- ~~The Moon room's colour-light cycle~~ — **built 2026-07-22**, see below.
 
 ## The cross-room dependency graph (final)
 Every room feeds the next, so none is a place you visit once:

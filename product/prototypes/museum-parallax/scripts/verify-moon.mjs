@@ -113,12 +113,14 @@ check('with all six cards the board opens', await page.evaluate(() => window.__m
 await page.evaluate(() => window.__moonSolveWrong())
 await page.waitForTimeout(600)
 check('a wrong order does not solve it', (await page.evaluate(() => window.__roomComplete('moon'))) === false)
-const locked = await page.evaluate(() => document.querySelectorAll('#moon-board .mb-cell.locked').length)
-check('...but the cards already in the right place lock in', locked === 4, `${locked} locked`)
-check('...and the wrong ones come back to the tray',
-  (await page.evaluate(() => document.querySelectorAll('#moon-board [data-row="tray"] .mb-cell').length)) === 2)
-check('...with feedback a child can act on',
-  /in the right place/.test(await page.evaluate(() => document.querySelector('#moon-board .mb-msg').textContent)))
+const msg = await page.evaluate(() => document.querySelector('#moon-board .mb-msg').textContent)
+check('...it tells you HOW MANY are right', /4 of 6 are in the right place/.test(msg), msg.slice(0, 60))
+check('...but never which ones — otherwise CHECK becomes the solution',
+  !/#moon-board .mb-cell.locked/.test(msg) &&
+  (await page.evaluate(() => document.querySelectorAll('#moon-board .mb-cell.locked').length)) === 0)
+check('...and nothing is taken back off the board',
+  (await page.evaluate(() => document.querySelectorAll('#moon-board [data-row="tray"] .mb-cell').length)) === 0)
+check('...and it points at the beacon rather than the catalog', /beacon/i.test(msg))
 
 await page.evaluate(() => window.__moonSolve())
 await page.waitForTimeout(700)
@@ -130,17 +132,32 @@ check('the board closes itself and hands back control',
 
 // ---- the history it teaches has to be right ----
 const successText = await page.evaluate(() => document.getElementById('success-text').textContent)
-check('the celebration keeps Collins in orbit, not on the surface',
-  /Collins/.test(successText) && /Columbia/.test(successText), successText.slice(0, 90))
+check('the celebration credits the beacon', /beacon/i.test(successText), successText.slice(0, 80))
 const atlas = await page.evaluate(() => {
   window.__openCatalogSection('apollo')
   return document.getElementById('catalog-list').textContent
 })
 check('the Star Atlas has a Moon Missions section', /Apollo 11|Moon Missions/i.test(atlas))
-check('...it dates the landing correctly', /20 July 1969/.test(atlas))
-check('...it says Eagle undocked only once already orbiting the Moon',
-  /already circling the Moon/i.test(atlas))
-check('...it says Collins never walked on the Moon', /never walked on the Moon/i.test(atlas))
+check('...it still teaches the science', /Sea of Tranquility/i.test(atlas) && /Saturn V/i.test(atlas))
+check('...it still says Collins never walks on the Moon', /never walks on the Moon/i.test(atlas))
+/* The catalog must NOT give the order away — that is the whole point of the
+   signal lamp. Dates are the sneaky way it leaks: "16 July" and "24 July" sort
+   the mission for you without ever looking like a list. */
+check('...but it gives NO dates that would order the mission',
+  !/\b\d{1,2} July 1969\b/.test(atlas), (atlas.match(/\d{1,2} July 1969/g) || []).join(', '))
+check('...and no phrase that fixes a step relative to another',
+  !/already circling|after |before |then |first,|finally/i.test(atlas.replace(/first steps/ig, '')))
+
+// ---- the signal lamp IS the clue ----
+const lamp = await page.evaluate(() => window.__moonLamp())
+const steps = await page.evaluate(() => window.__moonStepColours())
+check('the room has a signal lamp running', Array.isArray(lamp.order) && lamp.order.length === 6)
+check('the lamp flashes the cards in the TRUE mission order',
+  lamp.order.join(',') === steps.slice().sort((a, b) => a.order - b.order).map((x) => x.id).join(','),
+  lamp.order.join(' → '))
+check('every card has its own colour', new Set(steps.map((x) => x.color)).size === 6)
+check('every card has its own shape too — colour alone is not readable for every child',
+  new Set(steps.map((x) => x.shape)).size === 6, steps.map((x) => x.shape).join(', '))
 
 check('finishing Moon does not finish the space wing',
   (await page.evaluate(() => window.__wingComplete('space'))) === false)

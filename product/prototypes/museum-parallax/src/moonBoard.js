@@ -5,15 +5,18 @@
    young hands are far better at tap-then-tap than at a precise drag, and this
    puzzle is meant to be hard in the head, not in the fingers.
 
-   Pressing CHECK locks every card that is already in the right place and hands
-   the rest back. Nothing is lost and nothing is scored — it converges, which is
-   what makes it fair for a five-year-old without making it trivial for a ten-
-   year-old. (Gameplay principle #4: no dead ends, no fail states.)
+   THE CLUE IS NOT IN HERE. Out in the room a signal lamp flashes the six card
+   colours in the order the mission happened. Nobody says so — noticing that the
+   lamp and the cards share a palette is the puzzle. The catalog deliberately does
+   not give the order away (Gidi, 2026-07-22: it was "too direct").
 
-   The order is mostly deducible by cause and effect — you must launch before you
-   travel, land before you walk, come home last. The one step a child can't guess
-   (that Eagle separates only once they're ALREADY orbiting the Moon) is in the
-   Star Atlas, which is where clues live.
+   So CHECK tells you HOW MANY cards are in the right place, and not which. An
+   earlier version locked the correct ones, which quietly became the real
+   solution: six or eight presses converged on the answer without ever looking at
+   the lamp. A count still tells a child they're getting warmer and still lets
+   them fix one card at a time, while leaving the lamp as the only way in. Cards
+   stay exactly where they were put — nothing is ever taken away.
+   (Gameplay principle #4: no dead ends, no fail states.)
    ===================================================================== */
 
 import { MOON_STEPS, missionCardSVG } from './art.js'
@@ -26,7 +29,6 @@ export const isMoonBoardOpen = () => open
 let overlay, slotRow, trayRow, checkBtn, msgEl
 let onCloseCb = null, onCompleteCb = null
 let slots = []        // stepId | null, per position
-let locked = []       // true once CHECK confirmed that position
 let tray = []         // stepIds not yet placed
 let picked = null     // the card currently lifted
 let solved = false
@@ -76,10 +78,6 @@ function ensureDom() {
       transition: transform .12s ease, border-color .15s ease, background .15s ease; }
     #moon-board .mb-cell:hover { transform: translateY(-2px); background: rgba(232,169,72,0.12); }
     #moon-board .mb-cell.filled { border-style: solid; border-color: rgba(232,169,72,0.9); background: none; }
-    #moon-board .mb-cell.locked { border-color: #8ce09a; cursor: default; }
-    #moon-board .mb-cell.locked::after { content: "✓"; position: absolute; top: -9px; right: -9px;
-      width: 24px; height: 24px; border-radius: 50%; background: #8ce09a; color: #10331a;
-      display: grid; place-items: center; font-size: 15px; font-weight: 700; }
     #moon-board .mb-cell.picked { border-color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.35); }
     #moon-board .mb-cell.wrong { animation: mb-shake .45s ease; }
     @keyframes mb-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-6px) } 75% { transform: translateX(6px) } }
@@ -99,14 +97,14 @@ function ensureDom() {
   overlay.innerHTML = `
     <div class="mb-wrap">
       <h1>✦ The Landing Sequence ✦</h1>
-      <div class="mb-sub">Put the six mission cards in the order they really happened</div>
+      <div class="mb-sub">Put the six mission cards in the order the mission really happened</div>
       <div class="mb-bar">
         <button class="mb-btn mb-close">‹ Back to the Moon</button>
         <button class="mb-btn mb-check">CHECK</button>
       </div>
       <div class="mb-label">The mission, first to last</div>
       <div class="mb-row" data-row="slots"></div>
-      <div class="mb-label">Cards to place</div>
+      <div class="mb-label" data-label="tray">Cards to place</div>
       <div class="mb-row" data-row="tray"></div>
       <div class="mb-msg"></div>
     </div>`
@@ -124,11 +122,11 @@ function render() {
   slotRow.replaceChildren()
   for (let i = 0; i < N; i++) {
     const cell = document.createElement('div')
-    cell.className = 'mb-cell' + (slots[i] ? ' filled' : '') + (locked[i] ? ' locked' : '')
+    cell.className = 'mb-cell' + (slots[i] ? ' filled' : '')
     cell.dataset.slot = String(i)
     cell.innerHTML = (slots[i] ? missionCardSVG(slots[i], 150, 200) : '<span class="mb-empty">?</span>')
       + `<span class="mb-num">${i + 1}</span>`
-    if (!locked[i]) cell.addEventListener('click', () => tapSlot(i))
+    cell.addEventListener('click', () => tapSlot(i))
     slotRow.appendChild(cell)
   }
   trayRow.replaceChildren()
@@ -140,6 +138,9 @@ function render() {
     cell.addEventListener('click', () => tapCard(id))
     trayRow.appendChild(cell)
   }
+  // once every card is on the board the tray is empty — hide its heading rather
+  // than leaving a label over a blank strip
+  overlay.querySelector('[data-label="tray"]').style.display = tray.length ? '' : 'none'
   checkBtn.disabled = solved || slots.some((s) => !s)
 }
 
@@ -151,7 +152,7 @@ function tapCard(id) {
 }
 
 function tapSlot(i) {
-  if (solved || locked[i]) return
+  if (solved) return
   if (picked) {
     // if the slot already holds a card, that one goes back to the tray
     if (slots[i]) tray.push(slots[i])
@@ -168,35 +169,30 @@ function tapSlot(i) {
   render()
 }
 
-/* CHECK locks what's right and returns what isn't. It never punishes: the
-   feedback is "these are already in the right place", which is information a
-   child can act on, rather than a score. */
+/* CHECK says how many are right, never which, and never takes a card away. */
 function check() {
   if (solved || slots.some((s) => !s)) return
   let right = 0
-  const wrongCells = []
-  for (let i = 0; i < N; i++) {
-    if (slots[i] === correctIdFor(i)) { locked[i] = true; right++ } else { wrongCells.push(i) }
-  }
+  for (let i = 0; i < N; i++) if (slots[i] === correctIdFor(i)) right++
+
   if (right === N) {
     solved = true
     ;[660, 880, 1100, 1320].forEach((f, i) => note(f, 0.24, 'triangle', 0.05, i * 0.11))
-    msgEl.innerHTML = '<b>That’s the mission.</b> Lift-off, three days out, Eagle undocking in Moon orbit, touchdown in the Sea of Tranquility, first steps — and home with a splash.'
+    msgEl.innerHTML = '<b>That’s the mission.</b> The beacon was flashing it the whole time.'
     render()
     if (onCompleteCb) onCompleteCb()
     setTimeout(() => { if (open) closeMoonBoard() }, 2800)
     return
   }
   note(220, 0.22, 'square', 0.04)
-  for (const i of wrongCells) { tray.push(slots[i]); slots[i] = null }
   msgEl.innerHTML = right === 0
-    ? 'None of those are in the right place yet. Think about what has to happen <b>first</b> — and read the <b>Star Atlas</b> if you get stuck.'
-    : `<b>${right}</b> ${right === 1 ? 'card is' : 'cards are'} in the right place — those are locked in. The rest are back below; try them again.`
+    ? 'None of them are in the right place yet. Have another look at the <b>beacon</b> out in the room — it keeps flashing its colours for a reason.'
+    : `<b>${right}</b> of <b>${N}</b> are in the right place — but not which ones. Watch the <b>beacon</b> again, then shuffle the rest.`
   render()
-  // shake whatever just came back
+  // shake the whole row: the answer is in here somewhere, not back in the tray
   requestAnimationFrame(() => {
-    for (const el of trayRow.children) el.classList.add('wrong')
-    setTimeout(() => { for (const el of trayRow.children) el.classList.remove('wrong') }, 480)
+    for (const el of slotRow.children) el.classList.add('wrong')
+    setTimeout(() => { for (const el of slotRow.children) el.classList.remove('wrong') }, 480)
   })
 }
 
@@ -207,7 +203,6 @@ export function openMoonBoard(opts = {}) {
   onCloseCb = opts.onClose || null
   if (!solved) {
     slots = new Array(N).fill(null)
-    locked = new Array(N).fill(false)
     // shuffled, so the tray order is never itself a hint
     tray = MOON_STEPS.map((s) => s.id).sort(() => Math.random() - 0.5)
     picked = null

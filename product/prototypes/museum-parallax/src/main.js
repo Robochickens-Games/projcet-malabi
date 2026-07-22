@@ -5,6 +5,7 @@ import {
   eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
   PLANETS, PLANET_BY_ID, planetSVG, roverWheelSVG, solarPanelSVG,
   MOON_STEPS, missionCardSVG, tetherSVG, spaceToolSVG, hexTileSVG, strutSVG, wingTokenSVG,
+  signalLampSVG, stepGlyphSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -1145,9 +1146,9 @@ async function buildMoon() {
           setTimeout(() => finishSolve({
             success: {
               title: '🌕 The mission is back in order! 🌕',
-              html: 'Lift-off, three days out, <b>Eagle</b> undocking once they were already circling the Moon, ' +
-                'touchdown in the Sea of Tranquility, first steps — and home with a splash. ' +
-                '<b>Michael Collins</b> stayed aboard <i>Columbia</i> the whole time.',
+              html: 'The <b>beacon</b> was flashing the mission the whole time — every card in the order ' +
+                'Apollo 11 really went. <b>Michael Collins</b> never set foot on the Moon; he was ' +
+                'circling overhead in <i>Columbia</i>, waiting for the other two to come back up.',
             },
           }, 'moon'), 400)
         }
@@ -1176,6 +1177,66 @@ async function buildMoon() {
     })
   }, 'moon:bench'))
 
+  /* ---- THE SIGNAL LAMP ----
+     The clue. It flashes the six mission colours in the order the mission
+     actually happened, on a loop, from the moment you walk in — nobody tells the
+     player what it's for. Each flash also carries the card's shape, so the
+     sequence is readable without relying on colour vision.
+
+     It is deliberately at the far RIGHT of the room and the sequence board is at
+     the far LEFT: you watch, you remember, you walk over and lay the cards out.
+     Gidi's call (2026-07-22) — no replay inside the board. The board's CHECK
+     softens the memory load instead, by telling you how many you have right. */
+  const lampFrames = await Promise.all([
+    svgTexture(signalLampSVG(null, 240)),
+    ...MOON_STEPS.map((step) => svgTexture(signalLampSVG(step, 240))),
+  ])
+  const lamp = new Sprite(lampFrames[0])
+  lamp.anchor.set(0.5)
+  placeAt(lamp, S.lamp.x, S.lamp.y)
+  mainL.addChild(lamp)
+  // a soft wash of the current colour across the nearby ground, so the flash
+  // reads as a LIGHT in the room rather than a picture on a pole
+  const wash = new Graphics().ellipse(0, 0, 420, 120).fill({ color: 0xffffff })
+  placeAt(wash, S.lamp.x, 880)
+  wash.alpha = 0
+  wash.blendMode = 'add'
+  mainL.addChild(wash)
+
+  moon._lamp = { index: -1, order: MOON_STEPS.map((x) => x.id) }
+  const ON = 700, GAP = 260, LOOP_PAUSE = 1500
+  let lampTimer = null
+  const lampStep = (i) => {
+    if (!moon) return
+    if (i >= MOON_STEPS.length) {                     // dark pause, then loop
+      lamp.texture = lampFrames[0]
+      moon._lamp.index = -1
+      gsap.to(wash, { alpha: 0, duration: 0.3 })
+      lampTimer = setTimeout(() => lampStep(0), LOOP_PAUSE)
+      return
+    }
+    const step = MOON_STEPS[i]
+    lamp.texture = lampFrames[i + 1]
+    moon._lamp.index = i
+    wash.tint = Number('0x' + step.color.slice(1))
+    gsap.to(wash, { alpha: 0.22, duration: 0.18 })
+    gsap.fromTo(lamp.scale, { x: 1.12, y: 1.12 }, { x: 1, y: 1, duration: 0.28, ease: 'back.out(3)' })
+    lampTimer = setTimeout(() => {
+      lamp.texture = lampFrames[0]
+      moon._lamp.index = -1
+      gsap.to(wash, { alpha: 0.04, duration: 0.15 })
+      lampTimer = setTimeout(() => lampStep(i + 1), GAP)
+    }, ON)
+  }
+  moon._lampStart = () => { clearTimeout(lampTimer); lampStep(0) }
+  moon._lampStop = () => { clearTimeout(lampTimer); lamp.texture = lampFrames[0]; moon._lamp.index = -1; wash.alpha = 0 }
+  // tapping the lamp just restarts the cycle from the top — never punishes a poke
+  mainL.addChild(hitRect(S.lamp.x - 130, S.lamp.y - 130, 260, 300, () => {
+    sfx.tap()
+    moon._lampStart()
+    toast('The beacon starts its sequence again.', 3000)
+  }, 'moon:lamp'))
+
   // three of the six cards are hidden here
   const clueL = scrollLayer(1.12)
   const roomCards = ['liftoff', 'touchdown', 'firstSteps']
@@ -1194,7 +1255,7 @@ async function buildMoon() {
   const foreL = scrollLayer(1.35)
   const fore = new Sprite(foreT)
   fore.anchor.set(0.5)
-  placeAt(fore, 4100 / 2, 540)
+  placeAt(fore, 4600 / 2, 540)
   foreL.addChild(fore)
 
   moon.addChild(skyL, farL, midL, mainL, clueL, foreL)
@@ -2024,6 +2085,9 @@ const wingComplete = (wingId) => {
 
 function goScene(target) {
   if (!scenes[target] || target === state.scene) return
+  // the Moon's signal lamp only runs while you're in the room with it
+  if (state.scene === 'moon') moon?._lampStop?.()
+  if (target === 'moon') setTimeout(() => moon?._lampStart?.(), 600)
   if (puzzleOpen) closeFootPuzzle()
   if (isSupplyDeskOpen()) closeSupplyDesk()
   if (isOrbitGameOpen()) closeOrbitGame()
@@ -2061,7 +2125,7 @@ const ROOM_ENTER = {
 const SPACE_ROOM_ENTER = {
   solar: 'The planetarium! Three rings on the orrery are <b>empty</b>. Read the <b>STAR ATLAS</b> on the lectern to work out which planet goes where.',
   mars: 'The Mars bay. The rover is missing a <b>wheel</b>, and its solar panel is buried in <b>red dust</b>. Fix both, then take it for a drive.',
-  moon: 'The Apollo 11 landing site — that really is <b>Earth</b> up there. Six <b>mission cards</b> have come off the board. Find them all, then put the mission back in order.',
+  moon: 'The Apollo 11 landing site — that really is <b>Earth</b> up there. Six <b>mission cards</b> have come off the board. Find them all, then work out what order the mission went in.',
   station: 'Outside the station, <b>400 km</b> above the Earth. The airlock’s <b>safety tether</b> is unclipped and the <b>solar array</b> is turned away from the Sun.',
   webb: 'The James Webb telescope, a million and a half kilometres from home. A <b>mirror segment</b> is missing, its <b>strut</b> has come off — and the rest are pointing every which way.',
 }
@@ -3408,6 +3472,8 @@ async function boot() {
   window.__moonSolveWrong = () => __moonSolveWrong()
   window.__moonCards = () => MOON_STEPS.filter((x) => hasClue(`card:${x.id}`)).map((x) => x.id)
   window.__moonBoardLit = () => !!moon?._boardLit
+  window.__moonLamp = () => ({ ...(moon?._lamp ?? {}), lit: (moon?._lamp?.index ?? -1) >= 0 })
+  window.__moonStepColours = () => MOON_STEPS.map((x) => ({ id: x.id, order: x.order, color: x.color, shape: x.shape }))
   window.__rocketOpen = () => isRocketGameOpen()
   window.__rocketStack = (ok) => __rocketStack(ok)
   window.__rocketLaunch = () => __rocketLaunch()
@@ -3454,6 +3520,7 @@ async function boot() {
   window.__setCoins = (n) => { setCoins(n); refreshSupplyDesk() }
   // a non-rock item in the bag, to prove the desk will never buy it back
   window.__giveTestQuestItem = () => { grantItem('trexTooth'); refreshSupplyDesk() }
+  window.__give = (id) => grantItem(id)
   window.__wingRooms = (w = 'dino') => WINGS[w].rooms.slice()
   window.__wingHub = (w = 'dino') => WINGS[w].hub
   window.__openPtero = () => openPteroGame({ goal: 10, onComplete: () => onMinigameSolved('ptero'), onClose: () => afterMinigameClose('ptero') })
