@@ -440,15 +440,20 @@ async function buildLobby() {
   placeAt(fore, 3300 / 2, 540)
   foreL.addChild(fore)
 
-  // wing-complete seal over the Dinosaur Wing door (hidden until every room is solved)
-  lobby._wingMark = solvedSeal(LOBBY_SPOTS.doorDino.x, 470, { r: 58, caption: 'WING COMPLETE' })
-  mainL.addChild(lobby._wingMark)
+  // one wing-complete seal per wing, over its lobby door (hidden until every room
+  // in that wing is solved)
+  lobby._wingMarks = {}
+  for (const [wingId, w] of Object.entries(WINGS)) {
+    const seal = solvedSeal(LOBBY_SPOTS[w.door].x, 470, { r: 58, caption: 'WING COMPLETE' })
+    mainL.addChild(seal)
+    lobby._wingMarks[wingId] = seal
+  }
 
   lobby.addChild(backL, mainL, toothL, foreL)
   lobby._layers = [backL, mainL, toothL, foreL]
   lobby._main = mainL
   makeDust(lobby, 26, LOBBY_W)
-  if (dinoWingComplete()) revealMark(lobby._wingMark)
+  for (const wingId of Object.keys(WINGS)) if (wingComplete(wingId)) revealMark(lobby._wingMarks[wingId])
 }
 
 /* ---------- GROVE ---------- */
@@ -570,6 +575,7 @@ async function buildGrove() {
         '<b>plant eater</b>: the skeleton guarding the nest is a <b>Triceratops</b>!',
     },
   }
+  grove._challenges = ['drop']
   makeDust(grove, 32, GROVE_W, 0xd8f0a0)
 }
 
@@ -630,7 +636,7 @@ async function buildDinoHub() {
   makeDust(dinohub, 24, DINOHUB_W)
 
   // already-solved rooms stay stamped if the hall is rebuilt/revisited
-  for (const room of ROOMS) if (roomComplete(room)) markRoomComplete(room)
+  for (const room of WINGS.dino.rooms) if (roomComplete(room)) markRoomComplete(room)
 }
 
 /* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
@@ -729,6 +735,7 @@ async function buildRaptor() {
         'show exactly where its feathers attached.',
     },
   }
+  raptor._challenges = ['drop']
   makeDust(raptor, 26, RAPTOR_W, 0xe8d29a)
 }
 
@@ -819,6 +826,7 @@ async function buildTrex() {
   trex.addChild(skyL, farL, midL, mainL, clueL, foreL)
   trex._layers = [skyL, farL, midL, mainL, clueL, foreL]
   trex._main = mainL
+  trex._challenges = ['drop', 'foot']
   makeDust(trex, 24, TREX_W, 0x9fce9f)
 
   // the full-screen overlay lives on top of every scene (added to root, hidden)
@@ -868,6 +876,7 @@ async function buildBrachio() {
   brachio.addChild(skyL, hillsL, treesL, mainL, clueL, foreL)
   brachio._layers = [skyL, hillsL, treesL, mainL, clueL, foreL]
   brachio._main = mainL
+  brachio._challenges = ['drop', 'game']
   makeDust(brachio, 26, BRACHIO_W, 0xe6d79a)
 }
 
@@ -909,6 +918,7 @@ async function buildPtero() {
   ptero.addChild(skyL, seaL, cliffL, mainL, foreL)
   ptero._layers = [skyL, seaL, cliffL, mainL, foreL]
   ptero._main = mainL
+  ptero._challenges = ['drop', 'game']
   makeDust(ptero, 24, PTERO_W, 0xbcd6e6)
 }
 
@@ -1018,28 +1028,61 @@ function pickUpTooth() {
   toast('A fossil tooth! It’s now in your INVENTORY. The DINOSAUR WING is at the end of the hall →', 6000)
 }
 
-/* ---------- scene navigation (lobby → dino hall → a dino's room) ---------- */
-const ROOMS = ['grove', 'raptor', 'trex', 'brachio', 'ptero']
-const SCENE_BACK = { dinohub: 'lobby', ...Object.fromEntries(ROOMS.map((r) => [r, 'dinohub'])) }
-const BACK_LABEL = { dinohub: 'Lobby', ...Object.fromEntries(ROOMS.map((r) => [r, 'Dino Hall'])) }
-const DEPTH = { lobby: 0, dinohub: 1, ...Object.fromEntries(ROOMS.map((r) => [r, 2])) }
+/* ---------- wings (lobby → a wing's hall → one of its rooms) ----------
+   The museum is a set of WINGS. Each wing owns a hub scene, its rooms, the lobby
+   door that leads into it, and the copy its finale card shows. Everything below —
+   navigation, seals, completion — reads this registry, so adding a wing is data,
+   not new plumbing. */
+const WINGS = {
+  dino: {
+    hub: 'dinohub',
+    hubLabel: 'Dino Hall',
+    door: 'doorDino',
+    rooms: ['grove', 'raptor', 'trex', 'brachio', 'ptero'],
+    finale: {
+      name: 'DINOSAUR WING',
+      text: 'Every fossil is back where it belongs — you’ve solved <b>all five exhibits</b> ' +
+        'and completed the entire <b>Dinosaur Wing</b>! 🦕',
+    },
+  },
+}
 
-/* ---------- completion state (inner section = a dino room; section = the wing) ----------
-   A room is "done" when ALL its challenges are solved (the drag-placement puzzle,
-   plus the foot-assembly puzzle in the T-rex room). The Dinosaur WING is done when
-   every room is. Each room stamps a SOLVED seal on its diorama in the hall; the wing
-   stamps the lobby door and fires a grand finale. */
+// derived navigation tables: lobby(0) → hub(1) → room(2)
+const SCENE_BACK = {}
+const BACK_LABEL = {}
+const DEPTH = { lobby: 0 }
+const ROOM_WING = {}   // room id → the wing it belongs to
+for (const [wingId, w] of Object.entries(WINGS)) {
+  SCENE_BACK[w.hub] = 'lobby'
+  BACK_LABEL[w.hub] = 'Lobby'
+  DEPTH[w.hub] = 1
+  for (const r of w.rooms) {
+    SCENE_BACK[r] = w.hub
+    BACK_LABEL[r] = w.hubLabel
+    DEPTH[r] = 2
+    ROOM_WING[r] = wingId
+  }
+}
+
+/* ---------- completion state (a room = one diorama; a wing = five of them) ----------
+   A room is "done" when ALL its challenges are solved. Each room declares which
+   challenges it has via `sc._challenges` (set by its builder) instead of the engine
+   knowing room names. A WING is done when every one of its rooms is. Each room stamps
+   a SOLVED seal on its diorama in the hall; the wing stamps its lobby door and fires
+   a grand finale. */
+const CHALLENGE_DONE = {
+  drop: (sc) => !!sc._drop?.done,   // drag a clue onto the skeleton
+  foot: (sc) => !!sc._foot?.done,   // the T-rex foot-assembly puzzle
+  game: (sc) => !!sc._gameDone,     // a mini-game hit its goal
+}
+
 function roomComplete(name) {
   const sc = scenes[name]
-  // every room has a drag-placement puzzle; require it (also guards the build race
-  // where a room's _drop isn't assigned yet — an unbuilt room is NOT complete)
-  if (!sc || !sc._drop?.done) return false
-  if (name === 'trex' && !sc._foot?.done) return false
-  // brachio & ptero also each hide a mini-game challenge (Brachio Run / Fish Run)
-  if ((name === 'brachio' || name === 'ptero') && !sc._gameDone) return false
-  return true
+  // no `_challenges` yet = the builder hasn't run — an unbuilt room is NOT complete
+  if (!sc?._challenges?.length) return false
+  return sc._challenges.every((c) => CHALLENGE_DONE[c](sc))
 }
-const dinoWingComplete = () => ROOMS.every(roomComplete)
+const wingComplete = (wingId) => WINGS[wingId].rooms.every(roomComplete)
 
 function goScene(target) {
   if (!scenes[target] || target === state.scene) return
@@ -1325,11 +1368,11 @@ function showSuccess(d, meta = {}) {
   card.classList.toggle('finale', !!meta.wingComplete)
 
   if (meta.wingComplete) {
-    // grand finale — the whole Dinosaur Wing is solved
+    // grand finale — every room in that wing is solved (copy comes from the wing)
+    const fin = WINGS[meta.wingComplete].finale
     card.querySelector('.big').textContent = '🏆 WING COMPLETE! 🏆'
-    $('success-text').innerHTML = 'Every fossil is back where it belongs — you’ve solved <b>all five exhibits</b> ' +
-      'and completed the entire <b>Dinosaur Wing</b>! 🦕'
-    badge.innerHTML = 'DINOSAUR WING&nbsp;<b>· COMPLETE ·</b>'
+    $('success-text').innerHTML = fin.text
+    badge.innerHTML = `${fin.name}&nbsp;<b>· COMPLETE ·</b>`
     badge.classList.remove('hidden')
   } else {
     $('success-text').innerHTML = d.success.html +
@@ -1603,26 +1646,27 @@ function finishFoot(foot) {
 }
 
 /* ---------- completion: stamp the finished room / wing, then celebrate ---------- */
-let wingFinaleShown = false
+const wingFinaleShown = {}   // wingId → already celebrated
 
 function markRoomComplete(room) {
-  const m = dinohub?._marks?.[room]
+  const hub = scenes[WINGS[ROOM_WING[room]]?.hub]
+  const m = hub?._marks?.[room]
   if (!m) return
   revealMark(m.frameGlow, { glow: true })
   revealMark(m.seal)
 }
 
-function markWingComplete() {
-  revealMark(lobby?._wingMark) // idempotent — revealMark guards re-runs
+function markWingComplete(wingId) {
+  revealMark(lobby?._wingMarks?.[wingId]) // idempotent — revealMark guards re-runs
 }
 
-// the grand finale card (shown once) — fired when the LAST challenge in the wing
-// is solved, whether that's a drag-puzzle, the foot, or a mini-game
-function showWingFinale() {
-  if (wingFinaleShown) return
-  wingFinaleShown = true
-  markWingComplete()
-  showSuccess(null, { wingComplete: true })
+// the grand finale card (shown once per wing) — fired when the LAST challenge in
+// that wing is solved, whether that's a drag-puzzle, the foot, or a mini-game
+function showWingFinale(wingId) {
+  if (wingFinaleShown[wingId]) return
+  wingFinaleShown[wingId] = true
+  markWingComplete(wingId)
+  showSuccess(null, { wingComplete: wingId })
 }
 
 // called 1s after a drag-placement or the T-rex foot is solved: stamps the room
@@ -1630,7 +1674,8 @@ function showWingFinale() {
 function finishSolve(d, room) {
   const roomDone = roomComplete(room)
   if (roomDone) markRoomComplete(room)
-  if (dinoWingComplete()) { showWingFinale(); return }
+  const wing = ROOM_WING[room]
+  if (wingComplete(wing)) { showWingFinale(wing); return }
   showSuccess(d, { roomComplete: roomDone })
 }
 
@@ -1647,7 +1692,8 @@ function onMinigameSolved(room) {
 
 // returning to the room from a mini-game: roll out any celebration earned inside it
 function afterMinigameClose(room) {
-  if (dinoWingComplete()) { showWingFinale(); return }
+  const wing = ROOM_WING[room]
+  if (wingComplete(wing)) { showWingFinale(wing); return }
   if (scenes[room]?._gameDone && roomComplete(room)) {
     setTimeout(() => toast('🎉 Exhibit complete! Every challenge in this room is solved.', 5000), 500)
   }
@@ -1904,18 +1950,21 @@ async function boot() {
   window.__brachioGame = () => isBrachioGameOpen()
   window.__openBrachio = () => openBrachioGame()
   window.__roomComplete = (r) => roomComplete(r)
-  window.__wingComplete = () => dinoWingComplete()
+  window.__wingComplete = (w = 'dino') => wingComplete(w)
+  window.__wings = () => Object.keys(WINGS)
+  window.__wingRooms = (w = 'dino') => WINGS[w].rooms.slice()
+  window.__wingHub = (w = 'dino') => WINGS[w].hub
   window.__openPtero = () => openPteroGame({ goal: 10, onComplete: () => onMinigameSolved('ptero'), onClose: () => afterMinigameClose('ptero') })
-  // test/screenshot hook: mark every challenge solved, stamp all seals, fire the finale
-  window.__solveWing = () => {
-    for (const r of ROOMS) {
+  // test/screenshot hook: mark every challenge in a wing solved, stamp all seals, fire the finale
+  window.__solveWing = (w = 'dino') => {
+    for (const r of WINGS[w].rooms) {
       const sc = scenes[r]
       if (sc._drop) { sc._drop.done = true; if (sc._drop.placed) sc._drop.placed.alpha = 1 }
-      if (r === 'trex' && sc._foot) sc._foot.done = true
+      if (sc._foot) sc._foot.done = true
       if (sc._gameBadge) { sc._gameDone = true; revealMark(sc._gameBadge) }
       markRoomComplete(r)
     }
-    showWingFinale()
+    showWingFinale(w)
   }
 
   $('walk-arrow').classList.remove('hidden')
