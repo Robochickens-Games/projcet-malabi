@@ -1170,3 +1170,93 @@ export function solarPanelSVG(dust = 1, w = 180, h = 120) {
     </g>
   </svg>`
 }
+
+/* ============================== MOON MISSIONS ==============================
+   The Apollo 11 landing, as six ordered cards. Verified against NASA's Apollo 11
+   mission overview and the Smithsonian Air & Space timeline — see
+   brain/memory/projects/science-museum-mystery/space-accuracy-rulings.
+
+   The COUNT is simplified for ages 5-10; the ORDER never is. Most of it is
+   causally deducible by a child (you must launch before you travel, land before
+   you walk, come home last), which is the real reasoning this puzzle wants — the
+   catalog supplies the facts for the step that isn't obvious, namely that Eagle
+   separates only once they are already in orbit around the Moon.
+
+   Michael Collins stayed aboard Columbia and never walked on the Moon; card 3
+   says so, because "all three bounced about on the surface" is the single most
+   common Apollo mistake in kids' media. */
+export const MOON_STEPS = [
+  {
+    id: 'liftoff', order: 1, name: 'Lift-off', color: '#e8a948',
+    blurb: 'The Saturn V leaves the pad.',
+    atlas: 'On <b>16 July 1969</b> the Saturn V — still the most powerful rocket ever flown — lifted Apollo 11 off Launch Complex 39A in Florida.',
+  },
+  {
+    id: 'onTheWay', order: 2, name: 'On the way', color: '#c9d86a',
+    blurb: 'The engine fires again to leave Earth behind.',
+    atlas: 'After a lap and a half around the Earth, the third stage fired a second time to fling the spacecraft out of Earth orbit and toward the Moon. It took about <b>three days</b> to get there.',
+  },
+  {
+    id: 'eagleSeparates', order: 3, name: 'Eagle separates', color: '#7fd8c9',
+    blurb: 'The lander leaves the mothership.',
+    atlas: 'Only <b>once they were already circling the Moon</b> did Armstrong and Aldrin move into the lunar module <b>Eagle</b> and undock. <b>Michael Collins stayed behind</b> in the command module <i>Columbia</i> — he never walked on the Moon.',
+  },
+  {
+    id: 'touchdown', order: 4, name: 'Touchdown', color: '#7fb6e8',
+    blurb: 'Eagle lands on the grey dust.',
+    atlas: '<b>20 July 1969.</b> Eagle came down in the <b>Sea of Tranquility</b> — a flat, dusty plain, not a sea at all. “The Eagle has landed.”',
+  },
+  {
+    id: 'firstSteps', order: 5, name: 'First steps', color: '#c9a0e8',
+    blurb: 'Boots on the Moon.',
+    atlas: 'Armstrong stepped down first, then Aldrin. They were outside for about <b>two and a half hours</b>. Their footprints are still there — with no wind or rain, nothing wipes them away.',
+  },
+  {
+    id: 'splashdown', order: 6, name: 'Splashdown', color: '#e88f7f',
+    blurb: 'Home, in the middle of the ocean.',
+    atlas: 'On <b>24 July 1969</b> Columbia parachuted into the Pacific Ocean and a ship came to pick the crew up. Every Apollo crew came home by splashing into the sea.',
+  },
+]
+export const MOON_STEP_BY_ID = Object.fromEntries(MOON_STEPS.map((s) => [s.id, s]))
+
+// a mission card: a coloured header band, a simple pictogram, and its name
+export function missionCardSVG(id, w = 150, h = 200) {
+  const s = MOON_STEP_BY_ID[id]
+  if (!s) return ''
+  const art = {
+    liftoff: `<path d="M75,34 q16,26 16,58 l0,30 -32,0 0,-30 q0,-32 16,-58 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M59,104 l-16,26 16,0 Z M91,104 l16,26 -16,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M64,132 q11,26 22,0 q-11,16 -22,0 Z" fill="${GOLD}"/>
+      <ellipse cx="75" cy="150" rx="26" ry="9" fill="${GOLD}" opacity="0.55"/>`,
+    onTheWay: `<circle cx="40" cy="120" r="24" fill="#3f7fb5" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <circle cx="118" cy="56" r="17" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M56,104 q34,-34 50,-38" fill="none" stroke="${GOLD}" stroke-width="4" stroke-dasharray="7 6"/>
+      <path d="M96,74 l14,-6 -4,14 Z" fill="${GOLD}"/>`,
+    eagleSeparates: `<rect x="26" y="72" width="42" height="34" rx="9" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M92,66 l34,0 -6,26 -22,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M96,92 l26,0 6,20 -38,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M74,88 l12,0" stroke="${GOLD}" stroke-width="4" stroke-dasharray="4 4"/>
+      <path d="M96,112 l-8,18 M126,112 l8,18" stroke="${CREAM}" stroke-width="4"/>`,
+    touchdown: `<path d="M56,58 l38,0 -6,26 -26,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M58,84 l34,0 8,24 -50,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M52,108 l-14,26 M98,108 l14,26" stroke="${CREAM}" stroke-width="4"/>
+      <path d="M20,140 q55,-14 110,0 l0,20 -110,0 Z" fill="${BONE_DIM}"/>`,
+    firstSteps: `<circle cx="75" cy="62" r="16" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M75,42 a16,16 0 0 1 12,8" fill="none" stroke="${GOLD}" stroke-width="4"/>
+      <rect x="60" y="78" width="30" height="40" rx="10" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M60,88 l-16,18 M90,88 l16,18 M66,118 l-6,22 M84,118 l6,22" stroke="${CREAM}" stroke-width="5" stroke-linecap="round"/>
+      <path d="M20,150 q55,-10 110,0 l0,14 -110,0 Z" fill="${BONE_DIM}"/>`,
+    splashdown: `<path d="M56,50 q19,-16 38,0 l-6,44 -26,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M46,36 q29,-22 58,0" fill="none" stroke="${GOLD}" stroke-width="4"/>
+      <path d="M46,36 l16,16 M104,36 l-16,16 M75,26 l0,20" stroke="${GOLD}" stroke-width="3"/>
+      <path d="M14,116 q18,-12 34,0 t34,0 t34,0 t20,0 l0,44 -122,0 Z" fill="#2f6f9e" opacity="0.9"/>
+      <path d="M14,134 q18,-10 34,0 t34,0 t34,0" fill="none" stroke="${CREAM}" stroke-width="3" opacity="0.6"/>`,
+  }[id]
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 150 200">
+    <rect x="4" y="4" width="142" height="192" rx="12" fill="${TEAL_DEEP}" stroke="${GOLD_DEEP}" stroke-width="3"/>
+    <rect x="4" y="4" width="142" height="26" rx="12" fill="${s.color}"/>
+    <rect x="4" y="22" width="142" height="10" fill="${s.color}"/>
+    ${art}
+    <text x="75" y="182" text-anchor="middle" font-family="${SERIF}" font-size="17" fill="${CREAM}">${s.name}</text>
+  </svg>`
+}

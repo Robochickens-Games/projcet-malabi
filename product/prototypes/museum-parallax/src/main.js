@@ -4,6 +4,7 @@ import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
   eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
   PLANETS, PLANET_BY_ID, planetSVG, roverWheelSVG, solarPanelSVG,
+  MOON_STEPS, missionCardSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -16,11 +17,14 @@ import {
   SPACEHUB_W, SPACEHUB_SPOTS, SPACEHUB_ORDER, spacehubBackSVG, spacehubMainSVG, spacehubForeSVG,
   SOLAR_W, SOLAR_SPOTS, orbitPoint, solarSkySVG, solarNebulaSVG, solarDomeSVG, solarMainSVG, solarForeSVG,
   MARS_W, MARS_SPOTS, marsSkySVG, marsFarSVG, marsMidSVG, marsMainSVG, marsForeSVG,
+  MOON_W, MOON_SPOTS, moonSkySVG, moonFarSVG, moonMidSVG, moonMainSVG, moonForeSVG,
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
 import { openOrbitGame, closeOrbitGame, isOrbitGameOpen, __orbitForceWin } from './orbitGame.js'
 import { openRoverGame, closeRoverGame, isRoverGameOpen, __roverPlanTo, __roverDrive, __roverDriving, __roverReroll } from './roverGame.js'
+import { openMoonBoard, closeMoonBoard, isMoonBoardOpen, __moonSolve, __moonSolveWrong } from './moonBoard.js'
+import { openRocketGame, closeRocketGame, isRocketGameOpen, __rocketStack, __rocketLaunch, __rocketPhase } from './rocketGame.js'
 import {
   SPACE_ROCKS, SPACE_TOOLS, isRock, itemArt, rockInstance, rockType, rockOf,
   openSupplyDesk, closeSupplyDesk, isSupplyDeskOpen, refreshSupplyDesk,
@@ -44,6 +48,7 @@ const WORLDS = {
   spacehub: { w: SPACEHUB_W },
   solar: { w: SOLAR_W },
   mars: { w: MARS_W },
+  moon: { w: MOON_W },
 }
 
 const $ = (id) => document.getElementById(id)
@@ -183,10 +188,10 @@ function setupInput() {
     }
     drag = null
   }
-  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !uiHit(e)) dragStart(e.clientX) })
+  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !uiHit(e)) dragStart(e.clientX) })
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
   window.addEventListener('mouseup', () => dragEnd())
-  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
+  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
@@ -280,9 +285,13 @@ function dismissToast() {
   clearTimeout(toastTimer)
   $('toast').classList.add('hidden')
 }
+/* Toast copy carries light markup (<b> for the word that matters), so this
+   assigns innerHTML, not textContent — with textContent the tags printed
+   literally on screen. Every string reaching here is authored in this file;
+   nothing player-supplied ever is, so there is no injection surface. */
 function toast(msg, ms = 4800) {
   const el = $('toast')
-  $('toast-text').textContent = msg
+  $('toast-text').innerHTML = msg
   el.classList.remove('hidden')
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => el.classList.add('hidden'), ms)
@@ -391,7 +400,7 @@ function revealMark(node, { glow = false } = {}) {
 
 /* ---------- boot ---------- */
 // no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
-let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar, mars
+let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar, mars, moon
 let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow, placedTooth
 let featherSprite, featherSparkle
 const scenes = {}                                  // name → scene container
@@ -1056,6 +1065,10 @@ async function buildMars() {
   }, 'mars:console'))
 
   const clueL = scrollLayer(1.12)
+  /* One of the Moon room's mission cards is here, not there — the dependency
+     runs both ways between these two rooms, so neither is a place you visit once. */
+  const cardT = await svgTexture(missionCardSVG('onTheWay', 84, 112))
+  addHiddenClue(clueL, S.card, 'card:onTheWay', cardT)
   addHiddenClue(clueL, S.rockA, rockInstance('meteorite', 'mars'), rockAT)
   addHiddenClue(clueL, S.rockB, rockInstance('lunarChip', 'mars'), rockBT)
 
@@ -1080,6 +1093,127 @@ async function buildMars() {
 
   mars._challenges = ['repairs', 'game']
   makeDust(mars, 34, MARS_W, 0xd9a07a)
+}
+
+/* ---------- MOON ROOM — Rebuild the Landing Sequence ----------
+   Six mission cards, gathered from four different places, then put in the order
+   the real Apollo 11 mission happened. Three cards are lying around this room,
+   one is over in the Mars bay, one is sold at the Supply Desk, and the last is
+   won by stacking a Saturn V correctly in Build-a-Rocket. You cannot open the
+   board until you hold all six — the collecting IS the first half of the puzzle. */
+async function buildMoon() {
+  const [skyT, farT, midT, mainT, foreT, rockAT, rockBT] = await Promise.all([
+    moonSkySVG(), moonFarSVG(), moonMidSVG(), moonMainSVG(), moonForeSVG(),
+    spaceRockSVG('lunarChip', 62, 80), spaceRockSVG('starShard', 60, 78),
+  ].map(svgTexture))
+
+  const skyL = bgLayer(0.1, skyT, 2400 / 2)
+  const farL = bgLayer(0.3, farT, 2900 / 2)
+  const midL = bgLayer(0.55, midT, 3200 / 2)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, MOON_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = MOON_SPOTS
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('spacehub'), 'moon:back'))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
+    sfx.tap()
+    toast('EXHIBIT 3 — APOLLO 11. Six mission cards have come off the board. Find them all, then put the mission back in order.', 6500)
+  }, 'moon:placard'))
+
+  // the board glows once every card is in hand — the world says "you're ready"
+  const boardGlow = new Graphics()
+    .roundRect(0, 0, 380, 300, 12).stroke({ color: 0xffd98a, width: 7, alpha: 0.9 })
+  placeAt(boardGlow, S.board.x - 190, 520)
+  boardGlow.alpha = 0
+  boardGlow.blendMode = 'add'
+  mainL.addChild(boardGlow)
+  moon._boardGlow = boardGlow
+
+  mainL.addChild(hitRect(S.board.x - 190, 520, 380, 360, () => {
+    sfx.tap()
+    if (moon._sequence?.done) { toast('The mission is already back in order. 🚀', 3500); return }
+    const missing = MOON_STEPS.filter((s) => !hasClue(`card:${s.id}`))
+    if (missing.length) {
+      toast(`You still need <b>${missing.length}</b> more mission ${missing.length === 1 ? 'card' : 'cards'}. Look around the wing — and check the Supply Desk.`, 5500)
+      return
+    }
+    openMoonBoard({
+      onComplete: () => {
+        moon._sequence.done = true
+        for (const s of MOON_STEPS) removeItem(`card:${s.id}`)
+      },
+      onClose: () => {
+        if (moon._sequence.done) {
+          setTimeout(() => finishSolve({
+            success: {
+              title: '🌕 The mission is back in order! 🌕',
+              html: 'Lift-off, three days out, <b>Eagle</b> undocking once they were already circling the Moon, ' +
+                'touchdown in the Sea of Tranquility, first steps — and home with a splash. ' +
+                '<b>Michael Collins</b> stayed aboard <i>Columbia</i> the whole time.',
+            },
+          }, 'moon'), 400)
+        }
+      },
+    })
+  }, 'moon:board'))
+  moon._sequence = { done: false }
+
+  // the Build-a-Rocket workbench
+  moon._gameBadge = solvedSeal(S.bench.x + 128, 664, { r: 34, caption: '' })
+  mainL.addChild(moon._gameBadge)
+  mainL.addChild(hitRect(S.bench.x - 160, 600, 320, 280, () => {
+    sfx.tap()
+    if (hasClue('card:splashdown') || moon._sequence.done) {
+      toast('You already earned that card by launching it properly.', 3500)
+      return
+    }
+    openRocketGame({
+      onComplete: () => onMinigameSolved('moon'),
+      onClose: () => {
+        if (moon._gameDone && !hasClue('card:splashdown') && !moon._sequence.done) {
+          grantItem('card:splashdown')
+          toast('🚀 A good launch! The <b>Splashdown</b> mission card is yours.', 6000)
+        } else { afterMinigameClose('moon') }
+      },
+    })
+  }, 'moon:bench'))
+
+  // three of the six cards are hidden here
+  const clueL = scrollLayer(1.12)
+  const roomCards = ['liftoff', 'touchdown', 'firstSteps']
+  const spots = [S.cardA, S.cardB, S.cardC]
+  await Promise.all(roomCards.map(async (id, i) => {
+    const tex = await svgTexture(missionCardSVG(id, 84, 112))
+    addHiddenClue(clueL, spots[i], `card:${id}`, tex)
+  }))
+  addHiddenClue(clueL, S.rockA, rockInstance('lunarChip', 'moon'), rockAT)
+  addHiddenClue(clueL, S.rockB, rockInstance('starShard', 'moon'), rockBT)
+
+  const foreL = scrollLayer(1.35)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 4100 / 2, 540)
+  foreL.addChild(fore)
+
+  moon.addChild(skyL, farL, midL, mainL, clueL, foreL)
+  moon._layers = [skyL, farL, midL, mainL, clueL, foreL]
+  moon._main = mainL
+  moon._challenges = ['sequence', 'game']
+  makeDust(moon, 22, MOON_W, 0xc7ccd2)
+}
+
+// light the sequence board the moment the sixth card lands, wherever it came from
+function refreshMoonBoardCue() {
+  if (!moon?._boardGlow || moon._sequence?.done || moon._boardLit) return
+  if (!MOON_STEPS.every((s) => hasClue(`card:${s.id}`))) return
+  moon._boardLit = true
+  gsap.to(moon._boardGlow, { alpha: 0.9, duration: 0.8 })
+  gsap.to(moon._boardGlow, { alpha: 0.35, duration: 1.2, yoyo: true, repeat: -1, delay: 0.8 })
+  setTimeout(() => toast('That’s all six mission cards! The <b>LANDING SEQUENCE</b> board is ready.', 6000), 900)
 }
 
 /* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
@@ -1535,6 +1669,7 @@ const CHALLENGE_DONE = {
   game: (sc) => !!sc._gameDone,     // a mini-game hit its goal
   orrery: (sc) => !!sc._orrery?.done,           // every planet back on its ring
   repairs: (sc) => !!sc._drops?.every((d) => d.done), // every repair in the room done
+  sequence: (sc) => !!sc._sequence?.done,       // the mission cards are in order
 }
 
 function roomComplete(name) {
@@ -1556,6 +1691,8 @@ function goScene(target) {
   if (isSupplyDeskOpen()) closeSupplyDesk()
   if (isOrbitGameOpen()) closeOrbitGame()
   if (isRoverGameOpen()) closeRoverGame()
+  if (isMoonBoardOpen()) closeMoonBoard()
+  if (isRocketGameOpen()) closeRocketGame()
   const from = scenes[state.scene]
   const to = scenes[target]
   const dir = DEPTH[target] >= DEPTH[state.scene] ? -1 : 1
@@ -1585,6 +1722,7 @@ const ROOM_ENTER = {
 const SPACE_ROOM_ENTER = {
   solar: 'The planetarium! Three rings on the orrery are <b>empty</b>. Read the <b>STAR ATLAS</b> on the lectern to work out which planet goes where.',
   mars: 'The Mars bay. The rover is missing a <b>wheel</b>, and its solar panel is buried in <b>red dust</b>. Fix both, then take it for a drive.',
+  moon: 'The Apollo 11 landing site — that really is <b>Earth</b> up there. Six <b>mission cards</b> have come off the board. Find them all, then put the mission back in order.',
 }
 
 function onSceneEnter(target) {
@@ -1651,6 +1789,7 @@ const ITEM_SVG = {
   ),
   ...Object.fromEntries(PLANETS.map((p) => [`planet:${p.id}`, (w, h) => planetSVG(p.id, w, h)])),
   roverWheel: (w, h) => roverWheelSVG(w, h),
+  ...Object.fromEntries(MOON_STEPS.map((s) => [`card:${s.id}`, (w, h) => missionCardSVG(s.id, w, h)])),
 }
 const CLUE_TOAST = {
   feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
@@ -1678,6 +1817,8 @@ const ITEM_INFO = {
   ...Object.fromEntries(PLANETS.map((p) =>
     [`planet:${p.id}`, { name: `${p.name} model`, section: 'Star Atlas', found: 'Space Wing', note: p.trait }])),
   roverWheel: { name: 'Rover Wheel', section: 'Supplies', found: 'The Orrery' },
+  ...Object.fromEntries(MOON_STEPS.map((s) =>
+    [`card:${s.id}`, { name: `${s.name} card`, section: 'Moon Missions', found: 'Space Wing', note: s.blurb }])),
 }
 
 /* A bag item id is usually the item itself, but a space rock is an INSTANCE
@@ -1833,6 +1974,7 @@ function grantItem(itemId) {
   fillInvSlot(slotEl, itemId)
   gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
   updatePouchTotals()
+  refreshMoonBoardCue()   // the sixth card may have just arrived
   return true
 }
 
@@ -1901,6 +2043,7 @@ function pickUpClue(itemId) {
           slotEl.innerHTML = slotInner(itemId)
           gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
           updatePouchTotals()
+          refreshMoonBoardCue()
         },
       })
   }
@@ -2335,7 +2478,7 @@ const allPlacedRocks = () =>
    desk stays vague on purpose (naming it would hand over the Star Atlas answer,
    which is the rule in [[clue-design-deduction-not-naming]]), but what lands in
    the bag is a labelled Saturn the child can then place. */
-const TOOL_GRANTS = { planetModel: 'planet:saturn' }
+const TOOL_GRANTS = { planetModel: 'planet:saturn', missionCard: 'card:eagleSeparates' }
 
 /* ---------- Space Supply Desk ----------
    The desk is a PLACE you walk to (a tappable counter in the space hub), not a
@@ -2539,6 +2682,33 @@ const STAR_ATLAS_SECTION = {
     </div>`,
 }
 
+/* MOON MISSIONS — the Apollo half of the Star Atlas, and the sequence puzzle's
+   only clue source. It deliberately does NOT print the steps as a numbered list:
+   that would hand over the answer. Each card gets its own entry with the facts a
+   child needs to reason ("only once they were already circling the Moon"), and
+   the ordering is left to them. Verified against NASA + Smithsonian Air & Space;
+   rulings in brain/memory/projects/science-museum-mystery/space-accuracy-rulings. */
+const MOON_MISSIONS_SECTION = {
+  id: 'apollo', title: 'Moon Missions', blurb: 'How Apollo 11 actually went.',
+  icon: missionCardSVG('touchdown', 34, 45), tag: 'mission log', ready: true,
+  render: () => `
+    <div class="cat-card">
+      <div class="cat-note"><b>Apollo 11</b> — the first time people landed on another world.
+        Three astronauts went: <b>Neil Armstrong</b>, <b>Buzz Aldrin</b> and <b>Michael Collins</b>.
+        Only two of them walked on the Moon.</div>
+    </div>
+    ${[...MOON_STEPS].sort((a, b) => a.name.localeCompare(b.name)).map((s) => `
+      <div class="cat-card">
+        <div class="art trait">${missionCardSVG(s.id, 96, 128)}</div>
+        <h3>${s.name}</h3>
+        <div class="cat-note">${s.atlas}</div>
+      </div>`).join('')}
+    <div class="cat-card">
+      <div class="cat-note">🌕 <b>Twelve people</b> have walked on the Moon, across six landings
+        between 1969 and 1972. Nobody has been back since.</div>
+    </div>`,
+}
+
 const CATALOG_SECTIONS = [
   SECTION('teeth', 'Teeth', 'A tooth tells you what a dinosaur ate.', toothSVG('leaf', 34, 42),
     (d) => toothSVG(d.tooth, 96, 120), (d) => d.toothNote),
@@ -2550,6 +2720,7 @@ const CATALOG_SECTIONS = [
   SECTION('eggs', 'Eggs', 'Round, long, or leathery — eggs tell tales too.', eggSVG('round', 34, 42),
     (d) => eggSVG(d.egg, 96, 120), (d) => d.eggNote),
   STAR_ATLAS_SECTION,
+  MOON_MISSIONS_SECTION,
 ]
 
 function renderCatalogCover() {
@@ -2650,7 +2821,7 @@ async function boot() {
   window.addEventListener('resize', layout)
 
   // every scene is a Container of parallax layers; only the active one is visible
-  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar', 'mars']) {
+  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar', 'mars', 'moon']) {
     const c = new Container()
     c._layers = []
     c._dust = []
@@ -2658,7 +2829,7 @@ async function boot() {
     root.addChild(c)
     scenes[name] = c
   }
-  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar, mars } = scenes)
+  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar, mars, moon } = scenes)
 
   $('back-btn').addEventListener('pointerdown', () => goScene(SCENE_BACK[state.scene] || 'lobby'))
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
@@ -2699,7 +2870,7 @@ async function boot() {
   if (!econ.ok) {
     console.error('[economy] SOFT-LOCK RISK — placed rocks cannot fund the tools', econ)
   }
-  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar(), buildMars()])
+  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar(), buildMars(), buildMoon()])
 
   let t = 0
   app.ticker.add((ticker) => {
@@ -2772,6 +2943,15 @@ async function boot() {
   window.__roverGo = () => __roverDrive()
   window.__roverDriving = () => __roverDriving()
   window.__roverReroll = () => __roverReroll()
+  window.__moonBoardOpen = () => isMoonBoardOpen()
+  window.__moonSolve = () => __moonSolve()
+  window.__moonSolveWrong = () => __moonSolveWrong()
+  window.__moonCards = () => MOON_STEPS.filter((x) => hasClue(`card:${x.id}`)).map((x) => x.id)
+  window.__moonBoardLit = () => !!moon?._boardLit
+  window.__rocketOpen = () => isRocketGameOpen()
+  window.__rocketStack = (ok) => __rocketStack(ok)
+  window.__rocketLaunch = () => __rocketLaunch()
+  window.__rocketPhase = () => __rocketPhase()
   window.__repairs = () => (mars?._drops ?? []).map((d) => ({ item: d.item, done: d.done }))
   window.__consoleLit = () => !!mars?._consoleLit
   // use an item on the repair that wants it, going through the real placement path

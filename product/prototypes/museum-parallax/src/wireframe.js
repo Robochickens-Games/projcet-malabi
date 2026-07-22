@@ -1011,6 +1011,7 @@ export const MARS_SPOTS = {
   wheelSocket: { x: 1760, y: 742 },             // the empty axle, front-left
   panelSocket: { x: 1640, y: 512 },             // the dust-caked solar panel (a deployed wing)
   console: { x: 2860 },                          // the ROVER ROUTE drive console
+  card: { x: 3180, y: 902 },                     // a Moon mission card, dropped here
   rockA: { x: 1080, y: 906 },
   rockB: { x: 3560, y: 902 },
   hint: { x: 3720, y: 1000 },
@@ -1121,6 +1122,141 @@ export function marsForeSVG() {
     </g>`
   return `${svgOpen(W, 1080)}
     ${rock(180, 1)}${rock(1240, 0.8)}${rock(3160, 1.1)}${rock(3860, 0.9)}
+    ${speedTag('LAYER: FOREGROUND ROCKS · 1.35x')}
+  ${'</svg>'}`
+}
+
+/* ===================== MOON ROOM — the landing site (world: 3800) =====================
+   Grey regolith under a black sky, with Earth hanging in it — the view that makes
+   the Moon feel like a PLACE. The lunar module stands in the middle; a mission
+   board on the left holds the landing sequence, and a workbench on the right runs
+   Build-a-Rocket. */
+
+export const MOON_W = 3800
+
+export const MOON_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 600 },
+  board: { x: 1180, w: 380, h: 300 },     // the LANDING SEQUENCE board
+  lander: { x: 2050 },                     // the lunar module diorama
+  bench: { x: 2960, w: 320, h: 250 },      // the BUILD-A-ROCKET workbench
+  cardA: { x: 880, y: 902 },               // three mission cards hidden in the room
+  cardB: { x: 1700, y: 906 },
+  cardC: { x: 3400, y: 900 },
+  rockA: { x: 1520, y: 904 },
+  rockB: { x: 2600, y: 908 },
+  hint: { x: 3620, y: 1000 },
+}
+
+const L_LINE = '#c7ccd2'
+const L_SKY = '#05070c'
+const L_FAR = '#2b3138'
+const L_MID = '#3a4048'
+const L_MAIN = '#4a5058'
+const L_FORE = '#5d646d'
+
+export function moonSkySVG() {
+  const W = 2400
+  let stars = ''
+  for (let i = 0; i < 150; i++) {
+    const x = (i * 179) % W
+    const y = (i * 233) % 900
+    stars += `<circle cx="${x}" cy="${y}" r="${1 + ((i * 31) % 5) * 0.4}" fill="#dfe6ee" opacity="${0.3 + ((i * 19) % 6) * 0.11}"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="0" width="${W}" height="1080" fill="${L_SKY}"/>
+    ${stars}
+    <!-- Earth, seen from the Moon: small, blue, and very far away -->
+    <g transform="translate(1780,270)">
+      <circle cx="0" cy="0" r="86" fill="#2f6f9e" stroke="#8fb8d4" stroke-width="3"/>
+      <path d="M-52,-22 q30,-30 62,-8 q22,16 4,36 q-30,26 -60,4 q-18,-16 -6,-32 Z" fill="#5c9a5c" opacity="0.9"/>
+      <ellipse cx="18" cy="42" rx="34" ry="18" fill="#5c9a5c" opacity="0.75"/>
+      <circle cx="-30" cy="-30" r="26" fill="#fff" opacity="0.2"/>
+    </g>
+    ${speedTag('LAYER: DEEP SPACE · 0.1x')}
+  ${'</svg>'}`
+}
+
+export function moonFarSVG() {
+  const W = 2900
+  return `${svgOpen(W, 1080)}
+    <path d="M0,720 L340,600 L640,700 L980,560 L1320,690 L1680,590 L2060,700 L2460,610 L2900,720 L2900,880 L0,880 Z"
+      fill="${L_FAR}"/>
+    ${speedTag('LAYER: FAR HILLS · 0.3x')}
+  ${'</svg>'}`
+}
+
+export function moonMidSVG() {
+  const W = 3200
+  const crater = (x, y, rx) => `
+    <ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${rx * 0.3}" fill="${L_MID}" stroke="${L_LINE}" stroke-width="3" stroke-opacity="0.45"/>
+    <ellipse cx="${x}" cy="${y - 6}" rx="${rx * 0.7}" ry="${rx * 0.2}" fill="${L_FAR}"/>`
+  return `${svgOpen(W, 1080)}
+    <path d="M0,780 L520,730 L1000,790 L1520,740 L2040,800 L2560,745 L3200,790 L3200,880 L0,880 Z" fill="${L_MID}"/>
+    ${crater(420, 820, 190)}${crater(1450, 832, 230)}${crater(2560, 816, 170)}
+    ${speedTag('LAYER: CRATER FIELD · 0.55x')}
+  ${'</svg>'}`
+}
+
+export function moonMainSVG() {
+  const S = MOON_SPOTS
+  return `${svgOpen(MOON_W, 1080)}
+    <rect x="0" y="880" width="${MOON_W}" height="200" fill="${L_MAIN}"/>
+    <line x1="0" y1="880" x2="${MOON_W}" y2="880" stroke="${L_LINE}" stroke-width="4"/>
+    ${roomFloorTicks(MOON_W, L_LINE)}
+    ${roomBackPost(S, '&#8592; SPACE HALL')}
+    ${roomPlacard(S, L_LINE)}
+
+    <!-- the landing-sequence board: six empty frames on an easel -->
+    <g transform="translate(${S.board.x},0)">
+      <rect x="-190" y="520" width="380" height="300" rx="12" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="5"/>
+      ${tag(0, 566, 'LANDING SEQUENCE', GOLD, 20)}
+      <g fill="none" stroke="${GOLD}" stroke-width="3" opacity="0.75">
+        ${[0, 1, 2, 3, 4, 5].map((i) =>
+          `<rect x="${-160 + (i % 3) * 108}" y="${588 + Math.floor(i / 3) * 108}" width="88" height="92" rx="7" stroke-dasharray="8 6"/>`).join('')}
+      </g>
+      <path d="M-150,820 L-190,880 M150,820 L190,880" stroke="${L_LINE}" stroke-width="6"/>
+      ${tag(0, 858, '[ ARRANGE ]', GOLD, 16)}
+    </g>
+
+    <!-- the lunar module, standing where it landed -->
+    <g transform="translate(${S.lander.x},0)">
+      <ellipse cx="0" cy="880" rx="310" ry="42" fill="${L_FAR}" opacity="0.7"/>
+      <g transform="translate(-350,392) scale(1.02)">${SPACE_SILHOUETTES.moon(L_LINE, '#8f959c', L_SKY)}</g>
+      ${tag(0, 330, 'EAGLE — LUNAR MODULE', L_LINE, 22)}
+      <!-- the flag and a footprint trail, because this is a landing SITE -->
+      <g transform="translate(250,0)">
+        <line x1="0" y1="880" x2="0" y2="742" stroke="${L_LINE}" stroke-width="5"/>
+        <path d="M0,742 L74,760 L74,796 L0,782 Z" fill="#b9483f" stroke="${L_LINE}" stroke-width="3"/>
+      </g>
+      ${[0, 1, 2, 3, 4].map((i) => `<ellipse cx="${120 + i * 34}" cy="${906 + (i % 2) * 10}" rx="11" ry="6" fill="${L_FAR}" opacity="0.8"/>`).join('')}
+    </g>
+
+    <!-- the Build-a-Rocket workbench -->
+    <g transform="translate(${S.bench.x},0)">
+      <rect x="-160" y="630" width="320" height="250" rx="12" fill="${L_MID}" stroke="${GOLD}" stroke-width="5"/>
+      <rect x="-124" y="662" width="248" height="118" rx="8" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="3"/>
+      <g fill="${GOLD}" opacity="0.6">
+        <rect x="-40" y="686" width="80" height="18" rx="4"/>
+        <rect x="-32" y="710" width="64" height="16" rx="4"/>
+        <path d="M0,732 l22,26 -44,0 Z"/>
+      </g>
+      ${tag(0, 604, 'BUILD-A-ROCKET', GOLD, 20)}
+      ${tag(0, 826, '[ ASSEMBLE ]', GOLD, 16)}
+    </g>
+    ${roomHint(S)}
+    ${speedTag('LAYER: LANDING SITE · 1.0x')}
+  ${'</svg>'}`
+}
+
+export function moonForeSVG() {
+  const W = 4100
+  const boulder = (x, s) => `
+    <g transform="translate(${x},0) scale(${s})">
+      <path d="M0,1080 L34,946 L106,906 L186,962 L214,1080 Z" fill="${L_FORE}" stroke="${L_LINE}" stroke-width="4"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    ${boulder(160, 1)}${boulder(1980, 0.85)}${boulder(3720, 1.05)}
     ${speedTag('LAYER: FOREGROUND ROCKS · 1.35x')}
   ${'</svg>'}`
 }

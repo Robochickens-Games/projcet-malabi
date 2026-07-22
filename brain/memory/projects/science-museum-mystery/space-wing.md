@@ -118,12 +118,19 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
   the drive console light up. In Rover Route you plan the whole path first and then
   drive it — which is how real rovers work, because commands take minutes to arrive —
   and the actual question is which of three rocks is the **iron-rich red** one.
-- ⬜ **Next:** Moon, Space Station and James Webb rooms (all declared in the wing
-  already, so it can't finish early), their mini-games, then finishing the
-  cross-room dependency graph.
+- ✅ **Room 3 — Moon Missions (the Landing Sequence)** + its mini-game,
+  **Build-a-Rocket**. Two halves: **gather** six mission cards from four different
+  places (three in the room, one over in the Mars bay, one sold at the desk, one won
+  by stacking a Saturn V correctly), then **order** them the way Apollo 11 actually
+  went. CHECK locks the cards already in the right place and hands the rest back, so
+  it converges without being trivial. Michael Collins stays in orbit throughout —
+  "all three walked on the Moon" is the commonest Apollo mistake in kids' media.
+- ⬜ **Next:** Space Station and James Webb rooms (both declared in the wing already,
+  so it can't finish early), their mini-games, then the last cross-room links.
 
-Regression-tested end to end by `npm run verify` in the prototype (119 checks across
-`verify-wings`, `verify-economy`, `verify-spacewing`, `verify-solar`, `verify-mars`).
+Regression-tested end to end by `npm run verify` in the prototype (154 checks across
+`verify-wings`, `verify-economy`, `verify-spacewing`, `verify-solar`, `verify-mars`,
+`verify-moon`).
 
 ### Design notes worth keeping
 - **Countability beat realism in the orrery.** The first version fanned the planets
@@ -136,6 +143,13 @@ Regression-tested end to end by `npm run verify` in the prototype (119 checks ac
   the thing young hands are worst at.
 - **A wrong ring costs nothing** — it says why, hands the planet back, and changes
   nothing. No fail state, per [[gameplay-principles]] #4.
+- **Tap-then-tap beats drag** for ordering puzzles (Landing Sequence, Build-a-Rocket).
+  Young hands are much better at two taps than at a precise drag, and both puzzles are
+  meant to be hard in the head, not in the fingers.
+- **Wrong answers are made informative, not punishing.** The sequence board locks the
+  cards already right; a badly stacked rocket topples over rather than showing an
+  error; a wrongly scanned Mars rock says what it actually is. Each is a fact learned,
+  and none costs progress.
 
 If the team treats "two-wing structure + economy" as architectural, promote to an ADR via
 `/decide`. Related: [[prototype-parallax-first-slice]], [[game-concepts]],
