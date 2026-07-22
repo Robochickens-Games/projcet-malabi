@@ -31,8 +31,9 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 - **Skills:** `product-designer` (Dor's domain), `project-management` (team-wide
   coordination — *not* product, which is Gidi's), `brain-dump` (ideas →
   team-reviewed proposals), `paleontologist` (scientific fact-check / accuracy
-  review for the dino game — verdicts claims, corrects errors, cites sources) —
-  all usable by anyone.
+  review for the dino game — verdicts claims, corrects errors, cites sources),
+  `astronomer` (the space-side sibling: planets, missions, spacecraft — guards the
+  Space Wing's catalog content) — all usable by anyone.
 - **Auto-briefing:** every session / clone opens with **What's new / Built / Waiting**
   (SessionStart hook + `/sync`).
 - **Proposals gate:** `brain/proposals/` — ideas are logged and surfaced but not

@@ -86,4 +86,5 @@ After writing a memory, add a one-line pointer below under the right section.
 
 ## Projects
 ### Science Museum Mystery
-- [space-wing](projects/science-museum-mystery/space-wing.md) — the Space Wing (second wing): Gidi's 8-page comic spec + ready-to-build wireframe plan; adds an economy, cross-room item deps, and 5 new mini-games; Gidi approved, Dor's design sign-off pending
+- [space-wing](projects/science-museum-mystery/space-wing.md) — the Space Wing (second wing): Gidi's 8-page comic spec + ready-to-build wireframe plan; adds an economy, cross-room item deps, and 5 new mini-games; Gidi approved, in build
+- [space-accuracy-rulings](projects/science-museum-mystery/space-accuracy-rulings.md) — settled space-science verdicts for the Space Wing (planet order + clues, Apollo sequence, Mars rocks, JWST, airlock framing); the content spec the puzzles resolve to
