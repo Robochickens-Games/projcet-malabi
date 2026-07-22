@@ -86,12 +86,30 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
 
 ## Status / approvals
 
-- **Plan:** ready to execute.
-- **Gidi (product):** ✅ approved starting execution (2026-06-16).
-- **Dor (design):** ⏳ approval pending — Dor owns design ([[dor-role]]); the Space Wing
-  introduces an economy + new puzzle UX, so it wants his sign-off before/while building.
-  Requested via this commit (notify-by-committing → gazette + Telegram).
+- **Plan:** in build (started 2026-07-22).
+- **Gidi (product):** ✅ approved starting execution (2026-06-16), and on 2026-07-22
+  waived the wait for Dor's sign-off — build proceeds, design feedback folds in as
+  it comes.
 - **Ohad (tech):** FYI — second wing generalizes the single-wing engine; no blocker.
+
+## Build progress (2026-07-22)
+
+- ✅ **Wing engine generalized** — a `WINGS` registry drives navigation, seals and
+  finales; rooms declare their own challenges. The dino wing is behaviour-identical.
+- ✅ **[[astronomer]] skill + [[space-accuracy-rulings]]** — space content has the
+  same accuracy guard the dino wing has. Caught the "oxygen hose" error before build.
+- ✅ **Economy + Supply Desk** — see [[space-economy-design]], including the
+  two-pouch bag (Finds / Rocks).
+- ✅ **Space Hall hub + the lobby door** — the SPACE door is no longer roped off.
+  The hall has five framed niches (Solar System / Mars / Moon / Station / Webb),
+  the Supply Desk counter, and a space rock on the floor, so the whole
+  find → sell → buy loop is learnable within sight of the desk that pays for it.
+  Unbuilt dioramas say they're being installed rather than failing silently.
+- ⬜ **Next:** the five diorama rooms, then the five mini-games, then locking the
+  cross-room dependency graph.
+
+Regression-tested end to end by `npm run verify` in the prototype (54 checks across
+`verify-wings`, `verify-economy`, `verify-spacewing`).
 
 If the team treats "two-wing structure + economy" as architectural, promote to an ADR via
 `/decide`. Related: [[prototype-parallax-first-slice]], [[game-concepts]],

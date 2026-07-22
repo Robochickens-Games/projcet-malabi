@@ -4,7 +4,7 @@
 // layout: the exported *_SPOTS constants drive both the drawings and the
 // hotspots. Fills are depth-graded (far = darker/recedes, near = lighter)
 // so the parallax reads even before real art.
-import { SILHOUETTES } from './art.js'
+import { SILHOUETTES, SPACE_SILHOUETTES } from './art.js'
 
 export const INK = '#0d141d'
 const FAR = '#44606f'
@@ -710,5 +710,122 @@ export function pteroMainSVG() {
 export function pteroRockSVG() {
   return `${svgOpen(320, 220)}
     <path d="M10,220 L80,110 L150,160 L210,80 L290,180 L310,220 Z" fill="${C_FORE}" stroke="${C_LINE}" stroke-width="5"/>
+  ${'</svg>'}`
+}
+
+/* ===================== SPACE HALL — the space-wing hub (world: 5200) =====================
+   The Space Wing's counterpart to the Dino Hall: five framed niches, one per
+   diorama, plus the SPACE SUPPLY DESK — the wing's economy hub, and the reason
+   this hall is a place you keep coming back to rather than a corridor you pass
+   through once. Cooler palette than the dino hall (deep space blues against the
+   museum's gold) so the two wings read as different rooms of the same building. */
+
+export const SPACEHUB_W = 5200
+
+export const SPACEHUB_SPOTS = {
+  back: { x: 120, label: 'LOBBY' },              // ‹ back to the museum lobby
+  desk: { x: 760, w: 420, h: 300 },              // the Space Supply Desk counter
+  solar: { x: 1560, w: 460, h: 660 },            // → SOLAR SYSTEM orrery
+  mars: { x: 2360, w: 460, h: 660 },             // → MARS rover repair
+  moon: { x: 3160, w: 460, h: 660 },             // → MOON landing sequence
+  station: { x: 3960, w: 460, h: 660 },          // → SPACE STATION airlock
+  webb: { x: 4760, w: 460, h: 660 },             // → JAMES WEBB mirrors
+  rock: { x: 1180, y: 908 },                     // a space rock on the hall floor
+}
+
+// niche order in the hall — also the order the spec's comic introduces them
+export const SPACEHUB_ORDER = [
+  ['solar', 'SOLAR SYSTEM'], ['mars', 'MARS'], ['moon', 'MOON MISSIONS'],
+  ['station', 'SPACE STATION'], ['webb', 'JAMES WEBB'],
+]
+
+const SPACE_FAR = '#3d5a74'
+const SPACE_FAR_F = '#111c2b'
+const SPACE_WALL_F = '#0c1522'
+
+export function spacehubBackSVG() {
+  const W = 4300
+  // a starfield behind the hall's high windows — deterministic so the layout is
+  // stable between reloads (a twinkling random field would fight the parallax)
+  let stars = ''
+  for (let i = 0; i < 90; i++) {
+    const x = (i * 227) % W
+    const y = 170 + ((i * 149) % 620)
+    const r = 1.5 + ((i * 37) % 5) * 0.5
+    stars += `<circle cx="${x}" cy="${y}" r="${r}" fill="${SPACE_FAR}" opacity="${0.35 + ((i * 17) % 5) * 0.11}"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="150" width="${W}" height="710" fill="${SPACE_WALL_F}"/>
+    ${stars}
+    <g stroke="${SPACE_FAR}" stroke-width="3" fill="none">
+      <line x1="0" y1="150" x2="${W}" y2="150"/><line x1="0" y1="860" x2="${W}" y2="860"/>
+    </g>
+    ${tag(W / 2, 112, 'HALL OF SPACE', SPACE_FAR, 30)}
+    ${speedTag('LAYER: BACK WALL · 0.3x')}
+  ${'</svg>'}`
+}
+
+export function spacehubMainSVG() {
+  const S = SPACEHUB_SPOTS
+  // same framed-niche language as the Dino Hall, so a child who learned the hub
+  // once knows how to read this one
+  const diorama = (x, sil, label) => `
+    <g transform="translate(${x},0)">
+      <rect x="-230" y="200" width="460" height="660" rx="18" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="5"/>
+      <path d="M-208,300 A208,150 0 0 1 208,300" fill="none" stroke="${GOLD}" stroke-width="3"/>
+      <rect x="-210" y="720" width="420" height="140" fill="${SPACE_FAR_F}"/>
+      <g transform="translate(-252,374) scale(0.72)">${sil}</g>
+      <rect x="-150" y="772" width="300" height="54" rx="10" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="3"/>
+      ${tag(0, 808, label, GOLD, 18)}
+      ${tag(0, 262, '[ ENTER ]', GOLD, 18)}
+    </g>`
+
+  // the Supply Desk: a counter you walk up to, with a coin sign so a child can
+  // tell at a glance this is where money happens
+  const desk = `
+    <g transform="translate(${S.desk.x},0)">
+      <rect x="-210" y="600" width="420" height="60" rx="10" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="5"/>
+      <rect x="-180" y="660" width="360" height="220" fill="${MID_F}" stroke="${GOLD}" stroke-width="4"/>
+      <g stroke="${GOLD}" stroke-width="3" opacity="0.55">
+        <line x1="-180" y1="730" x2="180" y2="730"/><line x1="-60" y1="660" x2="-60" y2="880"/>
+        <line x1="60" y1="660" x2="60" y2="880"/>
+      </g>
+      <rect x="-150" y="404" width="300" height="150" rx="12" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="4"/>
+      ${tag(0, 456, 'SPACE SUPPLY', GOLD, 22)}
+      ${tag(0, 492, 'DESK', GOLD, 22)}
+      <circle cx="0" cy="528" r="15" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="3"/>
+      ${tag(0, 582, '[ TRADE ]', GOLD, 18)}
+    </g>`
+
+  let ticks = ''
+  for (let x = 40; x < SPACEHUB_W; x += 120) ticks += `<line x1="${x}" y1="880" x2="${x - 18}" y2="912" stroke="${MAIN}" stroke-width="2" opacity="0.5"/>`
+  const dioramas = SPACEHUB_ORDER.map(([id, label]) => diorama(S[id].x, SPACE_SILHOUETTES[id](BONE_F, '#223039', MAIN), label)).join('')
+  return `${svgOpen(SPACEHUB_W, 1080)}
+    <rect x="0" y="880" width="${SPACEHUB_W}" height="200" fill="${MAIN_F}"/>
+    <line x1="0" y1="880" x2="${SPACEHUB_W}" y2="880" stroke="${MAIN}" stroke-width="4"/>
+    ${ticks}
+    <!-- ‹ back to lobby -->
+    <g transform="translate(${S.back.x + 90},0)">
+      <line x1="0" y1="880" x2="0" y2="600" stroke="${GOLD}" stroke-width="4"/>
+      <rect x="-100" y="552" width="200" height="58" rx="8" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
+    </g>
+    ${tag(S.back.x + 90, 588, '&#8592; LOBBY', GOLD, 20)}
+    ${desk}
+    ${dioramas}
+    ${speedTag('LAYER: GALLERY · 1.0x')}
+  ${'</svg>'}`
+}
+
+export function spacehubForeSVG() {
+  const W = 5500
+  const column = (x) => `
+    <g transform="translate(${x},0)" stroke="${FORE}" stroke-width="5">
+      <rect x="-44" y="60" width="88" height="980" fill="${FORE_F}"/>
+      <rect x="-66" y="20" width="132" height="44" fill="${FORE_F}"/>
+      <rect x="-66" y="1010" width="132" height="40" fill="${FORE_F}"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    ${[420, 1150, 1960, 2760, 3560, 4360, 5120].map(column).join('')}
+    ${speedTag('LAYER: FOREGROUND · 1.35x')}
   ${'</svg>'}`
 }

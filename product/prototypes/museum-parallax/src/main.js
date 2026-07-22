@@ -2,7 +2,7 @@ import { Application, Container, Sprite, Graphics, Texture, Text } from 'pixi.js
 import { gsap } from 'gsap'
 import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
-  eggSVG, pycnofiberSVG, footprintSVG, coveringSVG,
+  eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -12,6 +12,7 @@ import {
   TREX_W, TREX_SPOTS, trexSkySVG, trexFarSVG, trexMidSVG, trexMainSVG, trexFernSVG,
   BRACHIO_W, BRACHIO_SPOTS, brachioSkySVG, brachioHillsSVG, brachioTreesSVG, brachioMainSVG, brachioGrassSVG,
   PTERO_W, PTERO_SPOTS, pteroSkySVG, pteroSeaSVG, pteroCliffSVG, pteroMainSVG, pteroRockSVG,
+  SPACEHUB_W, SPACEHUB_SPOTS, SPACEHUB_ORDER, spacehubBackSVG, spacehubMainSVG, spacehubForeSVG,
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
@@ -35,6 +36,7 @@ const WORLDS = {
   trex: { w: TREX_W },
   brachio: { w: BRACHIO_W },
   ptero: { w: PTERO_W },
+  spacehub: { w: SPACEHUB_W },
 }
 
 const $ = (id) => document.getElementById(id)
@@ -336,12 +338,17 @@ function makeDust(scene, count, worldW, tint = 0xc2d6e2) {
   }
 }
 
-function hitRect(wx, wy, w, h, onTap) {
+// named hotspots, so the headless tests can tap what a finger would tap rather
+// than calling the handler's target directly — `scene:id` → its tap handler
+const HOTSPOTS = {}
+
+function hitRect(wx, wy, w, h, onTap, id) {
   const g = new Graphics().rect(0, 0, w, h).fill({ color: 0xffffff, alpha: 0.0001 })
   placeAt(g, wx, wy)
   g.eventMode = 'static'
   g.cursor = 'pointer'
   g.on('pointertap', onTap)
+  if (id) HOTSPOTS[id] = onTap
   return g
 }
 
@@ -377,7 +384,7 @@ function revealMark(node, { glow = false } = {}) {
 
 /* ---------- boot ---------- */
 // no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
-let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero
+let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub
 let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow, placedTooth
 let featherSprite, featherSparkle
 const scenes = {}                                  // name → scene container
@@ -414,8 +421,8 @@ async function buildLobby() {
   doorGlow.alpha = 0
   mainL.addChild(doorGlow)
 
-  mainL.addChild(hitRect(LOBBY_SPOTS.doorDino.x - 180, 300, 360, 580, () => goScene('dinohub')))
-  mainL.addChild(hitRect(LOBBY_SPOTS.doorSpace.x - 170, 320, 340, 560, () => { sfx.tap(); toast('SPACE wing — roped off. Opening soon! ✨') }))
+  mainL.addChild(hitRect(LOBBY_SPOTS.doorDino.x - 180, 300, 360, 580, () => goScene('dinohub'), 'lobby:doorDino'))
+  mainL.addChild(hitRect(LOBBY_SPOTS.doorSpace.x - 170, 320, 340, 560, () => goScene('spacehub'), 'lobby:doorSpace'))
   mainL.addChild(hitRect(LOBBY_SPOTS.doorInventions.x - 170, 320, 340, 560, () => { sfx.tap(); toast('INVENTIONS wing — roped off. Opening soon! ⚙️') }))
 
   // the tooth rides its own layer, slightly slower than the planter in front
@@ -642,6 +649,77 @@ async function buildDinoHub() {
 
   // already-solved rooms stay stamped if the hall is rebuilt/revisited
   for (const room of WINGS.dino.rooms) if (roomComplete(room)) markRoomComplete(room)
+}
+
+/* ---------- SPACE HALL HUB ----------
+   The Space Wing's hub. Same shape as the Dino Hall — five tappable niches — plus
+   the Supply Desk, which is why this hall gets revisited rather than passed
+   through. The five rooms land next; until then their niches say so rather than
+   failing silently on a tap ("never punish the poke"). */
+async function buildSpaceHub() {
+  const [backT, mainT, foreT, rockT] = await Promise.all(
+    [spacehubBackSVG(), spacehubMainSVG(), spacehubForeSVG(), spaceRockSVG('lunarChip', 66, 86)].map(svgTexture),
+  )
+
+  const backL = scrollLayer(0.3)
+  const back = new Sprite(backT)
+  back.anchor.set(0.5)
+  placeAt(back, SPACEHUB_W / 2 - 400, 540)
+  backL.addChild(back)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, SPACEHUB_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = SPACEHUB_SPOTS
+  mainL.addChild(hitRect(S.back.x - 40, 540, 240, 360, () => goScene('lobby')))
+  // the Supply Desk — the whole counter is the target, generously sized
+  mainL.addChild(hitRect(S.desk.x - S.desk.w / 2, 400, S.desk.w, 480, () => openDesk(), 'spacehub:desk'))
+
+  for (const [id, label] of SPACEHUB_ORDER) {
+    const spot = S[id]
+    mainL.addChild(hitRect(spot.x - spot.w / 2, 200, spot.w, spot.h, () => {
+      if (scenes[id]) { goScene(id); return }
+      sfx.tap()
+      toast(`The ${label} exhibit is still being installed — check back soon! 🚧`, 4000)
+    }, `spacehub:${id}`))
+  }
+
+  // per-diorama completion marks, exactly as the Dino Hall stamps its niches
+  spacehub._marks = {}
+  for (const [id] of SPACEHUB_ORDER) {
+    const spot = S[id]
+    const frameGlow = new Graphics()
+      .roundRect(0, 0, spot.w, spot.h, 18)
+      .stroke({ color: 0xffd98a, width: 8, alpha: 0.9 })
+    placeAt(frameGlow, spot.x - spot.w / 2, 200)
+    frameGlow.alpha = 0
+    frameGlow.blendMode = 'add'
+    mainL.addChild(frameGlow)
+    const seal = solvedSeal(spot.x + spot.w / 2 - 70, 268, { r: 40 })
+    mainL.addChild(seal)
+    spacehub._marks[id] = { frameGlow, seal }
+  }
+
+  // a space rock on the hall floor — the first one a player meets, so the whole
+  // find→sell→buy loop can be learned within sight of the desk that pays for it
+  const rockL = scrollLayer(1.15)
+  addHiddenClue(rockL, S.rock, rockInstance('lunarChip', 'spacehub'), rockT)
+
+  const foreL = scrollLayer(1.35)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 5500 / 2, 540)
+  foreL.addChild(fore)
+
+  spacehub.addChild(backL, mainL, rockL, foreL)
+  spacehub._layers = [backL, mainL, rockL, foreL]
+  spacehub._main = mainL
+  makeDust(spacehub, 26, SPACEHUB_W, 0x9fc2e6)
+
+  for (const room of WINGS.space.rooms) if (roomComplete(room)) markRoomComplete(room)
 }
 
 /* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
@@ -987,6 +1065,7 @@ function buildBrachioGameEntry(mainL, { x, y }) {
 
 /* ---------- game beats ---------- */
 let lobbyHintTimer = null
+let firstSpaceVisit = true
 
 // the first inventory slot holds the found tooth
 const invToothSlot = () => document.querySelector('#inventory-grid .inv-slot')
@@ -1050,6 +1129,18 @@ const WINGS = {
         'and completed the entire <b>Dinosaur Wing</b>! 🦕',
     },
   },
+  space: {
+    hub: 'spacehub',
+    hubLabel: 'Space Hall',
+    door: 'doorSpace',
+    // the five dioramas exist as scenes from here on; their rooms land next
+    rooms: [],
+    finale: {
+      name: 'SPACE WING',
+      text: 'Every exhibit is running again — you’ve restored <b>all five</b> and finished ' +
+        'the whole <b>Space Wing</b>! 🚀',
+    },
+  },
 }
 
 // derived navigation tables: lobby(0) → hub(1) → room(2)
@@ -1087,7 +1178,12 @@ function roomComplete(name) {
   if (!sc?._challenges?.length) return false
   return sc._challenges.every((c) => CHALLENGE_DONE[c](sc))
 }
-const wingComplete = (wingId) => WINGS[wingId].rooms.every(roomComplete)
+// a wing with no rooms yet (one still being built) is NOT complete — `[].every()`
+// is true, which would otherwise stamp its seal and fire its finale on boot
+const wingComplete = (wingId) => {
+  const rooms = WINGS[wingId].rooms
+  return rooms.length > 0 && rooms.every(roomComplete)
+}
 
 function goScene(target) {
   if (!scenes[target] || target === state.scene) return
@@ -1121,6 +1217,18 @@ const ROOM_ENTER = {
 function onSceneEnter(target) {
   if (target === 'dinohub') {
     setTimeout(() => toast('The Hall of Dinosaurs! Tap a diorama to step inside its world.', 6000), 700)
+    return
+  }
+  if (target === 'spacehub') {
+    // arming the purse here is what makes coins appear at all — the Dinosaur Wing
+    // never shows them
+    armCoinHud()
+    // read the flag NOW, not inside the timeout — it's cleared before then
+    const msg = firstSpaceVisit
+      ? 'The Hall of Space! Five exhibits are broken. Space rocks are scattered everywhere — sell them at the SUPPLY DESK to buy what the exhibits need.'
+      : 'The Hall of Space. Tap the SUPPLY DESK to trade, or a diorama to step inside.'
+    firstSpaceVisit = false
+    setTimeout(() => toast(msg, 7000), 700)
     return
   }
   const cfg = ROOM_ENTER[target]
@@ -1405,7 +1513,12 @@ function pickUpClue(itemId) {
   gsap.to(clue.sprite, { alpha: 0, duration: 0.25 })
   gsap.to(clue.sparkle, { alpha: 0, duration: 0.25, overwrite: true })
   clue.sprite.eventMode = 'none'
-  toast(CLUE_TOAST[itemId] || 'A new clue is in your INVENTORY.', 6000)
+  // a rock's toast names it and what it's worth — the value IS the reward, and
+  // saying it out loud is how a child learns rocks are money
+  const rock = isRock(itemId) ? rockOf(itemId) : null
+  toast(rock
+    ? `A ${rock.name}! Worth <b>${rock.value} coins</b> at the Space Supply Desk. It’s in your ROCKS pouch.`
+    : (CLUE_TOAST[itemKey(itemId)] || 'A new clue is in your INVENTORY.'), 6000)
 }
 
 function switchScene(from, to, dir) {
@@ -2078,7 +2191,7 @@ async function boot() {
   window.addEventListener('resize', layout)
 
   // every scene is a Container of parallax layers; only the active one is visible
-  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero']) {
+  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub']) {
     const c = new Container()
     c._layers = []
     c._dust = []
@@ -2086,7 +2199,7 @@ async function boot() {
     root.addChild(c)
     scenes[name] = c
   }
-  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero } = scenes)
+  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub } = scenes)
 
   $('back-btn').addEventListener('pointerdown', () => goScene(SCENE_BACK[state.scene] || 'lobby'))
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
@@ -2127,7 +2240,7 @@ async function boot() {
   if (!econ.ok) {
     console.error('[economy] SOFT-LOCK RISK — placed rocks cannot fund the tools', econ)
   }
-  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero()])
+  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub()])
 
   let t = 0
   app.ticker.add((ticker) => {
@@ -2186,6 +2299,12 @@ async function boot() {
   window.__bag = () => Object.keys(state.has)
   window.__rockValue = (id) => rockOf(id)?.value ?? 0
   window.__toolPrice = (id) => SPACE_TOOLS[id]?.price ?? 0
+  // tap what a finger would tap, so tests exercise the real hotspot wiring
+  window.__tapWorld = (scene, id) => { HOTSPOTS[`${scene}:${id}`]?.(); return !!HOTSPOTS[`${scene}:${id}`] }
+  window.__clueExists = (id) => !!CLUES[id]
+  window.__pan = (x) => { cam().x = Math.max(0, Math.min(camMax(), x)); cam().vel = 0 }
+  window.__tapClue = (id) => { CLUES[id]?.sprite.emit('pointertap'); return !!CLUES[id] }
+  window.__wingSealShown = (w) => (lobby?._wingMarks?.[w]?.alpha ?? 0) > 0
   window.__setCoins = (n) => { setCoins(n); refreshSupplyDesk() }
   // a non-rock item in the bag, to prove the desk will never buy it back
   window.__giveTestQuestItem = () => { grantItem('trexTooth'); refreshSupplyDesk() }

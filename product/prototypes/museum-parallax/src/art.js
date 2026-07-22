@@ -920,3 +920,126 @@ export function coinSVG(size = 40) {
     <path d="M50,28 L56,44 L72,44 L59,54 L64,70 L50,60 L36,70 L41,54 L28,44 L44,44 Z" fill="${CREAM}" opacity=".9"/>
   </svg>`
 }
+
+/* ====================== SPACE WING SILHOUETTES ======================
+   One per space diorama, drawn in the same ~700x500 box as the dino
+   silhouettes so the hub's framed niches can reuse the same transform.
+   Real subjects only ([[scientific-realism-rule]]): an orrery, a Mars rover,
+   the Apollo lunar module, the ISS, and JWST. Accuracy notes live in
+   brain/memory/projects/science-museum-mystery/space-accuracy-rulings. */
+
+// Solar System orrery — the Sun plus eight planets on their rings.
+// Only the sixth planet carries visible rings: the "giant with rings is sixth"
+// clue stops being solvable if the other giants are drawn ringed too.
+function solarSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  const planets = [
+    [232, 9], [286, 14], [342, 15], [396, 12],   // Mercury Venus Earth Mars
+    [470, 30], [552, 26], [620, 19], [676, 18],  // Jupiter Saturn Uranus Neptune
+  ]
+  const rings = planets.map(([x, r]) =>
+    `<ellipse cx="150" cy="300" rx="${x - 150}" ry="${(x - 150) * 0.30}" fill="none" stroke="${dim}" stroke-width="2.5" opacity="0.55"/>`).join('')
+  const bodies = planets.map(([x, r], i) =>
+    `<circle cx="${x}" cy="300" r="${r}" fill="${i === 5 ? bone : dim}"/>` +
+    (i === 5 ? `<ellipse cx="${x}" cy="300" rx="${r * 1.95}" ry="${r * 0.5}" fill="none" stroke="${bone}" stroke-width="4"/>` : '')).join('')
+  return `<g>
+    ${rings}
+    <circle cx="150" cy="300" r="54" fill="${bone}"/>
+    <circle cx="150" cy="300" r="72" fill="none" stroke="${bone}" stroke-width="3" opacity="0.5"/>
+    ${bodies}
+    <rect x="120" y="420" width="60" height="60" fill="${dim}"/>
+  </g>`
+}
+
+// Mars rover — six wheels, rocker-bogie, mast with camera head, solar wings
+function roverSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  const wheel = (x) => `<circle cx="${x}" cy="418" r="42" fill="${dim}"/><circle cx="${x}" cy="418" r="20" fill="${bone}"/>`
+  return `<g>
+    ${[210, 350, 490].map(wheel).join('')}
+    <path d="M200,380 L280,318 L420,318 L500,380" fill="none" stroke="${dim}" stroke-width="9"/>
+    <rect x="250" y="252" width="220" height="80" rx="12" fill="${bone}"/>
+    <rect x="120" y="262" width="130" height="34" fill="${dim}"/>
+    <rect x="470" y="262" width="130" height="34" fill="${dim}"/>
+    <rect x="336" y="150" width="16" height="104" fill="${bone}"/>
+    <rect x="300" y="118" width="92" height="42" rx="8" fill="${bone}"/>
+    <circle cx="322" cy="139" r="10" fill="${bg}"/><circle cx="368" cy="139" r="10" fill="${bg}"/>
+    <path d="M470,290 L560,214" stroke="${bone}" stroke-width="8"/>
+    <rect x="546" y="192" width="46" height="30" rx="6" fill="${bone}"/>
+  </g>`
+}
+
+// Apollo lunar module — descent stage, four legs, angled ascent stage
+function landerSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  const leg = (x1, x2) => `
+    <path d="M${x1},330 L${x2},452" stroke="${dim}" stroke-width="11"/>
+    <ellipse cx="${x2}" cy="460" rx="30" ry="10" fill="${bone}"/>`
+  return `<g>
+    ${leg(258, 150)}${leg(442, 550)}${leg(300, 236)}${leg(400, 464)}
+    <rect x="248" y="272" width="204" height="66" rx="8" fill="${dim}"/>
+    <path d="M262,272 L438,272 L410,196 L290,196 Z" fill="${bone}"/>
+    <rect x="300" y="140" width="100" height="58" rx="10" fill="${bone}"/>
+    <rect x="318" y="156" width="28" height="26" fill="${bg}"/>
+    <rect x="356" y="156" width="28" height="26" fill="${bg}"/>
+    <rect x="340" y="338" width="20" height="34" fill="${dim}"/>
+    <path d="M330,372 L370,372 L384,412 L316,412 Z" fill="${dim}"/>
+    <rect x="336" y="106" width="12" height="36" fill="${dim}"/>
+  </g>`
+}
+
+// The ISS — a truss with pressurised modules and four big solar arrays
+function stationSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  const array = (x, y) => `
+    <rect x="${x}" y="${y}" width="150" height="66" fill="${dim}"/>
+    <g stroke="${bg}" stroke-width="3">
+      ${[1, 2, 3, 4].map((i) => `<line x1="${x + i * 30}" y1="${y}" x2="${x + i * 30}" y2="${y + 66}"/>`).join('')}
+      <line x1="${x}" y1="${y + 33}" x2="${x + 150}" y2="${y + 33}"/>
+    </g>`
+  return `<g>
+    <rect x="120" y="292" width="470" height="18" fill="${bone}"/>
+    ${array(130, 196)}${array(130, 316)}${array(460, 196)}${array(460, 316)}
+    <rect x="296" y="256" width="130" height="92" rx="26" fill="${bone}"/>
+    <rect x="256" y="278" width="46" height="48" rx="10" fill="${dim}"/>
+    <rect x="420" y="278" width="52" height="48" rx="10" fill="${dim}"/>
+    <rect x="344" y="348" width="36" height="52" rx="8" fill="${dim}"/>
+    <circle cx="362" cy="416" r="22" fill="${bone}"/>
+    <rect x="352" y="196" width="20" height="60" fill="${dim}"/>
+  </g>`
+}
+
+// JWST — 18 hexagonal mirror segments over the layered sunshield
+function webbSilhouette(bone = BONE, dim = BONE_DIM, bg = TEAL_DEEP) {
+  // a hex of radius r at (cx,cy), flat-top like Webb's segments
+  const hex = (cx, cy, r) => {
+    const pts = [0, 1, 2, 3, 4, 5].map((i) => {
+      const a = (Math.PI / 180) * (60 * i - 30)
+      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`
+    }).join(' ')
+    return `<polygon points="${pts}" fill="${bone}" stroke="${bg}" stroke-width="3"/>`
+  }
+  // Webb's primary is EXACTLY 18 segments: a hexagonal close-pack of 19
+  // positions (centre + two rings) with the centre left open for the secondary
+  // mirror's support. Rows of 3·4·5·4·3 = 19, minus the centre = 18. The count
+  // is the fact this room teaches, so it has to be right on sight.
+  const R = 30, dx = R * Math.sqrt(3), dy = R * 1.5
+  const rows = [[-1, -2, 3], [-1.5, -1, 4], [-2, 0, 5], [-1.5, 1, 4], [-1, 2, 3]]
+  let tiles = ''
+  for (const [start, ry, n] of rows) {
+    for (let i = 0; i < n; i++) {
+      if (ry === 0 && i === 2) continue        // the open centre
+      tiles += hex(350 + (start + i) * dx, 250 + ry * dy, R - 2)
+    }
+  }
+  return `<g>
+    <path d="M90,470 L610,470 L520,392 L180,392 Z" fill="${dim}"/>
+    <path d="M120,432 L580,432" stroke="${bg}" stroke-width="3"/>
+    <path d="M150,398 L550,398" stroke="${bg}" stroke-width="3"/>
+    ${tiles}
+    <path d="M350,180 L280,120 M350,180 L420,120" stroke="${dim}" stroke-width="7"/>
+    <ellipse cx="350" cy="112" rx="40" ry="14" fill="${bone}"/>
+    <rect x="336" y="322" width="28" height="76" fill="${dim}"/>
+  </g>`
+}
+
+export const SPACE_SILHOUETTES = {
+  solar: solarSilhouette, mars: roverSilhouette, moon: landerSilhouette,
+  station: stationSilhouette, webb: webbSilhouette,
+}

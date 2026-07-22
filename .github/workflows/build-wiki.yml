@@ -7,14 +7,19 @@ name: build-wiki
 #
 # One-time setup: repo Settings → Pages → Build and deployment → Source = "GitHub Actions".
 
+# PAUSED 2026-07-22 by Gidi — no new Malabi Daily editions until further notice.
+# The automatic push trigger is commented out rather than deleted; restore the
+# `push:` block below to resume printing an edition on every brain commit.
+# Manual runs still work: Actions → build-wiki → Run workflow (or `gh workflow run
+# build-wiki`), which also refreshes the prototype copy at <pages-url>/prototype/.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "brain/**"
-      - "scripts/build-wiki.mjs"
-      - ".github/workflows/build-wiki.yml"
-      - "product/prototypes/museum-parallax/**"
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "brain/**"
+  #     - "scripts/build-wiki.mjs"
+  #     - ".github/workflows/build-wiki.yml"
+  #     - "product/prototypes/museum-parallax/**"
   workflow_dispatch:
 
 permissions:

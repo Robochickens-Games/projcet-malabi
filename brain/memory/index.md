@@ -42,6 +42,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [parallax-mobile-compositing-oom](shared/parallax-mobile-compositing-oom.md) — silent mobile-only crash in the parallax prototypes = compositing OOM; size content layers to their content, not the full world
 - [midjourney-good-bg-not-scenes](shared/midjourney-good-bg-not-scenes.md) — Midjourney is great for backgrounds/atmosphere but unreliable for accurate scenes/subjects; keep it for bg, evaluate GPT (or another tool) for precise assets
 - [project-gazette](shared/project-gazette.md) — the newspaper-style wiki auto-published to GitHub Pages; visualizes the brain + what changed when
+- [gazette-publishing-paused](shared/gazette-publishing-paused.md) — ⏸ paused 2026-07-22 (Gidi): no new Daily editions on commit; build-wiki is manual-dispatch only (also pauses the Pages copy of the prototype)
 - [daily-notes](shared/daily-notes.md) — Letters to the Editor: post notes/content on any piece of info in-page (utterances); Telegram-pinged instantly, brain ingests at every sync, closes by commit
 - [click-to-play-engagement-concern](shared/click-to-play-engagement-concern.md) — open design concern: will the click-to-play exploration loop create the engagement we want (kids/touch)? + mitigations + prototype-to-resolve
 - [gameplay-principles](shared/gameplay-principles.md) — the six gameplay principles we design toward (every tap rewards, drip of aha, obvious-tappable, no dead ends, collection layer, soft guidance)
