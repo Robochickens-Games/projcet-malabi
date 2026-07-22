@@ -54,7 +54,13 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
   every sync and closes them by commit. See [[daily-notes]].
 
 ## In progress / open ⏳
-- **Space Wing — plan READY, awaiting Dor to execute (2026-06-16, Gidi):** the
+- **Space Wing — BUILT (2026-07-22).** All five dioramas are playable end to end
+  with their five mini-games, the Supply Desk economy, and a full cross-room
+  dependency chain; finishing them fires the wing finale. Wireframe art; painted
+  layers drop in 1:1 later. See [[space-wing]], [[space-economy-design]],
+  [[space-accuracy-rulings]]. Regression-tested by `npm run verify` (225 checks).
+  <!-- resolved-when: path-exists:product/prototypes/museum-parallax/src/telescopeGame.js -->
+- **Superseded — the original plan entry (2026-06-16, Gidi):** the
   **second wing** is fully spec'd by Gidi (8-page comic) and has a detailed, ready-to-build
   plan (`product/prototypes/museum-parallax/SPACE-WING-PLAN.md`). Same loop as the dino wing
   (restore 5 dioramas) plus **three new systems** — an economy (Space Supply Desk: sell rocks
@@ -85,7 +91,9 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 - **No spend on infra** right now — free tools/hosting only. [[budget-constraint]]
 
 ## Next steps
-- **Dor:** review the Space Wing spec + plan ([[space-wing]]) → approve so execution starts.
+- **Dor:** play the built Space Wing and give design feedback — it shipped without
+  waiting on sign-off at Gidi's call (2026-07-22), so the review is now on the real
+  thing rather than the plan.
 - **Ohad:** review ADR 0003 → agree or push back → move to accepted.
 - **Team:** first project folder now exists — `brain/memory/projects/science-museum-mystery/`. <!-- resolved-when: path-exists:brain/memory/projects/science-museum-mystery -->
 - **Onboard the team:** add Gidi & Ohad as repo collaborators; fill real GitHub

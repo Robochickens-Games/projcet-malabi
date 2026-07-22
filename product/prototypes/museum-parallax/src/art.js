@@ -1281,3 +1281,39 @@ export function tetherSVG(w = 100, h = 130) {
     ${clip(58, 102, -1)}
   </svg>`
 }
+
+/* ====================== JAMES WEBB ITEMS ======================
+   Webb's primary mirror is 18 hexagonal segments of beryllium under a thin
+   coat of GOLD — gold because it reflects infrared light, which is the light
+   Webb is built to see. Commissioning really did involve nudging each segment
+   individually until all 18 acted as one mirror. See space-accuracy-rulings. */
+
+// one mirror segment. The notch is a wavefront alignment mark: the puzzle is to
+// get every notch pointing the same way, which is why it's drawn off-centre.
+export function hexTileSVG(size = 120, aligned = false) {
+  const r = size * 0.46
+  const pts = [0, 1, 2, 3, 4, 5].map((i) => {
+    const a = (Math.PI / 180) * (60 * i - 30)
+    return `${(size / 2 + r * Math.cos(a)).toFixed(1)},${(size / 2 + r * Math.sin(a)).toFixed(1)}`
+  }).join(' ')
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <polygon points="${pts}" fill="${GOLD}" stroke="${aligned ? CREAM : GOLD_DEEP}" stroke-width="${size * 0.035}"/>
+    <polygon points="${pts}" fill="none" stroke="${CREAM}" stroke-width="${size * 0.012}" opacity="0.45"
+      transform="translate(${size / 2},${size / 2}) scale(0.72) translate(${-size / 2},${-size / 2})"/>
+    <!-- the alignment notch, at the top edge -->
+    <path d="M${size / 2},${size / 2 - r * 0.86} l${size * 0.055},${size * 0.11} l${-size * 0.11},0 Z"
+      fill="${TEAL_DEEP}"/>
+    <circle cx="${size * 0.36}" cy="${size * 0.38}" r="${size * 0.06}" fill="#fff" opacity="0.4"/>
+  </svg>`
+}
+
+// the mirror's support strut — a lightweight truss arm
+export function strutSVG(w = 100, h = 130) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">
+    <path d="M24,112 L76,26" stroke="${BONE_DIM}" stroke-width="9" stroke-linecap="round"/>
+    <path d="M20,96 L64,20 M36,116 L82,42" stroke="${BONE_DIM}" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+    ${[0, 1, 2, 3].map((i) => `<line x1="${24 + i * 14}" y1="${112 - i * 22}" x2="${34 + i * 14}" y2="${96 - i * 22}" stroke="${CREAM}" stroke-width="4"/>`).join('')}
+    <circle cx="24" cy="112" r="9" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+    <circle cx="76" cy="26" r="9" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+  </svg>`
+}

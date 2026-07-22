@@ -134,11 +134,27 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
   **The spec's "oxygen hose" is now a safety tether** (Gidi approved, 2026-07-22):
   a spacewalker's air comes from the suit's own backpack, never a line to the ship.
   Item and puzzle unchanged; the fact corrected, and the catalog says so explicitly.
-- ⬜ **Next:** the James Webb room + Focus the Stars, then the wing finale.
+- ✅ **Room 5 — James Webb (Align the Golden Mirrors)** + its mini-game, **Focus the
+  Stars**. Three challenges deep: fit the support **strut** (from the Space Station)
+  and the missing **18th segment** (desk), then tap the seven crooked segments until
+  every notch points the same way — the eleven already-correct ones are the
+  reference, so no separate instructions are needed. Then Focus the Stars: eighteen
+  segments make eighteen images of one star, and you drag them into a single point,
+  which is what Webb's real commissioning looked like.
+- ✅ **THE WING IS COMPLETE.** Finishing all five rooms fires the Space Wing finale,
+  stamps the SPACE door in the lobby, and leaves the Dinosaur Wing untouched.
 
-Regression-tested end to end by `npm run verify` in the prototype (187 checks across
-`verify-wings`, `verify-economy`, `verify-spacewing`, `verify-solar`, `verify-mars`,
-`verify-moon`, `verify-station`).
+## The cross-room dependency graph (final)
+Every room feeds the next, so none is a place you visit once:
+**solar** hides Mars's rover wheel → **mars** hides a Moon mission card →
+**moon** hides the Station's safety tether → **station** hides Webb's mirror strut.
+The Supply Desk supplies the other half of each room (planet model, solar brush,
+mission card, rotate key, mirror segment), so exploring and trading are both
+required — neither alone finishes anything.
+
+Regression-tested end to end by `npm run verify` in the prototype (**225 checks**
+across eight suites: `verify-wings`, `verify-economy`, `verify-spacewing`,
+`verify-solar`, `verify-mars`, `verify-moon`, `verify-station`, `verify-webb`).
 
 ### Design notes worth keeping
 - **Countability beat realism in the orrery.** The first version fanned the planets

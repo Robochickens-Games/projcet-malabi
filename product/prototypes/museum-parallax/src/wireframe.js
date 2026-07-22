@@ -1277,6 +1277,7 @@ export const STATION_SPOTS = {
   tetherHook: { x: 2280, y: 640 },   // the airlock's empty tether anchor
   airlock: { x: 2280 },              // the module itself
   hatch: { x: 3020, w: 300, h: 250 },// the SPACEWALK DRIFT console
+  strut: { x: 2740, y: 902 },        // James Webb's mirror support strut
   rockA: { x: 980, y: 902 },
   rockB: { x: 3540, y: 906 },
   hint: { x: 3700, y: 1000 },
@@ -1426,5 +1427,151 @@ export function stationForeSVG() {
   return `${svgOpen(W, 1080)}
     ${[240, 1180, 3320, 4020].map(strut).join('')}
     ${speedTag('LAYER: NEAR STRUTS · 1.35x')}
+  ${'</svg>'}`
+}
+
+/* ===================== JAMES WEBB ROOM — the mirror bay (world: 3900) =====================
+   Not in Earth orbit: Webb sits at L2, about 1.5 million km out, always with its
+   sunshield between it and the Sun. So this room is the coldest and emptiest in
+   the wing — deep space, the layered kite of the sunshield below, and the golden
+   honeycomb above it. */
+
+export const WEBB_W = 3900
+
+// the 18 segment positions: a hexagonal close-pack of 19 with the centre left
+// open for the secondary mirror's support (see art.js SPACE_SILHOUETTES.webb)
+export const WEBB_HUB = { x: 2000, y: 430, r: 62 }
+export function webbTilePositions() {
+  const R = WEBB_HUB.r, dx = R * Math.sqrt(3), dy = R * 1.5
+  const rows = [[-1, -2, 3], [-1.5, -1, 4], [-2, 0, 5], [-1.5, 1, 4], [-1, 2, 3]]
+  const out = []
+  for (const [start, ry, n] of rows) {
+    for (let i = 0; i < n; i++) {
+      if (ry === 0 && i === 2) continue                  // the open centre
+      out.push({ x: WEBB_HUB.x + (start + i) * dx, y: WEBB_HUB.y + ry * dy })
+    }
+  }
+  return out
+}
+
+export const WEBB_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 640 },
+  strutSocket: { x: 1560, y: 690 },     // where the support strut clips on
+  segmentSocket: { x: 2440, y: 690 },   // the tray the 18th segment drops into
+  hub: WEBB_HUB,
+  console: { x: 3080, w: 300, h: 250 }, // FOCUS THE STARS
+  rockA: { x: 1020, y: 904 },
+  rockB: { x: 3560, y: 900 },
+  hint: { x: 3720, y: 1000 },
+}
+
+const B_LINE = '#cbd6e0'
+const B_SKY = '#02040a'
+const B_SHIELD = '#2a3346'
+const B_MID = '#1a2233'
+const B_MAIN = '#27303f'
+const B_FORE = '#39465b'
+
+export function webbSkySVG() {
+  const W = 2400
+  let stuff = ''
+  for (let i = 0; i < 170; i++) {
+    const x = (i * 149) % W
+    const y = (i * 197) % 1080
+    stuff += `<circle cx="${x}" cy="${y}" r="${0.9 + ((i * 23) % 5) * 0.42}" fill="#eaf1f8" opacity="${0.25 + ((i * 13) % 6) * 0.1}"/>`
+  }
+  // a few distant galaxies — what Webb is actually out here to look at
+  const galaxy = (x, y, rx, rot) => `
+    <g transform="translate(${x},${y}) rotate(${rot})">
+      <ellipse cx="0" cy="0" rx="${rx}" ry="${rx * 0.34}" fill="#c9a0e8" opacity="0.28"/>
+      <ellipse cx="0" cy="0" rx="${rx * 0.55}" ry="${rx * 0.2}" fill="#f0dcff" opacity="0.35"/>
+      <circle cx="0" cy="0" r="${rx * 0.12}" fill="#fff" opacity="0.55"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="0" width="${W}" height="1080" fill="${B_SKY}"/>
+    ${stuff}
+    ${galaxy(420, 220, 90, -18)}${galaxy(1580, 160, 120, 24)}${galaxy(2080, 620, 70, -40)}
+    ${speedTag('LAYER: DEEP FIELD · 0.1x')}
+  ${'</svg>'}`
+}
+
+export function webbShieldSVG() {
+  const W = 2800
+  // the five-layer sunshield, a tennis-court-sized kite that keeps the mirror
+  // colder than -220°C — the whole reason Webb can see infrared at all
+  let layers = ''
+  for (let i = 0; i < 5; i++) {
+    const o = i * 26
+    layers += `<path d="M${300 + o},${760 + o} L${W / 2},${640 + o} L${W - 300 - o},${760 + o} L${W / 2},${880 + o} Z"
+      fill="${B_SHIELD}" stroke="${B_LINE}" stroke-width="3" stroke-opacity="${0.5 - i * 0.06}" opacity="${0.92 - i * 0.1}"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    ${layers}
+    ${speedTag('LAYER: SUNSHIELD · 0.45x')}
+  ${'</svg>'}`
+}
+
+export function webbMainSVG() {
+  const S = WEBB_SPOTS
+  return `${svgOpen(WEBB_W, 1080)}
+    <rect x="0" y="880" width="${WEBB_W}" height="200" fill="${B_MAIN}"/>
+    <line x1="0" y1="880" x2="${WEBB_W}" y2="880" stroke="${B_LINE}" stroke-width="4"/>
+    ${roomFloorTicks(WEBB_W, B_LINE)}
+    ${roomBackPost(S, '&#8592; SPACE HALL')}
+    ${roomPlacard(S, B_LINE)}
+
+    <!-- the backplane the segments mount to, and the secondary-mirror tripod -->
+    <g transform="translate(${WEBB_HUB.x},0)">
+      <path d="M-260,760 L0,660 L260,760 L260,800 L0,700 L-260,800 Z" fill="${B_MID}" stroke="${B_LINE}" stroke-width="4"/>
+      <line x1="0" y1="660" x2="0" y2="${WEBB_HUB.y + 200}" stroke="${B_LINE}" stroke-width="6"/>
+      <path d="M-150,${WEBB_HUB.y - 40} L0,${WEBB_HUB.y - 250} L150,${WEBB_HUB.y - 40}"
+        fill="none" stroke="${B_LINE}" stroke-width="6"/>
+      <ellipse cx="0" cy="${WEBB_HUB.y - 250}" rx="52" ry="18" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="4"/>
+      ${tag(0, 120, 'JAMES WEBB SPACE TELESCOPE', B_LINE, 24)}
+      ${tag(0, 830, 'L2 &#183; 1.5 MILLION KM FROM EARTH', B_LINE, 17)}
+    </g>
+
+    <!-- the empty strut mount -->
+    <g transform="translate(${S.strutSocket.x},0)">
+      <rect x="-70" y="${S.strutSocket.y - 60}" width="140" height="150" rx="10" fill="${B_MID}" stroke="${B_LINE}" stroke-width="4"/>
+      <circle cx="0" cy="${S.strutSocket.y}" r="30" fill="none" stroke="${GOLD}" stroke-width="5" stroke-dasharray="8 7"/>
+      <circle cx="0" cy="${S.strutSocket.y}" r="8" fill="${GOLD}"/>
+      ${tag(0, S.strutSocket.y + 128, 'STRUT MOUNT', B_LINE, 16)}
+    </g>
+
+    <!-- the segment tray -->
+    <g transform="translate(${S.segmentSocket.x},0)">
+      <rect x="-80" y="${S.segmentSocket.y - 60}" width="160" height="150" rx="10" fill="${B_MID}" stroke="${B_LINE}" stroke-width="4"/>
+      <circle cx="0" cy="${S.segmentSocket.y}" r="32" fill="none" stroke="${GOLD}" stroke-width="5" stroke-dasharray="8 7"/>
+      ${tag(0, S.segmentSocket.y + 128, 'SEGMENT TRAY', B_LINE, 16)}
+    </g>
+
+    <!-- the focus console -->
+    <g transform="translate(${S.console.x},0)">
+      <rect x="-150" y="630" width="300" height="250" rx="12" fill="${B_MID}" stroke="${GOLD}" stroke-width="5"/>
+      <rect x="-116" y="662" width="232" height="120" rx="8" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="3"/>
+      <g fill="none" stroke="${GOLD}" stroke-width="3" opacity="0.8">
+        <circle cx="0" cy="722" r="34"/><circle cx="0" cy="722" r="14"/>
+        <line x1="-52" y1="722" x2="-40" y2="722"/><line x1="40" y1="722" x2="52" y2="722"/>
+      </g>
+      ${tag(0, 604, 'FOCUS THE STARS', GOLD, 19)}
+      ${tag(0, 830, '[ OBSERVE ]', GOLD, 16)}
+    </g>
+    ${roomHint(S)}
+    ${speedTag('LAYER: MIRROR BAY · 1.0x')}
+  ${'</svg>'}`
+}
+
+export function webbForeSVG() {
+  const W = 4200
+  const rail = (x) => `
+    <g transform="translate(${x},0)" stroke="${B_FORE}" stroke-width="6" fill="none">
+      <line x1="0" y1="1080" x2="0" y2="852"/>
+      <line x1="-84" y1="852" x2="84" y2="852"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    ${[260, 780, 3340, 3980].map(rail).join('')}
+    ${speedTag('LAYER: RAIL · 1.35x')}
   ${'</svg>'}`
 }

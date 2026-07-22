@@ -4,7 +4,7 @@ import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
   eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
   PLANETS, PLANET_BY_ID, planetSVG, roverWheelSVG, solarPanelSVG,
-  MOON_STEPS, missionCardSVG, tetherSVG, spaceToolSVG,
+  MOON_STEPS, missionCardSVG, tetherSVG, spaceToolSVG, hexTileSVG, strutSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -20,6 +20,7 @@ import {
   MOON_W, MOON_SPOTS, moonSkySVG, moonFarSVG, moonMidSVG, moonMainSVG, moonForeSVG,
   STATION_W, STATION_SPOTS, stationSkySVG, stationEarthSVG, stationTrussSVG, stationMainSVG,
   stationForeSVG, solarWingSVG,
+  WEBB_W, WEBB_SPOTS, webbTilePositions, webbSkySVG, webbShieldSVG, webbMainSVG, webbForeSVG,
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
@@ -28,6 +29,7 @@ import { openRoverGame, closeRoverGame, isRoverGameOpen, __roverPlanTo, __roverD
 import { openMoonBoard, closeMoonBoard, isMoonBoardOpen, __moonSolve, __moonSolveWrong } from './moonBoard.js'
 import { openRocketGame, closeRocketGame, isRocketGameOpen, __rocketStack, __rocketLaunch, __rocketPhase } from './rocketGame.js'
 import { openSpacewalk, closeSpacewalk, isSpacewalkOpen, __spacewalkGrabAll, __spacewalkToHatch, __spacewalkState } from './spacewalkGame.js'
+import { openTelescope, closeTelescope, isTelescopeOpen, __focusSet, __focusState } from './telescopeGame.js'
 import {
   SPACE_ROCKS, SPACE_TOOLS, isRock, itemArt, rockInstance, rockType, rockOf,
   openSupplyDesk, closeSupplyDesk, isSupplyDeskOpen, refreshSupplyDesk,
@@ -53,6 +55,7 @@ const WORLDS = {
   mars: { w: MARS_W },
   moon: { w: MOON_W },
   station: { w: STATION_W },
+  webb: { w: WEBB_W },
 }
 
 const $ = (id) => document.getElementById(id)
@@ -192,10 +195,10 @@ function setupInput() {
     }
     drag = null
   }
-  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !isSpacewalkOpen() && !uiHit(e)) dragStart(e.clientX) })
+  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !isSpacewalkOpen() && !isTelescopeOpen() && !uiHit(e)) dragStart(e.clientX) })
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
   window.addEventListener('mouseup', () => dragEnd())
-  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !isSpacewalkOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
+  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !isSpacewalkOpen() && !isTelescopeOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
@@ -404,7 +407,7 @@ function revealMark(node, { glow = false } = {}) {
 
 /* ---------- boot ---------- */
 // no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
-let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar, mars, moon, station
+let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar, mars, moon, station, webb
 let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow, placedTooth
 let featherSprite, featherSparkle
 const scenes = {}                                  // name → scene container
@@ -1345,6 +1348,10 @@ async function buildStation() {
   }, 'station:hatch'))
 
   const clueL = scrollLayer(1.12)
+  /* Webb's mirror strut is here — the last link in the chain that runs
+     solar → mars → moon → station → webb. Every room feeds the next one. */
+  const strutT = await svgTexture(strutSVG(78, 101))
+  addHiddenClue(clueL, S.strut, 'mirrorStrut', strutT)
   addHiddenClue(clueL, S.rockA, rockInstance('stardust', 'station'), rockAT)
   addHiddenClue(clueL, S.rockB, rockInstance('meteorite', 'station'), rockBT)
 
@@ -1359,6 +1366,182 @@ async function buildStation() {
   station._main = mainL
   station._challenges = ['repairs', 'game']
   makeDust(station, 18, STATION_W, 0xbfd8ea)
+}
+
+/* ---------- JAMES WEBB ROOM — Align the Golden Mirrors ----------
+   The last exhibit, and three challenges deep. First the two repairs: a support
+   STRUT (over in the Space Station) and the missing 18th SEGMENT (bought at the
+   desk). Then the alignment itself — seven of the eighteen segments are turned
+   the wrong way, and tapping one rotates it a sixth of a turn until every notch
+   points the same way. Finally the focus, in Focus the Stars.
+
+   Eighteen segments, gold-coated because gold reflects INFRARED, which is the
+   light Webb is built for. Aligning them one at a time is what commissioning
+   really was. */
+const WEBB_LOOSE = 7                    // how many segments start turned wrong
+
+async function buildWebb() {
+  const [skyT, shieldT, mainT, foreT, rockAT, rockBT] = await Promise.all([
+    webbSkySVG(), webbShieldSVG(), webbMainSVG(), webbForeSVG(),
+    spaceRockSVG('starShard', 62, 80), spaceRockSVG('stardust', 60, 78),
+  ].map(svgTexture))
+
+  const skyL = bgLayer(0.1, skyT, 2400 / 2)
+  const shieldL = bgLayer(0.45, shieldT, 2800 / 2)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, WEBB_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = WEBB_SPOTS
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('spacehub'), 'webb:back'))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
+    sfx.tap()
+    toast('EXHIBIT 5 — JAMES WEBB. <b>18</b> gold mirror segments, out at <b>L2</b>, 1.5 million km away. One segment is missing and its support strut has come off.', 7000)
+  }, 'webb:placard'))
+
+  // ---- the two repairs ----
+  const strutGlow = new Graphics()
+    .circle(0, 0, 60).fill({ color: 0xffd98a, alpha: 0.16 }).stroke({ color: 0xffd98a, width: 6, alpha: 0.85 })
+  placeAt(strutGlow, S.strutSocket.x, S.strutSocket.y)
+  strutGlow.alpha = 0
+  strutGlow.blendMode = 'add'
+  mainL.addChild(strutGlow)
+  const strutT = await svgTexture(strutSVG(116, 151))
+  const strutPlaced = new Sprite(strutT)
+  strutPlaced.anchor.set(0.5)
+  placeAt(strutPlaced, S.strutSocket.x, S.strutSocket.y)
+  strutPlaced.alpha = 0
+  mainL.addChild(strutPlaced)
+
+  const segGlow = new Graphics()
+    .circle(0, 0, 62).fill({ color: 0xffd98a, alpha: 0.16 }).stroke({ color: 0xffd98a, width: 6, alpha: 0.85 })
+  placeAt(segGlow, S.segmentSocket.x, S.segmentSocket.y)
+  segGlow.alpha = 0
+  segGlow.blendMode = 'add'
+  mainL.addChild(segGlow)
+
+  webb._drops = [
+    {
+      item: 'mirrorStrut',
+      skeleton: { x: S.strutSocket.x, y: S.strutSocket.y - 80, w: 220, h: 190 },
+      socket: S.strutSocket, glow: strutGlow, placed: strutPlaced, done: false,
+      success: { html: 'The support strut is back on. Webb’s whole mirror rides on a lightweight <b>backplane</b> that barely moves at all — even at 220 degrees below zero.' },
+    },
+    {
+      item: 'mirrorPart',
+      skeleton: { x: S.segmentSocket.x, y: S.segmentSocket.y - 80, w: 240, h: 190 },
+      socket: S.segmentSocket, glow: segGlow, placed: segGlow, done: false,
+      onPlace: () => { webb._tiles.forEach((t) => { t.sprite.visible = true }) },
+      success: { html: 'That’s all <b>18</b> segments. They’re coated in real <b>gold</b> — because gold reflects <b>infrared</b> light, and infrared is exactly what Webb was built to see.' },
+    },
+  ]
+
+  /* ---- the mirror array: 18 tappable segments ----
+     The last one only appears once it's been fitted. Seven start rotated; a tap
+     turns one a sixth of a turn. Aligned segments are drawn with a pale rim, so
+     the 11 already-correct ones ARE the reference — no separate instructions. */
+  const [tileT, tileAlignedT] = await Promise.all([hexTileSVG(124, false), hexTileSVG(124, true)].map(svgTexture))
+  const positions = webbTilePositions()
+  webb._tiles = []
+  positions.forEach((pos, i) => {
+    const sprite = new Sprite(tileT)
+    sprite.anchor.set(0.5)
+    placeAt(sprite, pos.x, pos.y)
+    sprite.eventMode = 'static'
+    sprite.cursor = 'pointer'
+    const loose = i < WEBB_LOOSE
+    // a wrong turn is 1..5 sixths — never 0, or a "loose" tile would start right
+    const steps = loose ? 1 + Math.floor(Math.random() * 5) : 0
+    sprite.rotation = (Math.PI / 3) * steps
+    if (i === positions.length - 1) sprite.visible = false   // the missing segment
+    if (steps === 0) sprite.texture = tileAlignedT
+    const tile = { sprite, steps, loose }
+    sprite.on('pointertap', () => tapMirrorTile(tile))
+    mainL.addChild(sprite)
+    webb._tiles.push(tile)
+  })
+  webb._mirrors = { done: false, alignedTex: tileAlignedT, plainTex: tileT }
+
+  // ---- the focus console ----
+  const consoleGlow = new Graphics()
+    .roundRect(0, 0, 300, 250, 12).stroke({ color: 0xffd98a, width: 7, alpha: 0.9 })
+  placeAt(consoleGlow, S.console.x - 150, 630)
+  consoleGlow.alpha = 0
+  consoleGlow.blendMode = 'add'
+  mainL.addChild(consoleGlow)
+  webb._consoleGlow = consoleGlow
+  webb._gameBadge = solvedSeal(S.console.x + 126, 672, { r: 34, caption: '' })
+  mainL.addChild(webb._gameBadge)
+
+  mainL.addChild(hitRect(S.console.x - 150, 610, 300, 270, () => {
+    sfx.tap()
+    if (webb._gameDone) { toast('Already focused. That galaxy isn’t going anywhere. ✨', 3500); return }
+    if (!webb._drops.every((d) => d.done)) {
+      toast('The mirror isn’t whole yet — it still needs its <b>support strut</b> and the last <b>segment</b>.', 5500)
+      return
+    }
+    if (!webb._mirrors.done) {
+      toast('The segments are still pointing different ways. <b>Tap</b> the crooked ones until every notch points up.', 6000)
+      return
+    }
+    openTelescope({
+      onComplete: () => onMinigameSolved('webb'),
+      onClose: () => afterMinigameClose('webb'),
+    })
+  }, 'webb:console'))
+
+  webb._onRepair = () => {
+    if (!webb._drops.every((d) => d.done) || webb._repairsDone) return
+    webb._repairsDone = true
+    setTimeout(() => toast('All 18 segments are mounted — but they’re pointing every which way. <b>Tap</b> a crooked one to turn it.', 6500), 1600)
+  }
+
+  const clueL = scrollLayer(1.12)
+  addHiddenClue(clueL, S.rockA, rockInstance('starShard', 'webb'), rockAT)
+  addHiddenClue(clueL, S.rockB, rockInstance('stardust', 'webb'), rockBT)
+
+  const foreL = scrollLayer(1.35)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 4200 / 2, 540)
+  foreL.addChild(fore)
+
+  webb.addChild(skyL, shieldL, mainL, clueL, foreL)
+  webb._layers = [skyL, shieldL, mainL, clueL, foreL]
+  webb._main = mainL
+  webb._challenges = ['repairs', 'mirrors', 'game']
+  makeDust(webb, 16, WEBB_W, 0xd9c9f0)
+}
+
+// tap a segment: turn it a sixth of a turn. Aligned tiles gain a pale rim, so
+// the ones already right show you what right looks like.
+function tapMirrorTile(tile) {
+  if (!webb || webb._mirrors.done || !tile.sprite.visible) return
+  if (!webb._drops.every((d) => d.done)) {
+    sfx.tap()
+    toast('Fit the last segment and its strut first — then the mirror can be aligned.', 4500)
+    return
+  }
+  sfx.tap()
+  tile.steps = (tile.steps + 1) % 6
+  gsap.to(tile.sprite, { rotation: tile.sprite.rotation + Math.PI / 3, duration: 0.32, ease: 'back.out(2)' })
+  tile.sprite.texture = tile.steps === 0 ? webb._mirrors.alignedTex : webb._mirrors.plainTex
+
+  if (webb._tiles.every((t) => t.steps === 0)) {
+    webb._mirrors.done = true
+    sfx.success()
+    for (const t of webb._tiles) {
+      t.sprite.texture = webb._mirrors.alignedTex
+      gsap.fromTo(t.sprite.scale, { x: 1.14, y: 1.14 }, { x: 1, y: 1, duration: 0.5, ease: 'back.out(3)' })
+    }
+    gsap.to(webb._consoleGlow, { alpha: 0.85, duration: 0.8 })
+    gsap.to(webb._consoleGlow, { alpha: 0.35, duration: 1.2, yoyo: true, repeat: -1, delay: 0.8 })
+    confetti(webb._tiles[0].sprite)
+    setTimeout(() => toast('Every notch points the same way — <b>18 mirrors acting as one</b>. Now focus it.', 6000), 700)
+  }
 }
 
 /* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
@@ -1808,20 +1991,37 @@ for (const [wingId, w] of Object.entries(WINGS)) {
    knowing room names. A WING is done when every one of its rooms is. Each room stamps
    a SOLVED seal on its diorama in the hall; the wing stamps its lobby door and fires
    a grand finale. */
-const CHALLENGE_DONE = {
-  drop: (sc) => !!sc._drop?.done,   // drag a clue onto the skeleton
-  foot: (sc) => !!sc._foot?.done,   // the T-rex foot-assembly puzzle
-  game: (sc) => !!sc._gameDone,     // a mini-game hit its goal
-  orrery: (sc) => !!sc._orrery?.done,           // every planet back on its ring
-  repairs: (sc) => !!sc._drops?.every((d) => d.done), // every repair in the room done
-  sequence: (sc) => !!sc._sequence?.done,       // the mission cards are in order
+/* Every kind of challenge a room can declare, as a pair: how to tell it's done,
+   and how to force it done. They live together so the test/screenshot hook can
+   never fall behind the game — an earlier version of `force` only knew the dino
+   wing's types, so __solveWing('space') fired the wing finale for a wing that
+   was not actually finished. */
+const CHALLENGES = {
+  // drag a clue onto the skeleton
+  drop: { done: (sc) => !!sc._drop?.done,
+    force: (sc) => { if (sc._drop) { sc._drop.done = true; if (sc._drop.placed) sc._drop.placed.alpha = 1 } } },
+  // the T-rex foot-assembly puzzle
+  foot: { done: (sc) => !!sc._foot?.done, force: (sc) => { if (sc._foot) sc._foot.done = true } },
+  // a mini-game hit its goal
+  game: { done: (sc) => !!sc._gameDone,
+    force: (sc) => { sc._gameDone = true; if (sc._gameBadge) revealMark(sc._gameBadge) } },
+  // every planet back on its ring
+  orrery: { done: (sc) => !!sc._orrery?.done, force: (sc) => { if (sc._orrery) sc._orrery.done = true } },
+  // every repair in a multi-repair room
+  repairs: { done: (sc) => !!sc._drops?.every((d) => d.done),
+    force: (sc) => { for (const d of sc._drops ?? []) { d.done = true; if (d.placed) d.placed.alpha = 1 } } },
+  // the mission cards are in order
+  sequence: { done: (sc) => !!sc._sequence?.done, force: (sc) => { if (sc._sequence) sc._sequence.done = true } },
+  // every mirror segment aligned
+  mirrors: { done: (sc) => !!sc._mirrors?.done,
+    force: (sc) => { if (sc._mirrors) sc._mirrors.done = true; for (const t of sc._tiles ?? []) t.steps = 0 } },
 }
 
 function roomComplete(name) {
   const sc = scenes[name]
   // no `_challenges` yet = the builder hasn't run — an unbuilt room is NOT complete
   if (!sc?._challenges?.length) return false
-  return sc._challenges.every((c) => CHALLENGE_DONE[c](sc))
+  return sc._challenges.every((c) => CHALLENGES[c].done(sc))
 }
 // a wing with no rooms yet (one still being built) is NOT complete — `[].every()`
 // is true, which would otherwise stamp its seal and fire its finale on boot
@@ -1839,6 +2039,7 @@ function goScene(target) {
   if (isMoonBoardOpen()) closeMoonBoard()
   if (isRocketGameOpen()) closeRocketGame()
   if (isSpacewalkOpen()) closeSpacewalk()
+  if (isTelescopeOpen()) closeTelescope()
   const from = scenes[state.scene]
   const to = scenes[target]
   const dir = DEPTH[target] >= DEPTH[state.scene] ? -1 : 1
@@ -1870,6 +2071,7 @@ const SPACE_ROOM_ENTER = {
   mars: 'The Mars bay. The rover is missing a <b>wheel</b>, and its solar panel is buried in <b>red dust</b>. Fix both, then take it for a drive.',
   moon: 'The Apollo 11 landing site — that really is <b>Earth</b> up there. Six <b>mission cards</b> have come off the board. Find them all, then put the mission back in order.',
   station: 'Outside the station, <b>400 km</b> above the Earth. The airlock’s <b>safety tether</b> is unclipped and the <b>solar array</b> is turned away from the Sun.',
+  webb: 'The James Webb telescope, a million and a half kilometres from home. A <b>mirror segment</b> is missing, its <b>strut</b> has come off — and the rest are pointing every which way.',
 }
 
 function onSceneEnter(target) {
@@ -1938,6 +2140,7 @@ const ITEM_SVG = {
   roverWheel: (w, h) => roverWheelSVG(w, h),
   ...Object.fromEntries(MOON_STEPS.map((s) => [`card:${s.id}`, (w, h) => missionCardSVG(s.id, w, h)])),
   safetyTether: (w, h) => tetherSVG(w, h),
+  mirrorStrut: (w, h) => strutSVG(w, h),
 }
 const CLUE_TOAST = {
   feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
@@ -1968,6 +2171,7 @@ const ITEM_INFO = {
   ...Object.fromEntries(MOON_STEPS.map((s) =>
     [`card:${s.id}`, { name: `${s.name} card`, section: 'Moon Missions', found: 'Space Wing', note: s.blurb }])),
   safetyTether: { name: 'Safety Tether', section: 'Supplies', found: 'The Moon' },
+  mirrorStrut: { name: 'Mirror Strut', section: 'Supplies', found: 'The Space Station' },
 }
 
 /* A bag item id is usually the item itself, but a space rock is an INSTANCE
@@ -2893,6 +3097,42 @@ const STATION_SECTION = {
     </div>`,
 }
 
+/* THE GOLDEN MIRROR — Webb's section. The two facts kids' media most often gets
+   wrong about Webb are that it orbits the Earth (it doesn't — it's at L2, four
+   times further away than the Moon) and that its pictures are what you'd see
+   with your eyes (they're infrared, translated into colours we can look at). */
+const WEBB_SECTION = {
+  id: 'webb', title: 'The Golden Mirror', blurb: 'Webb, and why it’s gold.',
+  icon: hexTileSVG(38, true), tag: 'telescope log', ready: true,
+  render: () => `
+    <div class="cat-card">
+      <div class="art trait">${hexTileSVG(104, true)}</div>
+      <h3>Eighteen segments</h3>
+      <div class="cat-note">Webb’s main mirror is <b>18 hexagons</b> of a light metal called
+        <b>beryllium</b>, each about 1.3 m across, fitted together into one big honeycomb. Each one
+        was nudged into place separately until all eighteen worked as a single mirror.</div>
+    </div>
+    <div class="cat-card">
+      <h3>Why gold?</h3>
+      <div class="cat-note">The segments wear a coat of real <b>gold</b> — thinner than a hair — because
+        gold is very good at bouncing back <b>infrared</b> light. Infrared is the light Webb was built
+        to see, so gold is the right mirror for the job.</div>
+    </div>
+    <div class="cat-card">
+      <h3>Where it lives</h3>
+      <div class="cat-note">Webb does <b>not</b> circle the Earth the way Hubble does. It sits at a
+        quiet spot called <b>L2</b>, about <b>1.5 million km</b> away — four times further than the
+        Moon. Its kite-shaped <b>sunshield</b> always stays between it and the Sun, keeping the mirror
+        colder than −220°C. It launched in <b>December 2021</b>.</div>
+    </div>
+    <div class="cat-card">
+      <h3>Pictures of invisible light</h3>
+      <div class="cat-note">Because Webb sees <b>infrared</b>, its photographs show light your eyes
+        can’t. The colours are chosen afterwards so people can look at them — beautiful, and true,
+        but not quite what you’d see out of a window.</div>
+    </div>`,
+}
+
 const CATALOG_SECTIONS = [
   SECTION('teeth', 'Teeth', 'A tooth tells you what a dinosaur ate.', toothSVG('leaf', 34, 42),
     (d) => toothSVG(d.tooth, 96, 120), (d) => d.toothNote),
@@ -2906,6 +3146,7 @@ const CATALOG_SECTIONS = [
   STAR_ATLAS_SECTION,
   MOON_MISSIONS_SECTION,
   STATION_SECTION,
+  WEBB_SECTION,
 ]
 
 function renderCatalogCover() {
@@ -3006,7 +3247,7 @@ async function boot() {
   window.addEventListener('resize', layout)
 
   // every scene is a Container of parallax layers; only the active one is visible
-  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar', 'mars', 'moon', 'station']) {
+  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar', 'mars', 'moon', 'station', 'webb']) {
     const c = new Container()
     c._layers = []
     c._dust = []
@@ -3014,7 +3255,7 @@ async function boot() {
     root.addChild(c)
     scenes[name] = c
   }
-  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar, mars, moon, station } = scenes)
+  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar, mars, moon, station, webb } = scenes)
 
   $('back-btn').addEventListener('pointerdown', () => goScene(SCENE_BACK[state.scene] || 'lobby'))
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
@@ -3055,7 +3296,7 @@ async function boot() {
   if (!econ.ok) {
     console.error('[economy] SOFT-LOCK RISK — placed rocks cannot fund the tools', econ)
   }
-  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar(), buildMars(), buildMoon(), buildStation()])
+  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar(), buildMars(), buildMoon(), buildStation(), buildWebb()])
 
   let t = 0
   app.ticker.add((ticker) => {
@@ -3144,6 +3385,18 @@ async function boot() {
   window.__spacewalkState = () => __spacewalkState()
   window.__spacewalkGrabAll = () => __spacewalkGrabAll()
   window.__spacewalkToHatch = () => __spacewalkToHatch()
+  window.__webbRepairs = () => (webb?._drops ?? []).map((d) => ({ item: d.item, done: d.done }))
+  window.__webbTiles = () => (webb?._tiles ?? []).map((t) => ({ steps: t.steps, visible: t.sprite.visible }))
+  window.__webbMirrorsDone = () => !!webb?._mirrors?.done
+  window.__tapTile = (i) => { const t = webb?._tiles?.[i]; if (t) tapMirrorTile(t); return !!t }
+  window.__alignMirrors = () => {
+    if (!webb) return false
+    for (const t of webb._tiles) { while (t.steps !== 0) tapMirrorTile(t) }
+    return webb._mirrors.done
+  }
+  window.__telescopeOpen = () => isTelescopeOpen()
+  window.__focusSet = (x, y) => __focusSet(x, y)
+  window.__focusState = () => __focusState()
   window.__repairs = () => (mars?._drops ?? []).map((d) => ({ item: d.item, done: d.done }))
   window.__consoleLit = () => !!mars?._consoleLit
   // use an item on the repair that wants it, going through the real placement path
@@ -3174,12 +3427,15 @@ async function boot() {
   window.__solveWing = (w = 'dino') => {
     for (const r of WINGS[w].rooms) {
       const sc = scenes[r]
-      if (sc._drop) { sc._drop.done = true; if (sc._drop.placed) sc._drop.placed.alpha = 1 }
-      if (sc._foot) sc._foot.done = true
-      if (sc._gameBadge) { sc._gameDone = true; revealMark(sc._gameBadge) }
+      if (!sc?._challenges) continue                 // room not built yet
+      for (const c of sc._challenges) CHALLENGES[c].force(sc)
       markRoomComplete(r)
     }
+    // only celebrate a wing that really is finished — forcing the challenges is
+    // the point, and if that didn't work the finale must not paper over it
+    if (!wingComplete(w)) return false
     showWingFinale(w)
+    return true
   }
 
   $('walk-arrow').classList.remove('hidden')

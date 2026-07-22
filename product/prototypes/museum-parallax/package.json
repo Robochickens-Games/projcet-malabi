@@ -8,7 +8,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview --host",
-    "verify": "node scripts/verify-wings.mjs && node scripts/verify-economy.mjs && node scripts/verify-spacewing.mjs && node scripts/verify-solar.mjs && node scripts/verify-mars.mjs && node scripts/verify-moon.mjs && node scripts/verify-station.mjs"
+    "verify": "node scripts/verify-wings.mjs && node scripts/verify-economy.mjs && node scripts/verify-spacewing.mjs && node scripts/verify-solar.mjs && node scripts/verify-mars.mjs && node scripts/verify-moon.mjs && node scripts/verify-station.mjs && node scripts/verify-webb.mjs"
   },
   "dependencies": {
     "gsap": "^3.12.7",
