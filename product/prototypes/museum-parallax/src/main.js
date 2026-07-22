@@ -29,7 +29,7 @@ import { initTilt, onTilt, requestTilt, tiltNeedsPermission } from './tilt.js'
 import { openOrbitGame, closeOrbitGame, isOrbitGameOpen, __orbitForceWin, __orbitState, __orbitSim, __orbitPlace } from './orbitGame.js'
 import { openRoverGame, closeRoverGame, isRoverGameOpen, __roverPlanTo, __roverDrive, __roverDriving, __roverReroll } from './roverGame.js'
 import { openMoonBoard, closeMoonBoard, isMoonBoardOpen, __moonSolve, __moonSolveWrong } from './moonBoard.js'
-import { openRocketGame, closeRocketGame, isRocketGameOpen, __rocketStack, __rocketLaunch, __rocketPhase } from './rocketGame.js'
+import { openRocketGame, closeRocketGame, isRocketGameOpen, __rocketStack, __rocketStackWith, __rocketLaunch, __rocketPhase, __rocketMessage } from './rocketGame.js'
 import { openSpacewalk, closeSpacewalk, isSpacewalkOpen, __spacewalkGrabAll, __spacewalkToHatch, __spacewalkState } from './spacewalkGame.js'
 import { openTelescope, closeTelescope, isTelescopeOpen, __focusSet, __focusState } from './telescopeGame.js'
 import {
@@ -1062,8 +1062,8 @@ async function buildMars() {
   const clueL = scrollLayer(1.12)
   /* One of the Moon room's mission cards is here, not there — the dependency
      runs both ways between these two rooms, so neither is a place you visit once. */
-  const cardT = await svgTexture(missionCardSVG('onTheWay', 84, 112))
-  addHiddenClue(clueL, S.card, 'card:onTheWay', cardT)
+  const cardT = await svgTexture(missionCardSVG('docking', 84, 112))
+  addHiddenClue(clueL, S.card, 'card:docking', cardT)
   addHiddenClue(clueL, S.rockA, rockInstance('meteorite', 'mars'), rockAT)
   addHiddenClue(clueL, S.rockB, rockInstance('lunarChip', 'mars'), rockBT)
 
@@ -1091,11 +1091,11 @@ async function buildMars() {
 }
 
 /* ---------- MOON ROOM — Rebuild the Landing Sequence ----------
-   Six mission cards, gathered from four different places, then put in the order
+   Ten mission cards, gathered from four different places, then put in the order
    the real Apollo 11 mission happened. Three cards are lying around this room,
    one is over in the Mars bay, one is sold at the Supply Desk, and the last is
    won by stacking a Saturn V correctly in Build-a-Rocket. You cannot open the
-   board until you hold all six — the collecting IS the first half of the puzzle. */
+   board until you hold them all — the collecting IS the first half of the puzzle. */
 async function buildMoon() {
   const [skyT, farT, midT, mainT, foreT, rockAT, rockBT] = await Promise.all([
     moonSkySVG(), moonFarSVG(), moonMidSVG(), moonMainSVG(), moonForeSVG(),
@@ -1116,7 +1116,7 @@ async function buildMoon() {
   mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('spacehub'), 'moon:back'))
   mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
     sfx.tap()
-    toast('EXHIBIT 3 — APOLLO 11. Six mission cards have come off the board. Find them all, then put the mission back in order.', 6500)
+    toast('EXHIBIT 3 — APOLLO 11. Ten mission cards have come off the board. Find them all, then work out what order the mission went in.', 6500)
   }, 'moon:placard'))
 
   // the board glows once every card is in hand — the world says "you're ready"
@@ -1178,7 +1178,7 @@ async function buildMoon() {
   }, 'moon:bench'))
 
   /* ---- THE SIGNAL LAMP ----
-     The clue. It flashes the six mission colours in the order the mission
+     The clue. It flashes the ten mission colours in the order the mission
      actually happened, on a loop, from the moment you walk in — nobody tells the
      player what it's for. Each flash also carries the card's shape, so the
      sequence is readable without relying on colour vision.
@@ -1204,7 +1204,7 @@ async function buildMoon() {
   mainL.addChild(wash)
 
   moon._lamp = { index: -1, order: MOON_STEPS.map((x) => x.id) }
-  const ON = 700, GAP = 260, LOOP_PAUSE = 1500
+  const ON = 560, GAP = 200, LOOP_PAUSE = 1400   // ~9s for a full ten-flash cycle
   let lampTimer = null
   const lampStep = (i) => {
     if (!moon) return
@@ -1239,8 +1239,11 @@ async function buildMoon() {
 
   // three of the six cards are hidden here
   const clueL = scrollLayer(1.12)
-  const roomCards = ['liftoff', 'touchdown', 'firstSteps']
-  const spots = [S.cardA, S.cardB, S.cardC]
+  /* Seven of the ten are hidden in this room, one is over in the Mars bay, one is
+     sold at the Supply Desk and one is won in Build-a-Rocket — the same four
+     sources as before, just more to find in the room itself. */
+  const roomCards = ['liftoff', 'separates', 'moonPull', 'landing', 'samples', 'ascent', 'homeward']
+  const spots = [S.cardA, S.cardB, S.cardC, S.cardD, S.cardE, S.cardF, S.cardG]
   await Promise.all(roomCards.map(async (id, i) => {
     const tex = await svgTexture(missionCardSVG(id, 84, 112))
     addHiddenClue(clueL, spots[i], `card:${id}`, tex)
@@ -1272,7 +1275,7 @@ function refreshMoonBoardCue() {
   moon._boardLit = true
   gsap.to(moon._boardGlow, { alpha: 0.9, duration: 0.8 })
   gsap.to(moon._boardGlow, { alpha: 0.35, duration: 1.2, yoyo: true, repeat: -1, delay: 0.8 })
-  setTimeout(() => toast('That’s all six mission cards! The <b>LANDING SEQUENCE</b> board is ready.', 6000), 900)
+  setTimeout(() => toast('That’s all ten mission cards! The <b>LANDING SEQUENCE</b> board is ready.', 6000), 900)
 }
 
 /* ---------- SPACE STATION ROOM — Fix the Airlock ----------
@@ -2125,7 +2128,7 @@ const ROOM_ENTER = {
 const SPACE_ROOM_ENTER = {
   solar: 'The planetarium! Three rings on the orrery are <b>empty</b>. Read the <b>STAR ATLAS</b> on the lectern to work out which planet goes where.',
   mars: 'The Mars bay. The rover is missing a <b>wheel</b>, and its solar panel is buried in <b>red dust</b>. Fix both, then take it for a drive.',
-  moon: 'The Apollo 11 landing site — that really is <b>Earth</b> up there. Six <b>mission cards</b> have come off the board. Find them all, then work out what order the mission went in.',
+  moon: 'The Apollo 11 landing site — that really is <b>Earth</b> up there. Ten <b>mission cards</b> have come off the board. Find them all, then work out what order the mission went in.',
   station: 'Outside the station, <b>400 km</b> above the Earth. The airlock’s <b>safety tether</b> is unclipped and the <b>solar array</b> is turned away from the Sun.',
   webb: 'The James Webb telescope, a million and a half kilometres from home. A <b>mirror segment</b> is missing, its <b>strut</b> has come off — and the rest are pointing every which way.',
 }
@@ -2171,10 +2174,16 @@ function onSceneEnter(target) {
    is the scarcest thing we have, and rocks crowding out quest items in a 6-slot
    grid was the real problem. An item's pouch follows from what it IS, so nothing
    has to remember to file it correctly. */
-const pouchOf = (itemId) => (isRock(itemId) ? 'rocks' : 'finds')
-const gridSel = (pouch) => (pouch === 'rocks' ? '#rock-grid' : '#inventory-grid')
+/* Three pouches now. The Moon's ten mission cards are neither tools you drag onto
+   an exhibit nor currency you sell — they're a set you assemble for one board — and
+   ten of them will not fit in a six-slot Finds grid, which is how this pouch came
+   to exist at all. */
+const isCard = (itemId) => itemId.startsWith('card:')
+const pouchOf = (itemId) => (isRock(itemId) ? 'rocks' : isCard(itemId) ? 'cards' : 'finds')
+const gridSel = (pouch) =>
+  pouch === 'rocks' ? '#rock-grid' : pouch === 'cards' ? '#card-grid' : '#inventory-grid'
 const slotsIn = (pouch) => [...document.querySelectorAll(`${gridSel(pouch)} .inv-slot`)]
-const allSlots = () => [...slotsIn('finds'), ...slotsIn('rocks')]
+const allSlots = () => [...slotsIn('finds'), ...slotsIn('rocks'), ...slotsIn('cards')]
 
 const invSlot = (i) => slotsIn('finds')[i]
 const invSlotFor = (item) => allSlots().find((s) => s.dataset.item === item)
@@ -2354,11 +2363,15 @@ function showPouch(pouch) {
   closeItemDetail()
 }
 
-function revealRockPouch() {
-  const tab = document.querySelector('#inv-tabs .inv-tab[data-tab="rocks"]')
+// a pouch's tab appears the first time something belongs in it, so the Dinosaur
+// Wing's rail stays exactly as it was
+function revealPouch(pouch) {
+  const tab = document.querySelector(`#inv-tabs .inv-tab[data-tab="${pouch}"]`)
   if (!tab || !tab.classList.contains('hidden')) return
   tab.classList.remove('hidden')
-  $('inv-tabs').classList.add('two')
+  const shown = document.querySelectorAll('#inv-tabs .inv-tab:not(.hidden)').length
+  $('inv-tabs').classList.toggle('two', shown === 2)
+  $('inv-tabs').classList.toggle('three', shown >= 3)
 }
 
 // the rock count + what the pouch is worth: the child can see their pile growing
@@ -2369,6 +2382,12 @@ function updatePouchTotals() {
   if (countEl) countEl.textContent = String(rocks.length)
   const totalEl = $('rock-total')
   if (totalEl) totalEl.textContent = String(rocks.reduce((sum, id) => sum + (rockOf(id)?.value ?? 0), 0))
+
+  const cards = Object.keys(state.has).filter(isCard)
+  const cardCount = document.querySelector('#inv-tabs .inv-tab[data-tab="cards"] .inv-tab-count')
+  if (cardCount) cardCount.textContent = String(cards.length)
+  const cardTotal = $('card-total')
+  if (cardTotal) cardTotal.textContent = String(cards.length)
 }
 
 function grantItem(itemId) {
@@ -2376,14 +2395,14 @@ function grantItem(itemId) {
   const pouch = pouchOf(itemId)
   const slotEl = nextEmptySlotIn(pouch)
   if (!slotEl) {
-    toast(pouch === 'rocks'
-      ? 'Your rock pouch is full — sell some at the Supply Desk!'
+    toast(pouch === 'rocks' ? 'Your rock pouch is full — sell some at the Supply Desk!'
+      : pouch === 'cards' ? 'Your card wallet is full.'
       : 'Your bag is full — use something first.', 4500)
     return false
   }
   state.has[itemId] = true
   sfx.pickup()
-  if (pouch === 'rocks') revealRockPouch()
+  if (pouch !== 'finds') revealPouch(pouch)
   fillInvSlot(slotEl, itemId)
   gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
   updatePouchTotals()
@@ -2432,12 +2451,20 @@ function pickUpClue(itemId) {
   // open the inventory so the clue has a visible slot to fly into, on the pouch
   // that's about to receive it — the find must land somewhere the child can see
   openRailInstant('inventory-rail')
-  if (pouch === 'rocks') revealRockPouch()
+  if (pouch !== 'finds') revealPouch(pouch)
   showPouch(pouch)
 
   const gp = clue.sprite.getGlobalPosition()
   const slotEl = nextEmptyInvSlot(itemId)
   if (slotEl) {
+    /* Claim the slot NOW, not when the fly-in lands. The animation runs for
+       0.8s, and picking up two things inside that window used to hand both the
+       same slot — the second one overwrote the first and an item you were
+       holding vanished from the bag. The slot sits empty-but-claimed while the
+       item flies to it, which also reads as "it's going there". */
+    slotEl.classList.remove('empty')
+    slotEl.classList.add('filled')
+    slotEl.dataset.item = itemId
     const slot = slotEl.getBoundingClientRect()
     const fly = document.createElement('div')
     fly.style.cssText = 'position:fixed;left:0;top:0;z-index:40;pointer-events:none;will-change:transform'
@@ -2450,9 +2477,6 @@ function pickUpClue(itemId) {
         duration: 0.8, ease: 'power2.inOut',
         onComplete: () => {
           fly.remove()
-          slotEl.classList.remove('empty')
-          slotEl.classList.add('filled')
-          slotEl.dataset.item = itemId
           slotEl.innerHTML = slotInner(itemId)
           gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
           updatePouchTotals()
@@ -2901,7 +2925,7 @@ const allPlacedRocks = () =>
    desk stays vague on purpose (naming it would hand over the Star Atlas answer,
    which is the rule in [[clue-design-deduction-not-naming]]), but what lands in
    the bag is a labelled Saturn the child can then place. */
-const TOOL_GRANTS = { planetModel: 'planet:saturn', missionCard: 'card:eagleSeparates' }
+const TOOL_GRANTS = { planetModel: 'planet:saturn', missionCard: 'card:moonOrbit' }
 
 /* ---------- Space Supply Desk ----------
    The desk is a PLACE you walk to (a tappable counter in the space hub), not a
@@ -2943,7 +2967,13 @@ function updateCoinHud() {
   lastShownCoins = n
 }
 
-function armCoinHud() { coinHudArmed = true; updateCoinHud() }
+function armCoinHud() {
+  const first = !coinHudArmed
+  coinHudArmed = true
+  updateCoinHud()
+  // the Space half of the Field Guide appears with the wing itself
+  if (first) renderCatalogCover()
+}
 
 /* ---------- completion: stamp the finished room / wing, then celebrate ---------- */
 const wingFinaleShown = {}   // wingId → already celebrated
@@ -3058,13 +3088,13 @@ function catalogCard(d, trait, note) {
 
 // each section reads its own field off every DINOS entry; `trait` draws it big
 const SECTION = (id, title, blurb, icon, trait, note) => ({
-  id, title, blurb, icon, tag: `${DINOS.length} entries`, ready: true,
+  id, title, blurb, icon, wing: 'dino', tag: `${DINOS.length} entries`, ready: true,
   render: () => DINOS.map((d) => catalogCard(d, trait, note)).join(''),
 })
 // the T-rex foot "rebuild guide" — a single static reference card showing the
 // assembled skeleton (the puzzle's solution), so the player can match it.
 const FOOT_GUIDE_SECTION = {
-  id: 'trex-foot', title: 'T-rex Foot', blurb: 'How the toe-bones fit together.',
+  id: 'trex-foot', wing: 'dino', title: 'T-rex Foot', blurb: 'How the toe-bones fit together.',
   icon: footprintSVG('three-toe', 34, 42), tag: 'rebuild guide', ready: true,
   render: () => `
     <div class="cat-card">
@@ -3083,7 +3113,7 @@ const FOOT_GUIDE_SECTION = {
    then gets a card, so a child who doesn't already know them can match trait to
    picture. The scale disclaimer is stated out loud rather than left to imply. */
 const STAR_ATLAS_SECTION = {
-  id: 'planets', title: 'Star Atlas', blurb: 'The eight planets, and where each one belongs.',
+  id: 'planets', wing: 'space', title: 'Star Atlas', blurb: 'The eight planets, and where each one belongs.',
   icon: planetSVG('saturn', 34, 42), tag: 'orrery clues', ready: true,
   render: () => `
     <div class="cat-card">
@@ -3114,7 +3144,7 @@ const STAR_ATLAS_SECTION = {
    the ordering is left to them. Verified against NASA + Smithsonian Air & Space;
    rulings in brain/memory/projects/science-museum-mystery/space-accuracy-rulings. */
 const MOON_MISSIONS_SECTION = {
-  id: 'apollo', title: 'Moon Missions', blurb: 'How Apollo 11 actually went.',
+  id: 'apollo', wing: 'space', title: 'Moon Missions', blurb: 'How Apollo 11 actually went.',
   icon: missionCardSVG('touchdown', 34, 45), tag: 'mission log', ready: true,
   render: () => `
     <div class="cat-card">
@@ -3139,7 +3169,7 @@ const MOON_MISSIONS_SECTION = {
    spacewalker breathes through a hose from the ship (they don't — it's a backpack),
    and that astronauts float because there's "no gravity" (they're falling). */
 const STATION_SECTION = {
-  id: 'station', title: 'Living in Orbit', blurb: 'How people work outside a spacecraft.',
+  id: 'station', wing: 'space', title: 'Living in Orbit', blurb: 'How people work outside a spacecraft.',
   icon: tetherSVG(34, 45), tag: 'station log', ready: true,
   render: () => `
     <div class="cat-card">
@@ -3174,7 +3204,7 @@ const STATION_SECTION = {
    times further away than the Moon) and that its pictures are what you'd see
    with your eyes (they're infrared, translated into colours we can look at). */
 const WEBB_SECTION = {
-  id: 'webb', title: 'The Golden Mirror', blurb: 'Webb, and why it’s gold.',
+  id: 'webb', wing: 'space', title: 'The Golden Mirror', blurb: 'Webb, and why it’s gold.',
   icon: hexTileSVG(38, true), tag: 'telescope log', ready: true,
   render: () => `
     <div class="cat-card">
@@ -3210,7 +3240,7 @@ const WEBB_SECTION = {
    worth. Plan §B asked for this; the values were previously only visible at the
    desk itself and in an item's details. */
 const SPACE_ROCKS_SECTION = {
-  id: 'rocks', title: 'Space Rocks', blurb: 'What each find is worth at the desk.',
+  id: 'rocks', wing: 'space', title: 'Space Rocks', blurb: 'What each find is worth at the desk.',
   icon: spaceRockSVG('stardust', 34, 45), tag: `${Object.keys(SPACE_ROCKS).length} kinds`, ready: true,
   render: () => `
     <div class="cat-card">
@@ -3243,14 +3273,32 @@ const CATALOG_SECTIONS = [
   WEBB_SECTION,
 ]
 
+/* The Field Guide is split by WING. With ten sections across two subjects a flat
+   list buried the dinosaur pages under the space ones, and a child looking for
+   "teeth" had to scroll past four telescope entries to find it. The Space tab
+   only appears once the player has actually been to the Space Wing — same rule as
+   the coin purse and the Rocks pouch: nothing shows up before it means anything. */
+const CATALOG_WINGS = [
+  { id: 'dino', label: '🦕 Dinosaurs' },
+  { id: 'space', label: '🚀 Space' },
+]
+let catalogWing = 'dino'
+const wingSectionsOpen = (wingId) =>
+  wingId === 'space' ? coinHudArmed : true      // "have you been to the Space Wing yet?"
+
 function renderCatalogCover() {
+  const tabs = CATALOG_WINGS.filter((w) => wingSectionsOpen(w.id))
+  if (!tabs.some((w) => w.id === catalogWing)) catalogWing = tabs[0].id
+  const sections = CATALOG_SECTIONS.filter((s) => s.wing === catalogWing)
   $('catalog-list').innerHTML = `
     <div class="cat-cover">
       <div class="cat-crest">${catalogCrest(88)}</div>
       <div class="cat-cover-title">Field Guide</div>
+      ${tabs.length > 1 ? `<div class="cat-wings">${tabs.map((w) => `
+        <button class="cat-wing${w.id === catalogWing ? ' active' : ''}" data-wing="${w.id}">${w.label}</button>`).join('')}</div>` : ''}
       <div class="cat-cover-sub">Tap a section to study it</div>
       <div class="cat-sections">
-        ${CATALOG_SECTIONS.map((s) => `
+        ${sections.map((s) => `
           <button class="cat-row${s.ready ? '' : ' soon'}" data-section="${s.id}">
             <span class="cat-row-ic">${s.icon}</span>
             <span class="cat-row-meta">
@@ -3265,6 +3313,7 @@ function renderCatalogCover() {
 
 function openCatalogSection(id) {
   const s = CATALOG_SECTIONS.find((x) => x.id === id)
+  if (s?.wing) catalogWing = s.wing   // so ‹ Sections goes back to the right shelf
   if (!s) return
   $('catalog-list').innerHTML = `
     <button class="cat-back">‹ Sections</button>
@@ -3276,6 +3325,8 @@ function setupCatalog() {
   renderCatalogCover()
   $('catalog-list').addEventListener('pointerdown', (e) => {
     if (e.target.closest('.cat-back')) { sfx.tap(); renderCatalogCover(); return }
+    const wingTab = e.target.closest('.cat-wing')
+    if (wingTab) { sfx.tap(); catalogWing = wingTab.dataset.wing; renderCatalogCover(); return }
     const row = e.target.closest('.cat-row')
     if (row) { sfx.tap(); openCatalogSection(row.dataset.section) }
   })
@@ -3297,7 +3348,7 @@ function setupInventoryDrag() {
   // ROCKS: never dragged — they're sold, not used. Tapping one opens its details
   // (what it is, what it's worth) rather than starting a drag that could only
   // ever fail. A rock is still a *find*, so the tap has to reward, not rebuff.
-  $('rock-grid').addEventListener('pointerdown', (e) => {
+  for (const gridId of ['rock-grid', 'card-grid']) $(gridId).addEventListener('pointerdown', (e) => {
     const slot = e.target.closest('.inv-slot.filled')
     if (!slot) return
     e.preventDefault()
@@ -3478,6 +3529,8 @@ async function boot() {
   window.__rocketStack = (ok) => __rocketStack(ok)
   window.__rocketLaunch = () => __rocketLaunch()
   window.__rocketPhase = () => __rocketPhase()
+  window.__rocketStackWith = (id) => __rocketStackWith(id)
+  window.__rocketMessage = () => __rocketMessage()
   window.__stationRepairs = () => (station?._drops ?? []).map((d) => ({ item: d.item, done: d.done }))
   window.__stationConsoleLit = () => !!station?._consoleLit
   window.__wingTurned = () => !!station?._wingTurned

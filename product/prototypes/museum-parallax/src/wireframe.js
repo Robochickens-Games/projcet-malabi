@@ -1140,9 +1140,13 @@ export const MOON_SPOTS = {
   board: { x: 1180, w: 380, h: 300 },     // the LANDING SEQUENCE board
   lander: { x: 2050 },                     // the lunar module diorama
   bench: { x: 2960, w: 320, h: 250 },      // the BUILD-A-ROCKET workbench
-  cardA: { x: 880, y: 902 },               // three mission cards hidden in the room
-  cardB: { x: 1700, y: 906 },
-  cardC: { x: 3280, y: 900 },
+  cardA: { x: 700, y: 902 },               // seven mission cards hidden in the room
+  cardB: { x: 1620, y: 906 },
+  cardC: { x: 1900, y: 900 },
+  cardD: { x: 2360, y: 904 },
+  cardE: { x: 3080, y: 900 },
+  cardF: { x: 3320, y: 906 },
+  cardG: { x: 4020, y: 902 },
   lamp: { x: 3760, y: 470 },               // the SIGNAL LAMP — the sequence clue
   tether: { x: 2560, y: 902 },             // the Space Station's safety tether
   rockA: { x: 1520, y: 904 },

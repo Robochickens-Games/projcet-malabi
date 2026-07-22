@@ -1,7 +1,7 @@
 /* =====================================================================
    THE LANDING SEQUENCE BOARD — the Moon room's puzzle.
 
-   Six mission cards, six slots, one correct order. TAP a card, then TAP a slot:
+   Ten mission cards, ten slots, one correct order. TAP a card, then TAP a slot:
    young hands are far better at tap-then-tap than at a precise drag, and this
    puzzle is meant to be hard in the head, not in the fingers.
 
@@ -58,7 +58,7 @@ function ensureDom() {
       font-family: ${SERIF}; color: #f4e6c8;
       touch-action: manipulation; user-select: none; -webkit-user-select: none; }
     #moon-board.on { display: block; }
-    #moon-board .mb-wrap { max-width: 1180px; margin: 0 auto; padding: 16px 14px 34px; }
+    #moon-board .mb-wrap { max-width: 1080px; margin: 0 auto; padding: 16px 14px 40px; }
     #moon-board h1 { font-size: clamp(19px, 3.6vw, 28px); letter-spacing: .11em; text-align: center;
       margin: 4px 0 2px; color: #e8a948; text-transform: uppercase; }
     #moon-board .mb-sub { text-align: center; opacity: .72; font-size: 13.5px; margin-bottom: 12px; }
@@ -70,8 +70,12 @@ function ensureDom() {
     #moon-board .mb-check:disabled { opacity: .45; cursor: default; }
     #moon-board .mb-label { font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase;
       color: #e8a948; text-align: center; margin: 14px 0 8px; opacity: .85; }
-    #moon-board .mb-row { display: grid; grid-template-columns: repeat(${N}, 1fr); gap: 9px; }
-    @media (max-width: 780px) { #moon-board .mb-row { grid-template-columns: repeat(3, 1fr); } }
+    /* Ten cards will not read in one row. Five per row keeps each card big
+       enough to see its colour band and shape; phones drop to three. */
+    #moon-board .mb-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px 9px; }
+    @media (max-width: 900px) { #moon-board .mb-row { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 620px) { #moon-board .mb-row { grid-template-columns: repeat(3, 1fr); } }
+    #moon-board .mb-row + .mb-label { margin-top: 20px; }
     #moon-board .mb-cell { position: relative; aspect-ratio: 150 / 200; border-radius: 12px;
       border: 2px dashed rgba(232,169,72,0.45); background: rgba(244,230,200,0.05);
       display: grid; place-items: center; cursor: pointer;
@@ -82,7 +86,7 @@ function ensureDom() {
     #moon-board .mb-cell.wrong { animation: mb-shake .45s ease; }
     @keyframes mb-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-6px) } 75% { transform: translateX(6px) } }
     #moon-board .mb-cell svg { width: 100%; height: 100%; display: block; border-radius: 10px; }
-    #moon-board .mb-num { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+    #moon-board .mb-num { position: absolute; bottom: -11px; left: 50%; transform: translateX(-50%); z-index: 2;
       width: 26px; height: 26px; border-radius: 50%; background: #0b1018; border: 2px solid #e8a948;
       color: #e8a948; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
     #moon-board .mb-empty { opacity: .3; font-size: 13px; }
@@ -97,7 +101,7 @@ function ensureDom() {
   overlay.innerHTML = `
     <div class="mb-wrap">
       <h1>✦ The Landing Sequence ✦</h1>
-      <div class="mb-sub">Put the six mission cards in the order the mission really happened</div>
+      <div class="mb-sub" data-sub></div>
       <div class="mb-bar">
         <button class="mb-btn mb-close">‹ Back to the Moon</button>
         <button class="mb-btn mb-check">CHECK</button>
@@ -109,6 +113,8 @@ function ensureDom() {
       <div class="mb-msg"></div>
     </div>`
   document.body.appendChild(overlay)
+  overlay.querySelector('[data-sub]').textContent =
+    `Put the ${N} mission cards in the order the mission really happened`
   slotRow = overlay.querySelector('[data-row="slots"]')
   trayRow = overlay.querySelector('[data-row="tray"]')
   checkBtn = overlay.querySelector('.mb-check')

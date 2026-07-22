@@ -125,6 +125,13 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
   went. Michael Collins stays in orbit throughout — "all three walked on the Moon" is
   the commonest Apollo mistake in kids' media.
 
+  **Ten stages, not six (Gidi, 2026-07-22)** — back to the spec's scale: launch,
+  stages fall away, the Moon's pull takes over, circling the Moon, Eagle lands,
+  collecting rocks, up off the Moon, docking again, homeward, splashdown. Seven are
+  hidden in the room, one in the Mars bay, one at the desk, one won in
+  Build-a-Rocket. **Ten cards do not fit a six-slot bag**, so mission cards got
+  their own pouch — a third tab beside Finds and Rocks.
+
   **The clue is the SIGNAL LAMP (Gidi, 2026-07-22).** A beacon on the right of the
   room flashes the six card colours, on a loop, in the true mission order. Nobody
   says what it's for — realising that the lamp and the cards share a palette *is* the
@@ -137,6 +144,16 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
     which quietly became the real solution — six or eight presses converged on the
     answer without ever looking at the lamp. It now reports *how many* are right and
     never which, and takes nothing off the board.
+  - **Build-a-Rocket is about JOBS, not staging (Gidi, 2026-07-22).** The parts are
+    a **Booster** (all the push), a **Separator** (lets go of what's below),
+    **Steering** (points it) and the **Lunar Module** (lands). Each says what it
+    does, so a child can reason about where it goes without knowing anything about
+    Saturn V staging. Getting it wrong fails *funnily, in the way that part's job
+    implies*: separator on the bottom does its one job immediately and drops the
+    rocket off the rocket; steering on the bottom points before anything pushes and
+    the whole thing wanders off sideways; the lander underneath strains to lift
+    everything and manages about a metre. You learn what a part is for by watching
+    it do its job at completely the wrong moment.
   - **Colour is paired with SHAPE** (circle/triangle/square/diamond/star/hex) on both
     the lamp and each card's band. Six colours including red and green is not
     readable for every child, and shape carries no ordering information — so the
@@ -182,7 +199,7 @@ The Supply Desk supplies the other half of each room (planet model, solar brush,
 mission card, rotate key, mirror segment), so exploring and trading are both
 required — neither alone finishes anything.
 
-Regression-tested end to end by `npm run verify` in the prototype (**225 checks**
+Regression-tested end to end by `npm run verify` in the prototype (**253 checks**
 across eight suites: `verify-wings`, `verify-economy`, `verify-spacewing`,
 `verify-solar`, `verify-mars`, `verify-moon`, `verify-station`, `verify-webb`).
 

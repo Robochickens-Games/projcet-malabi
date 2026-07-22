@@ -39,6 +39,7 @@ await page.waitForTimeout(1100)
 check('tapping the MOON niche enters the room',
   (await page.evaluate(() => window.__cam().scene)) === 'moon')
 check('no mission cards held yet', (await page.evaluate(() => window.__moonCards())).length === 0)
+check('the mission has ten stages', (await page.evaluate(() => window.__moonStepColours())).length === 10)
 check('the room is not complete', (await page.evaluate(() => window.__roomComplete('moon'))) === false)
 
 await page.evaluate(() => window.__tapWorld('moon', 'board'))
@@ -46,27 +47,46 @@ await page.waitForTimeout(500)
 check('the board will not open without all six cards',
   (await page.evaluate(() => window.__moonBoardOpen())) === false)
 check('...and it says how many are still missing',
-  /6 more mission cards/.test(await page.evaluate(() => document.getElementById('toast-text').textContent)),
+  /10 more mission cards/.test(await page.evaluate(() => document.getElementById('toast-text').textContent)),
   await page.evaluate(() => document.getElementById('toast-text').textContent))
 // toast copy uses <b> for emphasis; it must RENDER, not print as literal tags
 check('toast markup renders instead of printing as tags',
   !/[<>]/.test(await page.evaluate(() => document.getElementById('toast-text').textContent)))
 
 // ---- cards come from FOUR different places ----
-for (const id of ['liftoff', 'touchdown', 'firstSteps']) {
+/* Seven pickups at 700ms intervals, against a 0.8s fly-in animation — so they
+   overlap on purpose. This doubles as the regression test for a bug where the
+   inventory slot was only claimed when the animation LANDED: two items picked up
+   inside that window were handed the same slot, and the first one vanished from
+   the bag. Any assertion here that counts filled slots is guarding that. */
+const ROOM_CARDS = ['liftoff', 'separates', 'moonPull', 'landing', 'samples', 'ascent', 'homeward']
+for (const id of ROOM_CARDS) {
   check(`the ${id} card is hidden in the Moon room`, await page.evaluate((c) => window.__clueExists(`card:${c}`), id))
   await page.evaluate((c) => window.__tapClue(`card:${c}`), id)
-  await page.waitForTimeout(900)
+  await page.waitForTimeout(700)
 }
-check('three cards found in the room', (await page.evaluate(() => window.__moonCards())).length === 3)
+// the pick-up animation flies for ~0.8s before it fills its slot
+await page.waitForTimeout(900)
+check('seven cards found in the room',
+  (await page.evaluate(() => window.__moonCards())).length === ROOM_CARDS.length,
+  String((await page.evaluate(() => window.__moonCards())).length))
+/* Ten cards will not fit in the six-slot Finds pouch, which is why they have
+   their own. Prove they went there and left the quest items alone. */
+const pouches = await page.evaluate(() => ({
+  cards: document.querySelectorAll('#card-grid .inv-slot.filled').length,
+  finds: document.querySelectorAll('#inventory-grid .inv-slot.filled').length,
+}))
+check('...and they went into their own CARDS pouch, not the Finds grid',
+  pouches.cards === ROOM_CARDS.length && pouches.finds === 0,
+  `cards ${pouches.cards}, finds ${pouches.finds}`)
 
 await page.evaluate(() => window.__goScene('mars'))
 await page.waitForTimeout(1000)
-check('a fourth card is over in the MARS room (cross-room)',
-  await page.evaluate(() => window.__clueExists('card:onTheWay')))
-await page.evaluate(() => window.__tapClue('card:onTheWay'))
+check('an eighth card is over in the MARS room (cross-room)',
+  await page.evaluate(() => window.__clueExists('card:docking')))
+await page.evaluate(() => window.__tapClue('card:docking'))
 await page.waitForTimeout(1100)
-check('four cards held', (await page.evaluate(() => window.__moonCards())).length === 4)
+check('eight cards held', (await page.evaluate(() => window.__moonCards())).length === 8)
 
 await page.evaluate(() => { window.__setCoins(60); window.__openDesk() })
 await page.waitForTimeout(500)
@@ -76,8 +96,8 @@ await cardBuy.click()
 await page.waitForTimeout(400)
 await page.evaluate(() => window.__closeDesk())
 await page.waitForTimeout(500)
-check('five cards held', (await page.evaluate(() => window.__moonCards())).length === 5)
-check('the board is still not ready at five', (await page.evaluate(() => window.__moonBoardLit())) === false)
+check('nine cards held', (await page.evaluate(() => window.__moonCards())).length === 9)
+check('the board is still not ready at nine', (await page.evaluate(() => window.__moonBoardLit())) === false)
 
 // ---- the sixth is won in Build-a-Rocket, and only by stacking it RIGHT ----
 await page.evaluate(() => window.__goScene('moon'))
@@ -86,35 +106,46 @@ await page.evaluate(() => window.__tapWorld('moon', 'bench'))
 await page.waitForTimeout(700)
 check('the workbench opens Build-a-Rocket', await page.evaluate(() => window.__rocketOpen()))
 
-await page.evaluate(() => { window.__rocketStack(false); window.__rocketLaunch() })
-await page.waitForTimeout(500)
-check('an upside-down rocket topples instead of flying',
-  (await page.evaluate(() => window.__rocketPhase())) === 'toppling')
-await page.waitForTimeout(2000)
-check('...and the pieces come straight back to try again',
+/* Each way of getting it wrong has its OWN joke, chosen by whichever part ended
+   up at the bottom — that's the part whose job fires first. */
+for (const [bottom, anim, phrase] of [
+  ['separator', 'pop', /let go of the rocket/i],
+  ['steering', 'spin', /sideways/i],
+  ['lander', 'hop', /about a metre/i],
+]) {
+  await page.evaluate((id) => { window.__rocketStackWith(id); window.__rocketLaunch() }, bottom)
+  await page.waitForTimeout(150)
+  check(`${bottom} on the bottom gets its own gag (${anim})`,
+    (await page.evaluate(() => window.__rocketPhase())) === anim,
+    await page.evaluate(() => window.__rocketPhase()))
+  check(`...and the message explains what that part just did`,
+    phrase.test(await page.evaluate(() => window.__rocketMessage())))
+  await page.waitForFunction(() => window.__rocketPhase() === 'build', null, { timeout: 12000 })
+}
+check('...and every part comes straight back to try again',
   (await page.evaluate(() => window.__rocketPhase())) === 'build')
 check('...a bad launch grants nothing',
-  (await page.evaluate(() => window.__moonCards())).length === 5)
+  (await page.evaluate(() => window.__moonCards())).length === 9)
 
 await page.evaluate(() => { window.__rocketStack(true); window.__rocketLaunch() })
 await page.waitForFunction(() => !window.__rocketOpen(), null, { timeout: 15000 })
 await page.waitForTimeout(600)
-check('a correctly stacked Saturn V flies and wins the last card',
-  (await page.evaluate(() => window.__moonCards())).length === 6,
+check('a correctly stacked rocket flies and wins the last card',
+  (await page.evaluate(() => window.__moonCards())).length === 10,
   (await page.evaluate(() => window.__moonCards())).join(', '))
-check('holding all six lights the sequence board',
+check('holding all ten lights the sequence board',
   await page.evaluate(() => window.__moonBoardLit()))
 
 // ---- the ordering puzzle ----
 await page.evaluate(() => window.__tapWorld('moon', 'board'))
 await page.waitForTimeout(600)
-check('with all six cards the board opens', await page.evaluate(() => window.__moonBoardOpen()))
+check('with all ten cards the board opens', await page.evaluate(() => window.__moonBoardOpen()))
 
 await page.evaluate(() => window.__moonSolveWrong())
 await page.waitForTimeout(600)
 check('a wrong order does not solve it', (await page.evaluate(() => window.__roomComplete('moon'))) === false)
 const msg = await page.evaluate(() => document.querySelector('#moon-board .mb-msg').textContent)
-check('...it tells you HOW MANY are right', /4 of 6 are in the right place/.test(msg), msg.slice(0, 60))
+check('...it tells you HOW MANY are right', /8 of 10 are in the right place/.test(msg), msg.slice(0, 60))
 check('...but never which ones — otherwise CHECK becomes the solution',
   !/#moon-board .mb-cell.locked/.test(msg) &&
   (await page.evaluate(() => document.querySelectorAll('#moon-board .mb-cell.locked').length)) === 0)
@@ -151,13 +182,13 @@ check('...and no phrase that fixes a step relative to another',
 // ---- the signal lamp IS the clue ----
 const lamp = await page.evaluate(() => window.__moonLamp())
 const steps = await page.evaluate(() => window.__moonStepColours())
-check('the room has a signal lamp running', Array.isArray(lamp.order) && lamp.order.length === 6)
+check('the room has a signal lamp running', Array.isArray(lamp.order) && lamp.order.length === 10)
 check('the lamp flashes the cards in the TRUE mission order',
   lamp.order.join(',') === steps.slice().sort((a, b) => a.order - b.order).map((x) => x.id).join(','),
   lamp.order.join(' → '))
-check('every card has its own colour', new Set(steps.map((x) => x.color)).size === 6)
+check('every card has its own colour', new Set(steps.map((x) => x.color)).size === 10)
 check('every card has its own shape too — colour alone is not readable for every child',
-  new Set(steps.map((x) => x.shape)).size === 6, steps.map((x) => x.shape).join(', '))
+  new Set(steps.map((x) => x.shape)).size === 10, steps.map((x) => x.shape).join(', '))
 
 check('finishing Moon does not finish the space wing',
   (await page.evaluate(() => window.__wingComplete('space'))) === false)

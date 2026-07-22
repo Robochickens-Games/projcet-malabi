@@ -1186,37 +1186,38 @@ export function solarPanelSVG(dust = 1, w = 180, h = 120) {
    says so, because "all three bounced about on the surface" is the single most
    common Apollo mistake in kids' media. */
 export const MOON_STEPS = [
-  {
-    id: 'liftoff', order: 1, name: 'Lift-off', color: '#e8737f', shape: 'circle',
+  { id: 'liftoff', order: 1, name: 'Lift-off', color: '#8ce09a', shape: 'circle',
     blurb: 'The Saturn V leaves the pad.',
-    atlas: 'The <b>Saturn V</b> — still the most powerful rocket ever flown — heaves Apollo 11 off the pad in Florida. Most of that giant is fuel, and most of it is used up in minutes.',
-  },
-  {
-    id: 'onTheWay', order: 2, name: 'On the way', color: '#7fd8e8', shape: 'triangle',
-    blurb: 'The engine fires again to leave Earth behind.',
-    atlas: 'Out of Earth orbit and coasting toward the Moon. The crossing takes about <b>three days</b>, with the spacecraft slowly rolling so the Sun heats it evenly.',
-  },
-  {
-    id: 'eagleSeparates', order: 3, name: 'Eagle separates', color: '#e8a948', shape: 'square',
-    blurb: 'The lander leaves the mothership.',
-    atlas: 'Armstrong and Aldrin move into the lunar module <b>Eagle</b> and cast off from the command module <i>Columbia</i>. <b>Michael Collins stays aboard Columbia</b> — he never walks on the Moon.',
-  },
-  {
-    id: 'touchdown', order: 4, name: 'Touchdown', color: '#c9a0e8', shape: 'diamond',
-    blurb: 'Eagle lands on the grey dust.',
-    atlas: 'Eagle settles onto the <b>Sea of Tranquility</b> — a flat, dusty plain, not a sea at all. Armstrong flies it past a boulder field with seconds of fuel to spare.',
-  },
-  {
-    id: 'firstSteps', order: 5, name: 'First steps', color: '#8ce09a', shape: 'star',
-    blurb: 'Boots on the Moon.',
-    atlas: 'Boots on the Moon. The two of them are outside for about <b>two and a half hours</b>. Their footprints are still there: with no wind and no rain, nothing wipes them away.',
-  },
-  {
-    id: 'splashdown', order: 6, name: 'Splashdown', color: '#6f8ee8', shape: 'hex',
+    atlas: 'The <b>Saturn V</b> — still the most powerful rocket ever flown — heaves Apollo 11 off the pad in Florida. Most of that giant is fuel, and most of it is burned in minutes.' },
+  { id: 'separates', order: 2, name: 'Stages fall away', color: '#e8737f', shape: 'triangle',
+    blurb: 'The empty bottom drops off.',
+    atlas: 'A rocket throws away what it has finished with. Each <b>stage</b> burns its fuel, lets go, and falls back — so the part still flying keeps getting lighter.' },
+  { id: 'moonPull', order: 3, name: 'The Moon takes over', color: '#7fd8e8', shape: 'square',
+    blurb: 'Earth stops pulling hardest.',
+    atlas: 'Coasting between the two worlds, there is a point where <b>Earth’s pull</b> stops winning and the <b>Moon’s pull</b> starts. From there you are falling toward the Moon instead of away from Earth.' },
+  { id: 'moonOrbit', order: 4, name: 'Circling the Moon', color: '#f0a03c', shape: 'diamond',
+    blurb: 'Into orbit around the Moon.',
+    atlas: 'The spacecraft slows just enough to be caught, and begins going round and round the Moon. <b>Michael Collins</b> stays up here in <i>Columbia</i> the whole time — he never walks on the Moon.' },
+  { id: 'landing', order: 5, name: 'Eagle lands', color: '#a98fe8', shape: 'star',
+    blurb: 'The lander touches down.',
+    atlas: 'The lunar module <b>Eagle</b> settles onto the <b>Sea of Tranquility</b> — a flat, dusty plain, not a sea at all. Armstrong flies it past a boulder field with seconds of fuel left.' },
+  { id: 'samples', order: 6, name: 'Collecting rocks', color: '#e8d54a', shape: 'hex',
+    blurb: 'Moon rocks into the box.',
+    atlas: 'Boots on the Moon, and work to do: the crew scoop up about <b>21 kg</b> of Moon rock and dust to bring home. Scientists are still studying it now.' },
+  { id: 'ascent', order: 7, name: 'Up off the Moon', color: '#4fc9a8', shape: 'pentagon',
+    blurb: 'The top half lifts away.',
+    atlas: 'Only the <b>top half</b> of Eagle flies home — it uses the bottom half as a launch pad and leaves it behind. That descent stage is still standing there today.' },
+  { id: 'docking', order: 8, name: 'Docking again', color: '#e08fd0', shape: 'cross',
+    blurb: 'The two craft join back up.',
+    atlas: 'Eagle catches up with <i>Columbia</i> and the two lock together nose to nose, so the crew can climb across with their boxes of Moon rock. Eagle is cast off for good once they are safely aboard.' },
+  { id: 'homeward', order: 9, name: 'Homeward', color: '#6f8ee8', shape: 'chevron',
+    blurb: 'Falling back toward Earth.',
+    atlas: 'One burn sends them out of lunar orbit and back toward Earth. Coming in, the capsule’s heat shield glows white-hot — that is the air, squeezed and heated by the speed.' },
+  { id: 'splashdown', order: 10, name: 'Splashdown', color: '#c9a37f', shape: 'ring',
     blurb: 'Home, in the middle of the ocean.',
-    atlas: 'Columbia parachutes into the <b>Pacific Ocean</b> and a ship comes to collect the crew. Every Apollo crew came home by splashing into the sea.',
-  },
+    atlas: 'Parachutes open and <i>Columbia</i> drops into the <b>Pacific Ocean</b>, where a ship comes to collect the crew. Every Apollo crew came home by splashing into the sea.' },
 ]
+
 export const MOON_STEP_BY_ID = Object.fromEntries(MOON_STEPS.map((s) => [s.id, s]))
 
 // a mission card: a coloured header band, a simple pictogram, and its name
@@ -1228,24 +1229,54 @@ export function missionCardSVG(id, w = 150, h = 200) {
       <path d="M59,104 l-16,26 16,0 Z M91,104 l16,26 -16,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
       <path d="M64,132 q11,26 22,0 q-11,16 -22,0 Z" fill="${GOLD}"/>
       <ellipse cx="75" cy="150" rx="26" ry="9" fill="${GOLD}" opacity="0.55"/>`,
-    onTheWay: `<circle cx="40" cy="120" r="24" fill="#3f7fb5" stroke="${TEAL_DEEP}" stroke-width="3"/>
-      <circle cx="118" cy="56" r="17" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
-      <path d="M56,104 q34,-34 50,-38" fill="none" stroke="${GOLD}" stroke-width="4" stroke-dasharray="7 6"/>
-      <path d="M96,74 l14,-6 -4,14 Z" fill="${GOLD}"/>`,
-    eagleSeparates: `<rect x="26" y="72" width="42" height="34" rx="9" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
-      <path d="M92,66 l34,0 -6,26 -22,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
-      <path d="M96,92 l26,0 6,20 -38,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
-      <path d="M74,88 l12,0" stroke="${GOLD}" stroke-width="4" stroke-dasharray="4 4"/>
-      <path d="M96,112 l-8,18 M126,112 l8,18" stroke="${CREAM}" stroke-width="4"/>`,
-    touchdown: `<path d="M56,58 l38,0 -6,26 -26,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+    separates: `<path d="M75,26 q13,20 13,44 l0,14 -26,0 0,-14 q0,-24 13,-44 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <g transform="translate(0,18)">
+        <rect x="56" y="96" width="38" height="30" rx="5" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+        <path d="M62,126 l-8,16 M88,126 l8,16" stroke="${BONE_DIM}" stroke-width="4"/>
+      </g>
+      <path d="M40,96 l-14,-8 M110,96 l14,-8" stroke="${GOLD}" stroke-width="5" stroke-linecap="round"/>
+      <path d="M46,110 l-16,4 M104,110 l16,4" stroke="${GOLD}" stroke-width="4" stroke-linecap="round" opacity="0.7"/>`,
+    moonPull: `<circle cx="34" cy="118" r="26" fill="#3f7fb5" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <circle cx="118" cy="58" r="19" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M56,102 q26,-18 44,-30" fill="none" stroke="${GOLD}" stroke-width="4" stroke-dasharray="7 6"/>
+      <path d="M92,70 l14,-6 -4,14 Z" fill="${GOLD}"/>
+      <path d="M60,132 l-14,6 M74,138 l-10,10" stroke="${CREAM}" stroke-width="3" opacity="0.5"/>`,
+    moonOrbit: `<circle cx="75" cy="96" r="34" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <circle cx="62" cy="86" r="7" fill="#8f959c"/><circle cx="86" cy="104" r="5" fill="#8f959c"/>
+      <ellipse cx="75" cy="96" rx="60" ry="24" fill="none" stroke="${GOLD}" stroke-width="3" stroke-dasharray="8 7"/>
+      <g transform="translate(133,96)">
+        <rect x="-9" y="-7" width="18" height="14" rx="4" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="2"/>
+      </g>`,
+    landing: `<path d="M56,58 l38,0 -6,26 -26,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
       <path d="M58,84 l34,0 8,24 -50,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
       <path d="M52,108 l-14,26 M98,108 l14,26" stroke="${CREAM}" stroke-width="4"/>
       <path d="M20,140 q55,-14 110,0 l0,20 -110,0 Z" fill="${BONE_DIM}"/>`,
-    firstSteps: `<circle cx="75" cy="62" r="16" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
-      <path d="M75,42 a16,16 0 0 1 12,8" fill="none" stroke="${GOLD}" stroke-width="4"/>
-      <rect x="60" y="78" width="30" height="40" rx="10" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
-      <path d="M60,88 l-16,18 M90,88 l16,18 M66,118 l-6,22 M84,118 l6,22" stroke="${CREAM}" stroke-width="5" stroke-linecap="round"/>
-      <path d="M20,150 q55,-10 110,0 l0,14 -110,0 Z" fill="${BONE_DIM}"/>`,
+    samples: `<circle cx="60" cy="60" r="15" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <rect x="46" y="76" width="28" height="36" rx="9" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M46,84 l-12,16 M74,84 l18,10 M52,112 l-6,20 M68,112 l6,20" stroke="${CREAM}" stroke-width="5" stroke-linecap="round"/>
+      <rect x="86" y="94" width="30" height="24" rx="4" fill="${GOLD_DEEP}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <circle cx="96" cy="106" r="4" fill="${BONE_DIM}"/><circle cx="106" cy="104" r="3" fill="${BONE_DIM}"/>
+      <path d="M20,146 q55,-10 110,0 l0,16 -110,0 Z" fill="${BONE_DIM}"/>`,
+    ascent: `<path d="M60,42 l30,0 -5,22 -20,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M60,64 l30,0 6,22 -42,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M66,88 q9,20 18,0 q-9,14 -18,0 Z" fill="${GOLD}"/>
+      <g opacity="0.85">
+        <rect x="56" y="118" width="38" height="18" rx="4" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+        <path d="M60,136 l-10,14 M90,136 l10,14" stroke="${BONE_DIM}" stroke-width="4"/>
+      </g>
+      <path d="M20,158 q55,-8 110,0 l0,12 -110,0 Z" fill="${BONE_DIM}"/>`,
+    docking: `<path d="M26,74 l32,0 -5,20 -22,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M28,94 l28,0 5,18 -38,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <rect x="94" y="80" width="34" height="28" rx="8" fill="${BONE_DIM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <rect x="86" y="88" width="10" height="12" rx="2" fill="${GOLD}"/>
+      <rect x="62" y="88" width="10" height="12" rx="2" fill="${GOLD}"/>
+      <path d="M72,94 l14,0" stroke="${GOLD}" stroke-width="4"/>
+      <path d="M66,120 l4,10 M110,116 l-3,12" stroke="${CREAM}" stroke-width="3" opacity="0.5"/>`,
+    homeward: `<circle cx="104" cy="122" r="30" fill="#3f7fb5" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M86,104 q14,-14 30,-6" fill="none" stroke="#5c9a5c" stroke-width="7" opacity="0.85"/>
+      <path d="M40,50 q16,-14 32,0 l-5,32 -22,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      <path d="M42,84 q14,12 28,0 q-14,22 -28,0 Z" fill="${GOLD}"/>
+      <path d="M56,96 l-8,16 M56,96 l10,14" stroke="${GOLD}" stroke-width="3" opacity="0.7"/>`,
     splashdown: `<path d="M56,50 q19,-16 38,0 l-6,44 -26,0 Z" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
       <path d="M46,36 q29,-22 58,0" fill="none" stroke="${GOLD}" stroke-width="4"/>
       <path d="M46,36 l16,16 M104,36 l-16,16 M75,26 l0,20" stroke="${GOLD}" stroke-width="3"/>
@@ -1258,7 +1289,8 @@ export function missionCardSVG(id, w = 150, h = 200) {
     <rect x="4" y="26" width="142" height="12" fill="${s.color}"/>
     <g transform="translate(59,3)">${stepGlyphInner(s.shape, '#0b1018', 32)}</g>
     ${art}
-    <text x="75" y="182" text-anchor="middle" font-family="${SERIF}" font-size="17" fill="${CREAM}">${s.name}</text>
+    <text x="75" y="182" text-anchor="middle" font-family="${SERIF}" fill="${CREAM}"
+      font-size="${s.name.length > 15 ? 13 : s.name.length > 11 ? 15 : 17}">${s.name}</text>
   </svg>`
 }
 
@@ -1352,6 +1384,16 @@ export function stepGlyphInner(shape, fill, size = 100) {
     case 'square': return `<rect x="${c - r * 0.82}" y="${c - r * 0.82}" width="${r * 1.64}" height="${r * 1.64}" rx="${r * 0.14}" fill="${fill}"/>`
     case 'diamond': return poly(4)
     case 'hex': return poly(6)
+    case 'pentagon': return poly(5)
+    case 'cross': {
+      const t = r * 0.36
+      return `<path d="M${c - t},${c - r} h${t * 2} v${r - t} h${r - t} v${t * 2} h${-(r - t)} v${r - t} h${-t * 2} v${-(r - t)} h${-(r - t)} v${-t * 2} h${r - t} Z" fill="${fill}"/>`
+    }
+    case 'chevron': {
+      const w = r * 0.95, h = r * 0.55
+      return `<path d="M${c - w},${c + h * 0.2} L${c},${c - h} L${c + w},${c + h * 0.2} L${c + w},${c + h * 1.1} L${c},${c + h * 0.1} L${c - w},${c + h * 1.1} Z" fill="${fill}"/>`
+    }
+    case 'ring': return `<circle cx="${c}" cy="${c}" r="${r * 0.78}" fill="none" stroke="${fill}" stroke-width="${r * 0.44}"/>`
     case 'star': {
       const pts = [...Array(10).keys()].map((i) => {
         const rr = i % 2 ? r * 0.46 : r

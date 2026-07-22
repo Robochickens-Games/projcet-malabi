@@ -40,6 +40,7 @@
     <div id="inv-tabs" role="tablist">
       <button class="inv-tab active" data-tab="finds" role="tab" aria-selected="true">🎒 Finds</button>
       <button class="inv-tab hidden" data-tab="rocks" role="tab" aria-selected="false">🪨 Rocks<span class="inv-tab-count">0</span></button>
+      <button class="inv-tab hidden" data-tab="cards" role="tab" aria-selected="false">🗂 Cards<span class="inv-tab-count">0</span></button>
     </div>
     <div id="inventory-grid" class="inv-grid" data-tab="finds">
       <div class="inv-slot empty"></div>
@@ -59,8 +60,21 @@
       <div class="inv-slot empty"></div>
       <div class="inv-slot empty"></div>
     </div>
+    <div id="card-grid" class="inv-grid hidden-inv" data-tab="cards">
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+      <div class="inv-slot empty"></div>
+    </div>
     <p class="inv-hint" data-tab="finds">drag a find onto the exhibit · tap ⓘ for details</p>
     <p class="inv-hint hidden-inv" data-tab="rocks">sell at the Supply Desk<br>worth <b id="rock-total">0</b> 🪙</p>
+    <p class="inv-hint hidden-inv" data-tab="cards">mission cards<br><b id="card-total">0</b> of 10 found</p>
     <div id="inventory-detail" class="hidden-inv"></div>
   </aside>
 
