@@ -15,6 +15,11 @@ import {
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
+import {
+  SPACE_ROCKS, SPACE_TOOLS, isRock, itemArt, rockInstance, rockType, rockOf,
+  openSupplyDesk, closeSupplyDesk, isSupplyDeskOpen, refreshSupplyDesk,
+  getCoins, setCoins, auditEconomy,
+} from './economy.js'
 
 /* ---------- constants ---------- */
 const DESIGN_W = 1920
@@ -169,10 +174,10 @@ function setupInput() {
     }
     drag = null
   }
-  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !uiHit(e)) dragStart(e.clientX) })
+  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !uiHit(e)) dragStart(e.clientX) })
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
   window.addEventListener('mouseup', () => dragEnd())
-  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
+  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
@@ -1087,6 +1092,7 @@ const wingComplete = (wingId) => WINGS[wingId].rooms.every(roomComplete)
 function goScene(target) {
   if (!scenes[target] || target === state.scene) return
   if (puzzleOpen) closeFootPuzzle()
+  if (isSupplyDeskOpen()) closeSupplyDesk()
   const from = scenes[state.scene]
   const to = scenes[target]
   const dir = DEPTH[target] >= DEPTH[state.scene] ? -1 : 1
@@ -1133,13 +1139,17 @@ const invSlot = (i) => document.querySelectorAll('#inventory-grid .inv-slot')[i]
 const invSlotFor = (item) => [...document.querySelectorAll('#inventory-grid .inv-slot')].find((s) => s.dataset.item === item)
 const nextEmptyInvSlot = () => [...document.querySelectorAll('#inventory-grid .inv-slot')].find((s) => !s.classList.contains('filled'))
 
-// every collectible clue → how it's drawn (inventory icon · drag ghost · placed sprite)
+// every collectible clue → how it's drawn (inventory icon · drag ghost · placed sprite).
+// Space rocks and tools draw themselves from the economy's own art.
 const ITEM_SVG = {
   tooth: (w, h) => toothSVG('leaf', w, h),
   feather: (w, h) => featherSVG(w, h),
   trexTooth: (w, h) => toothSVG('blade', w, h),
   brachioEgg: (w, h) => eggSVG('round', w, h),
   pycnofibers: (w, h) => pycnofiberSVG(w, h),
+  ...Object.fromEntries(
+    [...Object.keys(SPACE_ROCKS), ...Object.keys(SPACE_TOOLS)].map((id) => [id, (w, h) => itemArt(id, w, h)]),
+  ),
 }
 const CLUE_TOAST = {
   feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
@@ -1158,20 +1168,35 @@ const ITEM_INFO = {
   trexTooth: { name: 'Giant Tooth', section: 'Teeth', dino: 'trex', found: 'Desert Dunes' },
   brachioEgg: { name: 'Giant Egg', section: 'Eggs', dino: 'brachio', found: 'Pine Forest' },
   pycnofibers: { name: 'Pycnofibers', section: 'Covering', dino: 'ptero', found: 'Green Hills' },
+  // space rocks read their worth off the desk's price list, so the inventory and
+  // the counter can never disagree about what something sells for
+  ...Object.fromEntries(Object.entries(SPACE_ROCKS).map(([id, r]) =>
+    [id, { name: r.name, section: 'Space Rocks', found: 'Space Wing', worth: r.value }])),
+  ...Object.fromEntries(Object.entries(SPACE_TOOLS).map(([id, t]) =>
+    [id, { name: t.name, section: 'Supplies', found: 'Space Supply Desk' }])),
 }
 
+/* A bag item id is usually the item itself, but a space rock is an INSTANCE
+   (`lunarChip@solar` — see economy.js) so that the same rock type can be found in
+   several rooms. Everything that draws or describes an item resolves through
+   these, never by indexing the tables directly. */
+const itemKey = (id) => (isRock(id) ? rockType(id) : id)
+const itemSvg = (id, w, h) => (ITEM_SVG[itemKey(id)] || ITEM_SVG.tooth)(w, h)
+const itemInfo = (id) => ITEM_INFO[itemKey(id)]
+
 // a filled inventory slot's contents: the item icon + an ⓘ "more details" badge
-const slotInner = (itemId) => `${ITEM_SVG[itemId](40, 52)}<button class="inv-info" aria-label="More details">i</button>`
+const slotInner = (itemId) => `${itemSvg(itemId, 40, 52)}<button class="inv-info" aria-label="More details">i</button>`
 
 function openItemDetail(itemId) {
-  const info = ITEM_INFO[itemId]
+  const info = itemInfo(itemId)
   if (!info) return
   sfx.tap()
   $('inventory-detail').innerHTML = `
     <button class="inv-back">‹ Inventory</button>
-    <div class="inv-detail-art">${ITEM_SVG[itemId](132, 172)}</div>
+    <div class="inv-detail-art">${itemSvg(itemId, 132, 172)}</div>
     <h3 class="inv-detail-title">${info.name}</h3>
-    <p class="inv-detail-found">Found in <b>${info.found}</b></p>`
+    <p class="inv-detail-found">Found in <b>${info.found}</b></p>
+    ${info.worth ? `<p class="inv-detail-found">Sells for <b>${info.worth} coins</b> at the Supply Desk</p>` : ''}`
   $('inventory-grid').classList.add('hidden-inv')
   document.querySelector('#inventory-rail .inv-hint')?.classList.add('hidden-inv')
   $('inventory-detail').classList.remove('hidden-inv')
@@ -1236,6 +1261,42 @@ function addDropTarget(mainLayer, scene, opts) {
   return glow
 }
 
+/* ---------- inventory add/remove without a world sprite ----------
+   pickUpClue() flies an item out of the SCENE into the bag, so it needs a sprite
+   in the world. Buying at the Supply Desk has no such sprite, and selling has to
+   take an item back OUT — hence this pair. Both keep `state.has` and the slot DOM
+   in step; the desk is the only thing that removes an item other than placing it. */
+function fillInvSlot(slotEl, itemId) {
+  slotEl.classList.remove('empty')
+  slotEl.classList.add('filled')
+  slotEl.dataset.item = itemId
+  slotEl.innerHTML = slotInner(itemId)
+}
+
+function grantItem(itemId) {
+  if (hasClue(itemId)) return false
+  const slotEl = nextEmptyInvSlot()
+  if (!slotEl) { toast('Your bag is full — use something first.', 4000); return false }
+  state.has[itemId] = true
+  sfx.pickup()
+  fillInvSlot(slotEl, itemId)
+  gsap.fromTo(slotEl, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
+  return true
+}
+
+function removeItem(itemId) {
+  if (!hasClue(itemId)) return false
+  delete state.has[itemId]
+  const slotEl = invSlotFor(itemId)
+  if (slotEl) {
+    slotEl.classList.remove('filled', 'cue')
+    slotEl.classList.add('empty')
+    slotEl.innerHTML = ''
+    delete slotEl.dataset.item
+  }
+  return true
+}
+
 // collect any clue into the inventory (works for every itemId)
 function pickUpClue(itemId) {
   if (hasClue(itemId)) return
@@ -1252,7 +1313,7 @@ function pickUpClue(itemId) {
     const slot = slotEl.getBoundingClientRect()
     const fly = document.createElement('div')
     fly.style.cssText = 'position:fixed;left:0;top:0;z-index:40;pointer-events:none;will-change:transform'
-    fly.innerHTML = ITEM_SVG[itemId](60, 78)
+    fly.innerHTML = itemSvg(itemId, 60, 78)
     document.body.appendChild(fly)
     gsap.fromTo(fly,
       { x: gp.x - 30, y: gp.y - 39, scale: 1, rotation: -24 },
@@ -1298,7 +1359,7 @@ function startItemDrag(x, y, slot) {
   slot.classList.add('dragging')
   sfx.pickup()
   const ghost = $('drag-ghost')
-  ghost.innerHTML = (ITEM_SVG[dragItem] || ITEM_SVG.tooth)(64, 83)
+  ghost.innerHTML = itemSvg(dragItem, 64, 83)
   ghost.classList.remove('hidden')
   gsap.killTweensOf(ghost)
   gsap.set(ghost, { x: x - 32, y: y - 41 })
@@ -1645,6 +1706,67 @@ function finishFoot(foot) {
   }, 'trex'), 1000)
 }
 
+/* ---------- where the space rocks are hidden ----------
+   Which rock TYPE is hidden in which scene. Rooms read this when they build, so
+   the placement and the economy's affordability audit can never drift apart.
+   Every scene in the wing carries rocks (plus one in the lobby, to teach the
+   mechanic before the wing is even open) — exploring anywhere always pays.
+   Tuned so the rocks are worth ~1.6× every tool combined: a child who finds only
+   two thirds of them can still afford the whole wing (see auditEconomy). */
+const SPACE_ROCK_PLACEMENT = {
+  lobby: ['lunarChip'],
+  spacehub: ['marsRock', 'lunarChip'],
+  solar: ['starShard', 'lunarChip', 'marsRock'],
+  mars: ['marsRock', 'meteorite', 'lunarChip'],
+  moon: ['lunarChip', 'starShard', 'marsRock'],
+  station: ['meteorite', 'stardust', 'lunarChip'],
+  webb: ['starShard', 'stardust', 'marsRock'],
+}
+// every rock in the world, as the unique instance ids the inventory will use
+const allPlacedRocks = () =>
+  Object.entries(SPACE_ROCK_PLACEMENT).flatMap(([scene, types]) =>
+    types.map((t) => rockInstance(t, scene)))
+
+/* ---------- Space Supply Desk ----------
+   The desk is a PLACE you walk to (a tappable counter in the space hub), not a
+   menu you can pull up anywhere — trading stays part of exploring. main.js owns
+   the inventory, so it hands the desk a small adapter and economy.js does the
+   rest. Selling is restricted to rocks by economy.js, so no quest item can be
+   traded away. */
+function openDesk() {
+  if (isSupplyDeskOpen()) return
+  sfx.tap()
+  openSupplyDesk({
+    ownedRocks: () => Object.keys(state.has).filter(isRock),
+    owns: (id) => hasClue(id),
+    onSell: (id) => { removeItem(id); sfx.pickup() },
+    onBuy: (id) => grantItem(id),
+    onClose: () => { sfx.whoosh(); updateCoinHud() },
+  })
+}
+
+// the coin purse in the HUD — hidden until the player has been to the Space Wing,
+// so the dino wing's screen stays exactly as it was
+let coinHudArmed = false
+let lastShownCoins = 0
+
+function updateCoinHud() {
+  const el = $('coin-purse')
+  if (!el) return
+  const n = getCoins()
+  $('coin-count').textContent = String(n)
+  el.classList.toggle('hidden', !coinHudArmed)
+  // pop the purse when the number moves, so earning is felt and not just read
+  if (n !== lastShownCoins && coinHudArmed) {
+    el.classList.remove('bump')
+    void el.offsetWidth
+    el.classList.add('bump')
+  }
+  lastShownCoins = n
+}
+
+function armCoinHud() { coinHudArmed = true; updateCoinHud() }
+
 /* ---------- completion: stamp the finished room / wing, then celebrate ---------- */
 const wingFinaleShown = {}   // wingId → already celebrated
 
@@ -1900,10 +2022,18 @@ async function boot() {
     setRail('catalog-rail', true)
     setRail('inventory-rail', true)
   }
+  document.addEventListener('coins-changed', () => updateCoinHud())
   setupInput()
   setupFullscreen()
   setupInventoryDrag()
   setupCatalog()
+
+  // the wing must stay affordable: prove the rocks we place are worth more than
+  // every tool costs, so no edit to either list can quietly strand a player
+  const econ = auditEconomy(allPlacedRocks())
+  if (!econ.ok) {
+    console.error('[economy] SOFT-LOCK RISK — placed rocks cannot fund the tools', econ)
+  }
   await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero()])
 
   let t = 0
@@ -1952,6 +2082,20 @@ async function boot() {
   window.__roomComplete = (r) => roomComplete(r)
   window.__wingComplete = (w = 'dino') => wingComplete(w)
   window.__wings = () => Object.keys(WINGS)
+  // economy hooks — the Supply Desk is reachable before the space hub exists, so
+  // the whole sell/buy loop is testable now
+  window.__economyAudit = () => auditEconomy(allPlacedRocks())
+  window.__coins = () => getCoins()
+  window.__openDesk = () => { armCoinHud(); openDesk() }
+  window.__deskOpen = () => isSupplyDeskOpen()
+  window.__closeDesk = () => closeSupplyDesk()
+  window.__giveRock = (type, scene = 'test') => grantItem(rockInstance(type, scene))
+  window.__bag = () => Object.keys(state.has)
+  window.__rockValue = (id) => rockOf(id)?.value ?? 0
+  window.__toolPrice = (id) => SPACE_TOOLS[id]?.price ?? 0
+  window.__setCoins = (n) => { setCoins(n); refreshSupplyDesk() }
+  // a non-rock item in the bag, to prove the desk will never buy it back
+  window.__giveTestQuestItem = () => { grantItem('trexTooth'); refreshSupplyDesk() }
   window.__wingRooms = (w = 'dino') => WINGS[w].rooms.slice()
   window.__wingHub = (w = 'dino') => WINGS[w].hub
   window.__openPtero = () => openPteroGame({ goal: 10, onComplete: () => onMinigameSolved('ptero'), onClose: () => afterMinigameClose('ptero') })

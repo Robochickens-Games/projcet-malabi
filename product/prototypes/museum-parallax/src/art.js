@@ -820,3 +820,103 @@ export function catalogCrest(size = 92) {
     <circle cx="40" cy="39" r="4" fill="${CREAM}" opacity=".8"/>
   </svg>`
 }
+
+/* ============================== SPACE WING ==============================
+   Item art for the Space Wing: the five space-rock types the player sells at
+   the Supply Desk, and the five tools they buy back. Wireframe-grade SVG in
+   the museum palette — painted art drops in 1:1 later (team norm).
+   The economy's RULES (values, prices) live in economy.js; this file only
+   draws. Rock accuracy per brain/memory/projects/science-museum-mystery/
+   space-accuracy-rulings (Mars = iron-oxide red, lunar = grey basalt). */
+
+const SPACE_ROCK_INNER = {
+  // a bright crystalline shard — the most valuable common find
+  starShard: () => `
+    <path d="M50,14 L64,52 L50,116 L36,52 Z" fill="${CREAM}" stroke="${GOLD}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M50,14 L50,116" stroke="${GOLD_DEEP}" stroke-width="2" opacity=".7"/>
+    <path d="M36,52 L64,52" stroke="${GOLD_DEEP}" stroke-width="2" opacity=".5"/>
+    <circle cx="43" cy="40" r="4" fill="#fff" opacity=".85"/>`,
+  // rusty red — Mars is red from iron oxide in its dust
+  marsRock: () => `
+    <path d="M24,86 q-6,-26 14,-38 q22,-16 40,-2 q16,12 10,34 q-6,20 -32,20 q-26,0 -32,-14 Z"
+      fill="#a4472b" stroke="#6b2f1c" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="42" cy="60" rx="7" ry="5" fill="#c2603c" opacity=".9"/>
+    <ellipse cx="66" cy="74" rx="5" ry="4" fill="#c2603c" opacity=".7"/>
+    <ellipse cx="55" cy="47" rx="4" ry="3" fill="#8c3a22" opacity=".8"/>`,
+  // grey basalt with impact pits — lunar regolith
+  lunarChip: () => `
+    <path d="M28,80 q-4,-22 16,-32 q20,-10 34,2 q14,12 6,32 q-8,18 -30,16 q-22,-2 -26,-18 Z"
+      fill="#9a9a94" stroke="#5f5f5a" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="45" cy="58" r="6" fill="#7d7d78"/>
+    <circle cx="64" cy="72" r="4" fill="#7d7d78"/>
+    <circle cx="52" cy="78" r="3" fill="#7d7d78"/>`,
+  // dark, fusion-crusted, metallic glint — a fallen meteorite
+  meteorite: () => `
+    <path d="M26,78 q-2,-24 18,-34 q22,-11 36,4 q13,14 4,32 q-10,19 -32,16 q-24,-3 -26,-18 Z"
+      fill="#3d3630" stroke="#221d19" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M40,52 l10,12 -8,10 12,6" fill="none" stroke="${GOLD}" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+    <circle cx="66" cy="60" r="3.5" fill="${CREAM}" opacity=".7"/>`,
+  // a loose cluster of glittering grains — the rarest, highest-value find
+  stardust: () => {
+    const g = (x, y, r, o) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${CREAM}" opacity="${o}"/>`
+    return `
+      <ellipse cx="50" cy="66" rx="30" ry="26" fill="${TEAL}" stroke="${TEAL_DEEP}" stroke-width="3"/>
+      ${g(40, 54, 4, .95)}${g(58, 50, 3, .8)}${g(64, 68, 4.5, .9)}
+      ${g(44, 76, 3.5, .75)}${g(54, 66, 5, 1)}${g(34, 66, 2.5, .6)}${g(56, 80, 2.5, .65)}`
+  },
+}
+
+export function spaceRockSVG(kind, w = 100, h = 130) {
+  const inner = SPACE_ROCK_INNER[kind] || SPACE_ROCK_INNER.lunarChip
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">${inner()}</svg>`
+}
+
+const SPACE_TOOL_INNER = {
+  // an orrery planet on its mounting pin — slots onto an orbit ring
+  planetModel: () => `
+    <circle cx="50" cy="52" r="26" fill="${TEAL}" stroke="${GOLD}" stroke-width="3"/>
+    <ellipse cx="50" cy="52" rx="38" ry="11" fill="none" stroke="${GOLD}" stroke-width="3" opacity=".9"/>
+    <circle cx="41" cy="43" r="6" fill="${CREAM}" opacity=".5"/>
+    <path d="M50,78 L50,108" stroke="${GOLD_DEEP}" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="50" cy="112" rx="16" ry="5" fill="${GOLD_DEEP}"/>`,
+  // a soft brush for the rover's dusty solar panel (a museum tool, not a real
+  // rover part — see space-accuracy-rulings)
+  solarBrush: () => `
+    <rect x="42" y="22" width="16" height="52" rx="7" fill="${GOLD_DEEP}" stroke="${TEAL_DEEP}" stroke-width="2"/>
+    <rect x="36" y="72" width="28" height="14" rx="4" fill="${GOLD}" stroke="${TEAL_DEEP}" stroke-width="2"/>
+    ${[0, 1, 2, 3, 4, 5].map((i) => `<line x1="${39 + i * 4.4}" y1="86" x2="${37 + i * 5.2}" y2="112" stroke="${CREAM}" stroke-width="3" stroke-linecap="round"/>`).join('')}`,
+  // a punched mission-sequence card
+  missionCard: () => `
+    <rect x="22" y="34" width="56" height="62" rx="5" fill="${CREAM}" stroke="${GOLD_DEEP}" stroke-width="3"/>
+    <circle cx="34" cy="46" r="4" fill="${TEAL_DEEP}"/>
+    <line x1="44" y1="46" x2="68" y2="46" stroke="${TEAL}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="32" y1="62" x2="68" y2="62" stroke="${TEAL}" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+    <line x1="32" y1="74" x2="60" y2="74" stroke="${TEAL}" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+    <line x1="32" y1="86" x2="64" y2="86" stroke="${TEAL}" stroke-width="3" stroke-linecap="round" opacity=".5"/>`,
+  // a cranked key — turns the station's solar panels to face the Sun
+  rotateKey: () => `
+    <circle cx="50" cy="44" r="18" fill="none" stroke="${GOLD}" stroke-width="7"/>
+    <path d="M62,56 A18,18 0 0 1 38,56" fill="none" stroke="${GOLD_DEEP}" stroke-width="4" opacity=".8"/>
+    <rect x="45" y="60" width="10" height="44" rx="3" fill="${GOLD}" stroke="${GOLD_DEEP}" stroke-width="2"/>
+    <rect x="55" y="86" width="14" height="8" rx="2" fill="${GOLD}"/>
+    <rect x="55" y="98" width="10" height="8" rx="2" fill="${GOLD}"/>`,
+  // one hexagonal gold-coated mirror segment (JWST has 18 — see rulings)
+  mirrorPart: () => `
+    <path d="M50,20 L79,37 L79,71 L50,88 L21,71 L21,37 Z" fill="${GOLD}" stroke="${GOLD_DEEP}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M50,30 L70,42 L70,66 L50,78 L30,66 L30,42 Z" fill="none" stroke="${CREAM}" stroke-width="2" opacity=".55"/>
+    <path d="M34,40 L46,33" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>`,
+}
+
+export function spaceToolSVG(kind, w = 100, h = 130) {
+  const inner = SPACE_TOOL_INNER[kind] || SPACE_TOOL_INNER.planetModel
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">${inner()}</svg>`
+}
+
+// the coin the Supply Desk trades in — drawn small for the HUD counter
+export function coinSVG(size = 40) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="42" fill="${GOLD}" stroke="${GOLD_DEEP}" stroke-width="5"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="${GOLD_DEEP}" stroke-width="3" opacity=".7"/>
+    <path d="M50,28 L56,44 L72,44 L59,54 L64,70 L50,60 L36,70 L41,54 L28,44 L44,44 Z" fill="${CREAM}" opacity=".9"/>
+  </svg>`
+}

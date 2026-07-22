@@ -88,3 +88,4 @@ After writing a memory, add a one-line pointer below under the right section.
 ### Science Museum Mystery
 - [space-wing](projects/science-museum-mystery/space-wing.md) — the Space Wing (second wing): Gidi's 8-page comic spec + ready-to-build wireframe plan; adds an economy, cross-room item deps, and 5 new mini-games; Gidi approved, in build
 - [space-accuracy-rulings](projects/science-museum-mystery/space-accuracy-rulings.md) — settled space-science verdicts for the Space Wing (planet order + clues, Apollo sequence, Mars rocks, JWST, airlock framing); the content spec the puzzles resolve to
+- [space-economy-design](projects/science-museum-mystery/space-economy-design.md) — the Supply Desk economy: found-only coins, rocks-only selling, and a boot-time affordability audit that makes a soft-lock impossible; open question on the 6-slot inventory

@@ -349,6 +349,7 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
   /* tighter chrome so the buttons leave room for the world */
   #hud { padding: calc(7px + env(safe-area-inset-top)) 10px 7px; }
   .hud-btn { font-size: 12px; padding: 6px 11px; }
+  #coin-purse { font-size: 13px; padding: 5px 11px; gap: 4px; }
   #fs-btn { font-size: 15px; padding: 5px 9px; }
   #hud-left, #hud-right { gap: 7px; }
 
@@ -402,4 +403,25 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
 }
 @media (orientation: portrait) and (pointer: coarse) and (max-width: 920px) {
   #rotate-overlay { display: flex; }
+}
+
+/* ---------- Space Wing coin purse (HUD) ----------
+   Appears only once the player has entered the Space Wing, so the Dinosaur Wing's
+   HUD is unchanged. Sits beside the inventory toggle — the bag and the money it
+   buys things with read as one group. */
+#coin-purse {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--serif); font-size: 15px; font-weight: 700; letter-spacing: .04em;
+  color: var(--gold); background: rgba(20, 12, 4, 0.65);
+  border: 1px solid var(--gold-deep); border-radius: 999px;
+  padding: 7px 15px; backdrop-filter: blur(6px);
+}
+#coin-purse.hidden { display: none; }
+#coin-purse #coin-icon { font-size: 16px; line-height: 1; }
+/* a quick pop when the count changes, so earning is felt and not just read */
+#coin-purse.bump { animation: coin-bump .42s ease-out; }
+@keyframes coin-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22); background: rgba(232, 169, 72, 0.3); }
+  100% { transform: scale(1); }
 }
