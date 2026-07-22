@@ -125,12 +125,20 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
   went. CHECK locks the cards already in the right place and hands the rest back, so
   it converges without being trivial. Michael Collins stays in orbit throughout —
   "all three walked on the Moon" is the commonest Apollo mistake in kids' media.
-- ⬜ **Next:** Space Station and James Webb rooms (both declared in the wing already,
-  so it can't finish early), their mini-games, then the last cross-room links.
+- ✅ **Room 4 — Space Station (Fix the Airlock)** + its mini-game, **Spacewalk
+  Drift**. Two repairs of different kinds: clip the **safety tether** back on (it's
+  over in the Moon room) and use the **Rotate Key** from the desk to turn the solar
+  array to face the Sun — which is drawn in the scene, so the room answers its own
+  question. Then a tethered spacewalk to recover three floating tools; the hatch
+  stays locked until all three are aboard.
+  **The spec's "oxygen hose" is now a safety tether** (Gidi approved, 2026-07-22):
+  a spacewalker's air comes from the suit's own backpack, never a line to the ship.
+  Item and puzzle unchanged; the fact corrected, and the catalog says so explicitly.
+- ⬜ **Next:** the James Webb room + Focus the Stars, then the wing finale.
 
-Regression-tested end to end by `npm run verify` in the prototype (154 checks across
+Regression-tested end to end by `npm run verify` in the prototype (187 checks across
 `verify-wings`, `verify-economy`, `verify-spacewing`, `verify-solar`, `verify-mars`,
-`verify-moon`).
+`verify-moon`, `verify-station`).
 
 ### Design notes worth keeping
 - **Countability beat realism in the orrery.** The first version fanned the planets
@@ -146,6 +154,11 @@ Regression-tested end to end by `npm run verify` in the prototype (154 checks ac
 - **Tap-then-tap beats drag** for ordering puzzles (Landing Sequence, Build-a-Rocket).
   Young hands are much better at two taps than at a precise drag, and both puzzles are
   meant to be hard in the head, not in the fingers.
+- **Write the test so it can actually fail.** The spacewalk's "the tether never lets
+  you drift away" check first passed while the astronaut never moved at all — it
+  proved nothing. Rewritten to hold the thruster for real, it immediately caught a
+  sign error that made the tether push the astronaut *outward* instead of reeling
+  them in; only a hard clamp had been hiding it.
 - **Wrong answers are made informative, not punishing.** The sequence board locks the
   cards already right; a badly stacked rocket topples over rather than showing an
   error; a wrongly scanned Mars rock says what it actually is. Each is a fact learned,

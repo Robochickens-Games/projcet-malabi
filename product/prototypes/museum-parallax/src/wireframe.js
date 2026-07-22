@@ -1143,8 +1143,9 @@ export const MOON_SPOTS = {
   cardA: { x: 880, y: 902 },               // three mission cards hidden in the room
   cardB: { x: 1700, y: 906 },
   cardC: { x: 3400, y: 900 },
+  tether: { x: 2560, y: 902 },             // the Space Station's safety tether
   rockA: { x: 1520, y: 904 },
-  rockB: { x: 2600, y: 908 },
+  rockB: { x: 2760, y: 908 },
   hint: { x: 3620, y: 1000 },
 }
 
@@ -1258,5 +1259,172 @@ export function moonForeSVG() {
   return `${svgOpen(W, 1080)}
     ${boulder(160, 1)}${boulder(1980, 0.85)}${boulder(3720, 1.05)}
     ${speedTag('LAYER: FOREGROUND ROCKS · 1.35x')}
+  ${'</svg>'}`
+}
+
+/* ===================== SPACE STATION ROOM — the airlock bay (world: 3900) =====================
+   Outside the station, in orbit. Earth fills the lower background — at ~400 km up
+   it is enormous and always right there, which is the thing photographs of the ISS
+   always get across and diagrams never do. The module's solar array is turned the
+   wrong way and its airlock tether is unclipped. */
+
+export const STATION_W = 3900
+
+export const STATION_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 620 },
+  panelHub: { x: 1560, y: 420 },     // the solar array that won't turn
+  tetherHook: { x: 2280, y: 640 },   // the airlock's empty tether anchor
+  airlock: { x: 2280 },              // the module itself
+  hatch: { x: 3020, w: 300, h: 250 },// the SPACEWALK DRIFT console
+  rockA: { x: 980, y: 902 },
+  rockB: { x: 3540, y: 906 },
+  hint: { x: 3700, y: 1000 },
+}
+
+const T_LINE = '#b9cbd8'
+const T_SKY = '#040810'
+const T_EARTH = '#1f4f7a'
+const T_MID = '#24313d'
+const T_MAIN = '#2e3d4b'
+const T_FORE = '#41566a'
+
+export function stationSkySVG() {
+  const W = 2400
+  let stars = ''
+  for (let i = 0; i < 140; i++) {
+    const x = (i * 167) % W
+    const y = (i * 211) % 620
+    stars += `<circle cx="${x}" cy="${y}" r="${1 + ((i * 29) % 5) * 0.4}" fill="#e2ecf5" opacity="${0.28 + ((i * 17) % 6) * 0.1}"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="0" width="${W}" height="1080" fill="${T_SKY}"/>
+    ${stars}
+    ${speedTag('LAYER: ORBITAL NIGHT · 0.1x')}
+  ${'</svg>'}`
+}
+
+export function stationEarthSVG() {
+  const W = 2800
+  // the limb of the Earth, curving across the bottom — you are only ~400 km up
+  const limb = `M-400,1080 Q${W / 2},420 ${W + 400},1080 Z`
+  return `${svgOpen(W, 1080)}
+    <defs><clipPath id="earthLimb"><path d="${limb}"/></clipPath></defs>
+    <path d="${limb}" fill="${T_EARTH}"/>
+    <!-- continents and cloud are CLIPPED to the planet: drawn free they floated
+         above the horizon, which read as green blobs hanging in space -->
+    <g clip-path="url(#earthLimb)">
+      <g fill="#4f8f5f" opacity="0.6">
+        <ellipse cx="620" cy="990" rx="260" ry="96"/>
+        <ellipse cx="1460" cy="880" rx="300" ry="120"/>
+        <ellipse cx="2260" cy="1000" rx="230" ry="90"/>
+      </g>
+      <g fill="#ffffff" opacity="0.26">
+        <ellipse cx="1020" cy="950" rx="220" ry="52"/>
+        <ellipse cx="1980" cy="930" rx="260" ry="58"/>
+        <ellipse cx="340" cy="1040" rx="200" ry="46"/>
+      </g>
+    </g>
+    <path d="M-400,1080 Q${W / 2},420 ${W + 400},1080" fill="none" stroke="#7fc4e8" stroke-width="7" opacity="0.85"/>
+    <path d="M-400,1080 Q${W / 2},468 ${W + 400},1080" fill="none" stroke="#bfe6f7" stroke-width="4" opacity="0.4"/>
+    ${speedTag('LAYER: EARTH BELOW · 0.28x')}
+  ${'</svg>'}`
+}
+
+export function stationTrussSVG() {
+  const W = 3200
+  // the long truss the modules hang off, receding behind the main plane
+  let bays = ''
+  for (let x = 100; x < W; x += 200) {
+    bays += `<path d="M${x},430 L${x + 200},430 M${x},510 L${x + 200},510 M${x},430 L${x + 200},510 M${x + 200},430 L${x},510"
+      stroke="${T_MID}" stroke-width="5" fill="none" opacity="0.85"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    ${bays}
+    ${speedTag('LAYER: TRUSS · 0.6x')}
+  ${'</svg>'}`
+}
+
+export function stationMainSVG() {
+  const S = STATION_SPOTS
+  const arrayCell = (x, y, w, h) => `
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#1d3f5c" stroke="${T_LINE}" stroke-width="3"/>
+    ${[1, 2, 3].map((i) => `<line x1="${x + (w / 4) * i}" y1="${y}" x2="${x + (w / 4) * i}" y2="${y + h}" stroke="${T_LINE}" stroke-width="1.5" opacity="0.6"/>`).join('')}
+    <line x1="${x}" y1="${y + h / 2}" x2="${x + w}" y2="${y + h / 2}" stroke="${T_LINE}" stroke-width="1.5" opacity="0.6"/>`
+  return `${svgOpen(STATION_W, 1080)}
+    <rect x="0" y="880" width="${STATION_W}" height="200" fill="${T_MAIN}"/>
+    <line x1="0" y1="880" x2="${STATION_W}" y2="880" stroke="${T_LINE}" stroke-width="4"/>
+    ${roomFloorTicks(STATION_W, T_LINE)}
+    ${roomBackPost(S, '&#8592; SPACE HALL')}
+    ${roomPlacard(S, T_LINE)}
+
+    <!-- the solar array, currently edge-on to the Sun (the sprite that rotates
+         sits on top of this mast) -->
+    <g transform="translate(${S.panelHub.x},0)">
+      <rect x="-12" y="${S.panelHub.y}" width="24" height="430" fill="${T_MID}" stroke="${T_LINE}" stroke-width="4"/>
+      <circle cx="0" cy="${S.panelHub.y}" r="26" fill="${T_MID}" stroke="${GOLD}" stroke-width="5"/>
+      <circle cx="0" cy="${S.panelHub.y}" r="9" fill="${GOLD}"/>
+      ${tag(0, 250, 'SOLAR ARRAY', T_LINE, 20)}
+      <!-- the Sun's direction, so "turn it to face the Sun" is answerable -->
+      <g transform="translate(360,196)">
+        <circle cx="0" cy="0" r="34" fill="${GOLD}" opacity="0.9"/>
+        ${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+          const a = (Math.PI / 4) * i
+          return `<line x1="${Math.cos(a) * 44}" y1="${Math.sin(a) * 44}" x2="${Math.cos(a) * 62}" y2="${Math.sin(a) * 62}" stroke="${GOLD}" stroke-width="5" stroke-linecap="round"/>`
+        }).join('')}
+        ${tag(0, 104, 'SUN', GOLD, 18)}
+      </g>
+    </g>
+
+    <!-- the airlock module + its empty tether anchor -->
+    <g transform="translate(${S.airlock.x},0)">
+      <rect x="-260" y="470" width="520" height="230" rx="70" fill="${T_MID}" stroke="${T_LINE}" stroke-width="5"/>
+      ${[-150, -40, 70].map((x) => `<rect x="${x}" y="500" width="60" height="60" rx="8" fill="${T_SKY}" stroke="${T_LINE}" stroke-width="3"/>`).join('')}
+      <circle cx="180" cy="585" r="62" fill="${T_SKY}" stroke="${T_LINE}" stroke-width="6"/>
+      <circle cx="180" cy="585" r="42" fill="none" stroke="${T_LINE}" stroke-width="4" stroke-dasharray="9 8"/>
+      ${tag(0, 430, 'AIRLOCK MODULE', T_LINE, 22)}
+      ${tag(180, 592, 'HATCH', T_LINE, 15)}
+      <!-- the anchor the safety tether clips onto -->
+      <circle cx="0" cy="${S.tetherHook.y}" r="30" fill="none" stroke="${GOLD}" stroke-width="5" stroke-dasharray="8 7"/>
+      <circle cx="0" cy="${S.tetherHook.y}" r="8" fill="${GOLD}"/>
+      <line x1="-260" y1="700" x2="-260" y2="880" stroke="${T_LINE}" stroke-width="5"/>
+      <line x1="260" y1="700" x2="260" y2="880" stroke="${T_LINE}" stroke-width="5"/>
+    </g>
+
+    <!-- the spacewalk console -->
+    <g transform="translate(${S.hatch.x},0)">
+      <rect x="-150" y="630" width="300" height="250" rx="12" fill="${T_MID}" stroke="${GOLD}" stroke-width="5"/>
+      <rect x="-116" y="662" width="232" height="120" rx="8" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="3"/>
+      <g fill="none" stroke="${GOLD}" stroke-width="4" opacity="0.75">
+        <circle cx="0" cy="716" r="26"/>
+        <path d="M-46,760 q46,-26 92,0"/>
+      </g>
+      ${tag(0, 604, 'SPACEWALK DRIFT', GOLD, 19)}
+      ${tag(0, 830, '[ SUIT UP ]', GOLD, 16)}
+    </g>
+    ${roomHint(S)}
+    ${speedTag('LAYER: STATION EXTERIOR · 1.0x')}
+  ${'</svg>'}`
+}
+
+// the rotatable solar array wing — drawn separately so main.js can turn it
+export function solarWingSVG(w = 460, h = 200) {
+  return `${svgOpen(460, 200)}
+    <rect x="0" y="0" width="460" height="200" rx="8" fill="#14324a" stroke="${T_LINE}" stroke-width="5"/>
+    ${[1, 2, 3, 4, 5, 6, 7].map((i) => `<line x1="${(460 / 8) * i}" y1="0" x2="${(460 / 8) * i}" y2="200" stroke="${T_LINE}" stroke-width="2.5" opacity="0.7"/>`).join('')}
+    <line x1="0" y1="100" x2="460" y2="100" stroke="${T_LINE}" stroke-width="2.5" opacity="0.7"/>
+  ${'</svg>'}`
+}
+
+export function stationForeSVG() {
+  const W = 4200
+  const strut = (x) => `
+    <g transform="translate(${x},0)" stroke="${T_FORE}" stroke-width="7" fill="none">
+      <line x1="0" y1="1080" x2="0" y2="700"/>
+      <line x1="-70" y1="740" x2="70" y2="700"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    ${[240, 1180, 3320, 4020].map(strut).join('')}
+    ${speedTag('LAYER: NEAR STRUTS · 1.35x')}
   ${'</svg>'}`
 }

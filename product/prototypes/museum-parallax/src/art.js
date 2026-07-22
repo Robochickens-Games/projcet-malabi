@@ -1260,3 +1260,24 @@ export function missionCardSVG(id, w = 150, h = 200) {
     <text x="75" y="182" text-anchor="middle" font-family="${SERIF}" font-size="17" fill="${CREAM}">${s.name}</text>
   </svg>`
 }
+
+/* ====================== SPACE STATION ITEMS ======================
+   The spec called this an "oxygen hose". It isn't: a spacewalking astronaut's
+   oxygen comes from the suit's own backpack (the PLSS), never a hose to the
+   station. What DOES run to the airlock is a safety tether — so the item stayed
+   and the fact changed. See space-accuracy-rulings. */
+
+// the airlock safety tether: a braided line with a spring clip at each end
+export function tetherSVG(w = 100, h = 130) {
+  const clip = (cx, cy, flip = 1) => `
+    <g transform="translate(${cx},${cy}) scale(${flip},1)">
+      <path d="M0,-15 a15,15 0 1 1 0,30 a15,15 0 1 1 0,-30" fill="none" stroke="${BONE_DIM}" stroke-width="6"/>
+      <path d="M-2,-15 l14,7" stroke="${CREAM}" stroke-width="4" stroke-linecap="round"/>
+    </g>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">
+    <path d="M22,30 q34,26 12,44 q-22,18 14,26" fill="none" stroke="${GOLD_DEEP}" stroke-width="11" stroke-linecap="round"/>
+    <path d="M22,30 q34,26 12,44 q-22,18 14,26" fill="none" stroke="${GOLD}" stroke-width="5" stroke-linecap="round" stroke-dasharray="6 7"/>
+    ${clip(24, 26)}
+    ${clip(58, 102, -1)}
+  </svg>`
+}

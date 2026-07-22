@@ -4,7 +4,7 @@ import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
   eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
   PLANETS, PLANET_BY_ID, planetSVG, roverWheelSVG, solarPanelSVG,
-  MOON_STEPS, missionCardSVG,
+  MOON_STEPS, missionCardSVG, tetherSVG, spaceToolSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -18,6 +18,8 @@ import {
   SOLAR_W, SOLAR_SPOTS, orbitPoint, solarSkySVG, solarNebulaSVG, solarDomeSVG, solarMainSVG, solarForeSVG,
   MARS_W, MARS_SPOTS, marsSkySVG, marsFarSVG, marsMidSVG, marsMainSVG, marsForeSVG,
   MOON_W, MOON_SPOTS, moonSkySVG, moonFarSVG, moonMidSVG, moonMainSVG, moonForeSVG,
+  STATION_W, STATION_SPOTS, stationSkySVG, stationEarthSVG, stationTrussSVG, stationMainSVG,
+  stationForeSVG, solarWingSVG,
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
@@ -25,6 +27,7 @@ import { openOrbitGame, closeOrbitGame, isOrbitGameOpen, __orbitForceWin } from 
 import { openRoverGame, closeRoverGame, isRoverGameOpen, __roverPlanTo, __roverDrive, __roverDriving, __roverReroll } from './roverGame.js'
 import { openMoonBoard, closeMoonBoard, isMoonBoardOpen, __moonSolve, __moonSolveWrong } from './moonBoard.js'
 import { openRocketGame, closeRocketGame, isRocketGameOpen, __rocketStack, __rocketLaunch, __rocketPhase } from './rocketGame.js'
+import { openSpacewalk, closeSpacewalk, isSpacewalkOpen, __spacewalkGrabAll, __spacewalkToHatch, __spacewalkState } from './spacewalkGame.js'
 import {
   SPACE_ROCKS, SPACE_TOOLS, isRock, itemArt, rockInstance, rockType, rockOf,
   openSupplyDesk, closeSupplyDesk, isSupplyDeskOpen, refreshSupplyDesk,
@@ -49,6 +52,7 @@ const WORLDS = {
   solar: { w: SOLAR_W },
   mars: { w: MARS_W },
   moon: { w: MOON_W },
+  station: { w: STATION_W },
 }
 
 const $ = (id) => document.getElementById(id)
@@ -188,10 +192,10 @@ function setupInput() {
     }
     drag = null
   }
-  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !uiHit(e)) dragStart(e.clientX) })
+  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !isSpacewalkOpen() && !uiHit(e)) dragStart(e.clientX) })
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
   window.addEventListener('mouseup', () => dragEnd())
-  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
+  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !isMoonBoardOpen() && !isRocketGameOpen() && !isSpacewalkOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
@@ -400,7 +404,7 @@ function revealMark(node, { glow = false } = {}) {
 
 /* ---------- boot ---------- */
 // no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
-let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar, mars, moon
+let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar, mars, moon, station
 let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow, placedTooth
 let featherSprite, featherSparkle
 const scenes = {}                                  // name → scene container
@@ -1190,6 +1194,10 @@ async function buildMoon() {
     const tex = await svgTexture(missionCardSVG(id, 84, 112))
     addHiddenClue(clueL, spots[i], `card:${id}`, tex)
   }))
+  /* The Space Station's safety tether is here — the Moon room supplies the next
+     room along, just as Mars supplied this one's mission card. */
+  const tetherT = await svgTexture(tetherSVG(78, 101))
+  addHiddenClue(clueL, S.tether, 'safetyTether', tetherT)
   addHiddenClue(clueL, S.rockA, rockInstance('lunarChip', 'moon'), rockAT)
   addHiddenClue(clueL, S.rockB, rockInstance('starShard', 'moon'), rockBT)
 
@@ -1214,6 +1222,143 @@ function refreshMoonBoardCue() {
   gsap.to(moon._boardGlow, { alpha: 0.9, duration: 0.8 })
   gsap.to(moon._boardGlow, { alpha: 0.35, duration: 1.2, yoyo: true, repeat: -1, delay: 0.8 })
   setTimeout(() => toast('That’s all six mission cards! The <b>LANDING SEQUENCE</b> board is ready.', 6000), 900)
+}
+
+/* ---------- SPACE STATION ROOM — Fix the Airlock ----------
+   Two repairs again, but of different kinds: clip the SAFETY TETHER back onto the
+   airlock anchor (the tether is over in the Moon room), and use the ROTATE KEY
+   from the desk to turn the solar array to face the Sun. Then suit up for the
+   spacewalk.
+
+   The spec called the tether an "oxygen hose". It isn't — a spacewalker's oxygen
+   comes from the suit's own backpack, never a line to the station. Gidi approved
+   the reframe: the item and the puzzle are unchanged, the fact is corrected. */
+async function buildStation() {
+  const [skyT, earthT, trussT, mainT, foreT, wingT, rockAT, rockBT] = await Promise.all([
+    stationSkySVG(), stationEarthSVG(), stationTrussSVG(), stationMainSVG(), stationForeSVG(),
+    solarWingSVG(), spaceRockSVG('stardust', 62, 80), spaceRockSVG('meteorite', 60, 78),
+  ].map(svgTexture))
+
+  const skyL = bgLayer(0.1, skyT, 2400 / 2)
+  const earthL = bgLayer(0.28, earthT, 2800 / 2)
+  const trussL = bgLayer(0.6, trussT, 3200 / 2)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, STATION_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = STATION_SPOTS
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('spacehub'), 'station:back'))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
+    sfx.tap()
+    toast('EXHIBIT 4 — THE AIRLOCK. About <b>400 km</b> up, going round the Earth every <b>90 minutes</b>. The safety tether is unclipped and the solar array is turned the wrong way.', 7000)
+  }, 'station:placard'))
+
+  /* The solar array wing. It starts edge-on to the Sun — useless — and the Rotate
+     Key turns it to face the light. The Sun is drawn in the scene, so "which way
+     should it point?" is a question the room itself answers. */
+  const wing = new Sprite(wingT)
+  wing.anchor.set(0.5)
+  wing.scale.set(0.9)
+  placeAt(wing, S.panelHub.x, S.panelHub.y)
+  wing.rotation = Math.PI / 2          // edge-on: the broken state
+  mainL.addChild(wing)
+  const wingGlow = new Graphics()
+    .circle(0, 0, 66).fill({ color: 0xffd98a, alpha: 0.16 }).stroke({ color: 0xffd98a, width: 6, alpha: 0.85 })
+  placeAt(wingGlow, S.panelHub.x, S.panelHub.y)
+  wingGlow.alpha = 0
+  wingGlow.blendMode = 'add'
+  mainL.addChild(wingGlow)
+
+  const tetherGlow = new Graphics()
+    .circle(0, 0, 62).fill({ color: 0xffd98a, alpha: 0.16 }).stroke({ color: 0xffd98a, width: 6, alpha: 0.85 })
+  placeAt(tetherGlow, S.tetherHook.x, S.tetherHook.y)
+  tetherGlow.alpha = 0
+  tetherGlow.blendMode = 'add'
+  mainL.addChild(tetherGlow)
+  const tetherT = await svgTexture(tetherSVG(120, 156))
+  const tetherPlaced = new Sprite(tetherT)
+  tetherPlaced.anchor.set(0.5)
+  placeAt(tetherPlaced, S.tetherHook.x, S.tetherHook.y)
+  tetherPlaced.alpha = 0
+  mainL.addChild(tetherPlaced)
+
+  station._drops = [
+    {
+      item: 'safetyTether',
+      skeleton: { x: S.tetherHook.x, y: S.tetherHook.y - 90, w: 240, h: 190 },
+      socket: S.tetherHook, glow: tetherGlow, placed: tetherPlaced, done: false,
+      success: {
+        html: 'The <b>safety tether</b> is clipped back on. Spacewalkers are always tethered to the ' +
+          'station — and they wear a little jetpack called <b>SAFER</b> as a backup, just in case.',
+      },
+    },
+    {
+      item: 'rotateKey',
+      skeleton: { x: S.panelHub.x, y: S.panelHub.y - 80, w: 250, h: 200 },
+      socket: S.panelHub, glow: wingGlow, placed: wingGlow, done: false,
+      onPlace: () => {
+        // turn the array to face the drawn Sun, up and to the right
+        // face the Sun drawn up-and-right of the hub: the panel's flat side turns
+        // toward it, so the wing lies perpendicular to the hub→Sun direction
+        gsap.to(wing, { rotation: -0.5, duration: 1.5, ease: 'power2.inOut' })
+        station._wingTurned = true
+      },
+      success: {
+        html: 'The array swings round to face the <b>Sun</b> and the power comes back. Solar panels only ' +
+          'work pointed at the light — the station turns its wings all day long to keep up.',
+      },
+    },
+  ]
+
+  // the spacewalk console — dark until both repairs are done
+  const consoleGlow = new Graphics()
+    .roundRect(0, 0, 300, 250, 12).stroke({ color: 0xffd98a, width: 7, alpha: 0.9 })
+  placeAt(consoleGlow, S.hatch.x - 150, 630)
+  consoleGlow.alpha = 0
+  consoleGlow.blendMode = 'add'
+  mainL.addChild(consoleGlow)
+  station._gameBadge = solvedSeal(S.hatch.x + 126, 672, { r: 34, caption: '' })
+  mainL.addChild(station._gameBadge)
+
+  station._onRepair = () => {
+    if (!station._drops.every((d) => d.done) || station._consoleLit) return
+    station._consoleLit = true
+    gsap.to(consoleGlow, { alpha: 0.85, duration: 0.8 })
+    gsap.to(consoleGlow, { alpha: 0.35, duration: 1.2, yoyo: true, repeat: -1, delay: 0.8 })
+    setTimeout(() => toast('Tether on, power back. The <b>SPACEWALK DRIFT</b> console is live — time to suit up.', 5500), 1600)
+  }
+
+  mainL.addChild(hitRect(S.hatch.x - 150, 610, 300, 270, () => {
+    sfx.tap()
+    if (station._gameDone) { toast('You already brought every tool back inside. 🧑‍🚀', 3500); return }
+    if (!station._drops.every((d) => d.done)) {
+      toast('Not yet — the airlock still needs its <b>safety tether</b>, and the array needs turning to the <b>Sun</b>.', 5500)
+      return
+    }
+    openSpacewalk({
+      onComplete: () => onMinigameSolved('station'),
+      onClose: () => afterMinigameClose('station'),
+    })
+  }, 'station:hatch'))
+
+  const clueL = scrollLayer(1.12)
+  addHiddenClue(clueL, S.rockA, rockInstance('stardust', 'station'), rockAT)
+  addHiddenClue(clueL, S.rockB, rockInstance('meteorite', 'station'), rockBT)
+
+  const foreL = scrollLayer(1.35)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 4200 / 2, 540)
+  foreL.addChild(fore)
+
+  station.addChild(skyL, earthL, trussL, mainL, clueL, foreL)
+  station._layers = [skyL, earthL, trussL, mainL, clueL, foreL]
+  station._main = mainL
+  station._challenges = ['repairs', 'game']
+  makeDust(station, 18, STATION_W, 0xbfd8ea)
 }
 
 /* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
@@ -1693,6 +1838,7 @@ function goScene(target) {
   if (isRoverGameOpen()) closeRoverGame()
   if (isMoonBoardOpen()) closeMoonBoard()
   if (isRocketGameOpen()) closeRocketGame()
+  if (isSpacewalkOpen()) closeSpacewalk()
   const from = scenes[state.scene]
   const to = scenes[target]
   const dir = DEPTH[target] >= DEPTH[state.scene] ? -1 : 1
@@ -1723,6 +1869,7 @@ const SPACE_ROOM_ENTER = {
   solar: 'The planetarium! Three rings on the orrery are <b>empty</b>. Read the <b>STAR ATLAS</b> on the lectern to work out which planet goes where.',
   mars: 'The Mars bay. The rover is missing a <b>wheel</b>, and its solar panel is buried in <b>red dust</b>. Fix both, then take it for a drive.',
   moon: 'The Apollo 11 landing site — that really is <b>Earth</b> up there. Six <b>mission cards</b> have come off the board. Find them all, then put the mission back in order.',
+  station: 'Outside the station, <b>400 km</b> above the Earth. The airlock’s <b>safety tether</b> is unclipped and the <b>solar array</b> is turned away from the Sun.',
 }
 
 function onSceneEnter(target) {
@@ -1790,6 +1937,7 @@ const ITEM_SVG = {
   ...Object.fromEntries(PLANETS.map((p) => [`planet:${p.id}`, (w, h) => planetSVG(p.id, w, h)])),
   roverWheel: (w, h) => roverWheelSVG(w, h),
   ...Object.fromEntries(MOON_STEPS.map((s) => [`card:${s.id}`, (w, h) => missionCardSVG(s.id, w, h)])),
+  safetyTether: (w, h) => tetherSVG(w, h),
 }
 const CLUE_TOAST = {
   feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
@@ -1819,6 +1967,7 @@ const ITEM_INFO = {
   roverWheel: { name: 'Rover Wheel', section: 'Supplies', found: 'The Orrery' },
   ...Object.fromEntries(MOON_STEPS.map((s) =>
     [`card:${s.id}`, { name: `${s.name} card`, section: 'Moon Missions', found: 'Space Wing', note: s.blurb }])),
+  safetyTether: { name: 'Safety Tether', section: 'Supplies', found: 'The Moon' },
 }
 
 /* A bag item id is usually the item itself, but a space rock is an INSTANCE
@@ -2709,6 +2858,41 @@ const MOON_MISSIONS_SECTION = {
     </div>`,
 }
 
+/* LIVING IN ORBIT — the Space Station's half of the Atlas. Two of these entries
+   exist to correct things kids' space media almost always gets wrong: that a
+   spacewalker breathes through a hose from the ship (they don't — it's a backpack),
+   and that astronauts float because there's "no gravity" (they're falling). */
+const STATION_SECTION = {
+  id: 'station', title: 'Living in Orbit', blurb: 'How people work outside a spacecraft.',
+  icon: tetherSVG(34, 45), tag: 'station log', ready: true,
+  render: () => `
+    <div class="cat-card">
+      <h3>The Space Station</h3>
+      <div class="cat-note">It circles the Earth about <b>400 km</b> up, going all the way round
+        roughly every <b>90 minutes</b> — sixteen sunrises a day. People have been living aboard
+        <b>continuously since November 2000</b>.</div>
+    </div>
+    <div class="cat-card">
+      <div class="art trait">${tetherSVG(96, 128)}</div>
+      <h3>The safety tether</h3>
+      <div class="cat-note">Going outside, an astronaut clips a <b>tether</b> to the station so they
+        can’t drift off — and wears a small jetpack called <b>SAFER</b> as a backup. Their
+        <b>air comes from the backpack on the suit</b>, not from a hose to the ship.</div>
+    </div>
+    <div class="cat-card">
+      <div class="art trait">${spaceToolSVG('rotateKey', 96, 128)}</div>
+      <h3>Turning the wings</h3>
+      <div class="cat-note">Solar panels only make power when they face the <b>Sun</b>, so the station
+        turns its huge wings all day to keep pointing at it as it goes round and round.</div>
+    </div>
+    <div class="cat-card">
+      <h3>Why everything floats</h3>
+      <div class="cat-note">Not because there’s no gravity — there’s plenty up there. The station is
+        <b>falling</b> around the Earth and moving sideways so fast that it keeps missing. Everyone
+        inside is falling too, which is what floating really is.</div>
+    </div>`,
+}
+
 const CATALOG_SECTIONS = [
   SECTION('teeth', 'Teeth', 'A tooth tells you what a dinosaur ate.', toothSVG('leaf', 34, 42),
     (d) => toothSVG(d.tooth, 96, 120), (d) => d.toothNote),
@@ -2721,6 +2905,7 @@ const CATALOG_SECTIONS = [
     (d) => eggSVG(d.egg, 96, 120), (d) => d.eggNote),
   STAR_ATLAS_SECTION,
   MOON_MISSIONS_SECTION,
+  STATION_SECTION,
 ]
 
 function renderCatalogCover() {
@@ -2821,7 +3006,7 @@ async function boot() {
   window.addEventListener('resize', layout)
 
   // every scene is a Container of parallax layers; only the active one is visible
-  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar', 'mars', 'moon']) {
+  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar', 'mars', 'moon', 'station']) {
     const c = new Container()
     c._layers = []
     c._dust = []
@@ -2829,7 +3014,7 @@ async function boot() {
     root.addChild(c)
     scenes[name] = c
   }
-  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar, mars, moon } = scenes)
+  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar, mars, moon, station } = scenes)
 
   $('back-btn').addEventListener('pointerdown', () => goScene(SCENE_BACK[state.scene] || 'lobby'))
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
@@ -2870,7 +3055,7 @@ async function boot() {
   if (!econ.ok) {
     console.error('[economy] SOFT-LOCK RISK — placed rocks cannot fund the tools', econ)
   }
-  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar(), buildMars(), buildMoon()])
+  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar(), buildMars(), buildMoon(), buildStation()])
 
   let t = 0
   app.ticker.add((ticker) => {
@@ -2952,6 +3137,13 @@ async function boot() {
   window.__rocketStack = (ok) => __rocketStack(ok)
   window.__rocketLaunch = () => __rocketLaunch()
   window.__rocketPhase = () => __rocketPhase()
+  window.__stationRepairs = () => (station?._drops ?? []).map((d) => ({ item: d.item, done: d.done }))
+  window.__stationConsoleLit = () => !!station?._consoleLit
+  window.__wingTurned = () => !!station?._wingTurned
+  window.__spacewalkOpen = () => isSpacewalkOpen()
+  window.__spacewalkState = () => __spacewalkState()
+  window.__spacewalkGrabAll = () => __spacewalkGrabAll()
+  window.__spacewalkToHatch = () => __spacewalkToHatch()
   window.__repairs = () => (mars?._drops ?? []).map((d) => ({ item: d.item, done: d.done }))
   window.__consoleLit = () => !!mars?._consoleLit
   // use an item on the repair that wants it, going through the real placement path
