@@ -59,7 +59,7 @@ check('toast markup renders instead of printing as tags',
    inventory slot was only claimed when the animation LANDED: two items picked up
    inside that window were handed the same slot, and the first one vanished from
    the bag. Any assertion here that counts filled slots is guarding that. */
-const ROOM_CARDS = ['liftoff', 'separates', 'moonPull', 'landing', 'samples', 'ascent', 'homeward']
+const ROOM_CARDS = ['separates', 'landing', 'samples', 'ascent', 'homeward']
 for (const id of ROOM_CARDS) {
   check(`the ${id} card is hidden in the Moon room`, await page.evaluate((c) => window.__clueExists(`card:${c}`), id))
   await page.evaluate((c) => window.__tapClue(`card:${c}`), id)
@@ -67,7 +67,7 @@ for (const id of ROOM_CARDS) {
 }
 // the pick-up animation flies for ~0.8s before it fills its slot
 await page.waitForTimeout(900)
-check('seven cards found in the room',
+check('five cards found in the room',
   (await page.evaluate(() => window.__moonCards())).length === ROOM_CARDS.length,
   String((await page.evaluate(() => window.__moonCards())).length))
 /* Ten cards will not fit in the six-slot Finds pouch, which is why they have
@@ -82,11 +82,32 @@ check('...and they went into their own CARDS pouch, not the Finds grid',
 
 await page.evaluate(() => window.__goScene('mars'))
 await page.waitForTimeout(1000)
-check('an eighth card is over in the MARS room (cross-room)',
+/* The other five are spread right across the wing — the point being that you
+   cannot finish the Moon room from inside the Moon room. */
+await page.evaluate(() => window.__goScene('spacehub'))
+await page.waitForTimeout(1000)
+check('LIFT-OFF is lying in the Hall of Space',
+  await page.evaluate(() => window.__clueExists('card:liftoff')))
+await page.evaluate(() => window.__tapClue('card:liftoff'))
+await page.waitForTimeout(1100)
+
+await page.evaluate(() => window.__goScene('solar'))
+await page.waitForTimeout(1000)
+check('THE MOON TAKES OVER is in the Solar System room',
+  await page.evaluate(() => window.__clueExists('card:moonPull')))
+await page.evaluate(() => window.__tapClue('card:moonPull'))
+await page.waitForTimeout(1100)
+
+await page.evaluate(() => window.__goScene('mars'))
+await page.waitForTimeout(1000)
+check('DOCKING AGAIN is over in the Mars room',
   await page.evaluate(() => window.__clueExists('card:docking')))
 await page.evaluate(() => window.__tapClue('card:docking'))
 await page.waitForTimeout(1100)
-check('eight cards held', (await page.evaluate(() => window.__moonCards())).length === 8)
+check('eight cards held', (await page.evaluate(() => window.__moonCards())).length === 8,
+  String((await page.evaluate(() => window.__moonCards())).length))
+check('...and no mission card is hidden twice',
+  new Set(await page.evaluate(() => window.__moonCards())).size === 8)
 
 await page.evaluate(() => { window.__setCoins(60); window.__openDesk() })
 await page.waitForTimeout(500)

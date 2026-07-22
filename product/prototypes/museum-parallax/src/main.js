@@ -730,6 +730,10 @@ async function buildSpaceHub() {
   // find→sell→buy loop can be learned within sight of the desk that pays for it
   const rockL = scrollLayer(1.15)
   addHiddenClue(rockL, S.rock, rockInstance('lunarChip', 'spacehub'), rockT)
+  // and the Moon's LIFT-OFF card — the mission's first stage, lying where the
+  // player's own journey through the wing begins
+  const liftoffT = await svgTexture(missionCardSVG('liftoff', 84, 112))
+  addHiddenClue(rockL, S.card, 'card:liftoff', liftoffT)
 
   const foreL = scrollLayer(1.35)
   const fore = new Sprite(foreT)
@@ -875,6 +879,10 @@ async function buildSolar() {
   const wheelT = await svgTexture(roverWheelSVG(80, 104))
   addHiddenClue(clueL, S.wheel, 'roverWheel', wheelT)
   // two space rocks, because every room in the wing pays for exploring it
+  /* A Moon mission card — "the Moon takes over" — sits by the Star Atlas here.
+     It's a gravity idea, so the orrery room is where it belongs. */
+  const moonCardT = await svgTexture(missionCardSVG('moonPull', 80, 107))
+  addHiddenClue(clueL, S.card, 'card:moonPull', moonCardT)
   addHiddenClue(clueL, S.rockA, rockInstance('starShard', 'solar'), rockAT)
   addHiddenClue(clueL, S.rockB, rockInstance('marsRock', 'solar'), rockBT)
 
@@ -1242,8 +1250,14 @@ async function buildMoon() {
   /* Seven of the ten are hidden in this room, one is over in the Mars bay, one is
      sold at the Supply Desk and one is won in Build-a-Rocket — the same four
      sources as before, just more to find in the room itself. */
-  const roomCards = ['liftoff', 'separates', 'moonPull', 'landing', 'samples', 'ascent', 'homeward']
-  const spots = [S.cardA, S.cardB, S.cardC, S.cardD, S.cardE, S.cardF, S.cardG]
+  /* Five of the ten are hidden in this room. The other five are spread across the
+     wing: LIFT-OFF waits in the Hall of Space (the mission's first stage, lying
+     where the player's own journey starts), THE MOON TAKES OVER is in the Solar
+     System room (a gravity idea belongs in the room about orbits), DOCKING AGAIN
+     is over in the Mars bay, CIRCLING THE MOON is sold at the desk, and SPLASHDOWN
+     is won in Build-a-Rocket. You cannot finish this room from inside it. */
+  const roomCards = ['separates', 'landing', 'samples', 'ascent', 'homeward']
+  const spots = [S.cardA, S.cardB, S.cardC, S.cardD, S.cardE]
   await Promise.all(roomCards.map(async (id, i) => {
     const tex = await svgTexture(missionCardSVG(id, 84, 112))
     addHiddenClue(clueL, spots[i], `card:${id}`, tex)

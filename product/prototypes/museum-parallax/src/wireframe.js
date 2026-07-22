@@ -731,6 +731,7 @@ export const SPACEHUB_SPOTS = {
   station: { x: 3960, w: 460, h: 660 },          // → SPACE STATION airlock
   webb: { x: 4760, w: 460, h: 660 },             // → JAMES WEBB mirrors
   rock: { x: 1180, y: 908 },                     // a space rock on the hall floor
+  card: { x: 2000, y: 904 },                     // a Moon mission card, dropped in the hall
 }
 
 // niche order in the hall — also the order the spec's comic introduces them
@@ -870,6 +871,7 @@ export const SOLAR_SPOTS = {
   rockB: { x: 3900, y: 900 },
   clueMars: { x: 3400, y: 902 },    // the Mars model, tucked behind a console
   orbitStation: { x: 2760 },        // the ORBIT BALANCE mini-game console
+  card: { x: 1360, y: 902 },        // a Moon mission card, left by the Star Atlas
   wheel: { x: 1950, y: 908 },       // the Mars rover's wheel, rolled under the orrery
   hint: { x: 4020, y: 1000 },
 }
@@ -1140,13 +1142,11 @@ export const MOON_SPOTS = {
   board: { x: 1180, w: 380, h: 300 },     // the LANDING SEQUENCE board
   lander: { x: 2050 },                     // the lunar module diorama
   bench: { x: 2960, w: 320, h: 250 },      // the BUILD-A-ROCKET workbench
-  cardA: { x: 700, y: 902 },               // seven mission cards hidden in the room
-  cardB: { x: 1620, y: 906 },
-  cardC: { x: 1900, y: 900 },
-  cardD: { x: 2360, y: 904 },
-  cardE: { x: 3080, y: 900 },
-  cardF: { x: 3320, y: 906 },
-  cardG: { x: 4020, y: 902 },
+  cardA: { x: 780, y: 902 },               // five mission cards hidden in the room
+  cardB: { x: 1680, y: 906 },              // (two more live in the Hall of Space
+  cardC: { x: 2440, y: 900 },              //  and the Solar System room)
+  cardD: { x: 3240, y: 906 },
+  cardE: { x: 4040, y: 902 },
   lamp: { x: 3760, y: 470 },               // the SIGNAL LAMP — the sequence clue
   tether: { x: 2560, y: 902 },             // the Space Station's safety tether
   rockA: { x: 1520, y: 904 },

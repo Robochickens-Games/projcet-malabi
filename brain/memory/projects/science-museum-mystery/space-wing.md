@@ -127,9 +127,15 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
 
   **Ten stages, not six (Gidi, 2026-07-22)** — back to the spec's scale: launch,
   stages fall away, the Moon's pull takes over, circling the Moon, Eagle lands,
-  collecting rocks, up off the Moon, docking again, homeward, splashdown. Seven are
-  hidden in the room, one in the Mars bay, one at the desk, one won in
-  Build-a-Rocket. **Ten cards do not fit a six-slot bag**, so mission cards got
+  collecting rocks, up off the Moon, docking again, homeward, splashdown.
+
+  **Where the ten cards live (Gidi, 2026-07-22):** five in the Moon room, and five
+  deliberately elsewhere — **Lift-off** in the Hall of Space (the mission's first
+  stage, lying where the player's own journey starts), **The Moon takes over** in
+  the Solar System room (a gravity idea, so it belongs in the room about orbits),
+  **Docking again** in the Mars bay, **Circling the Moon** sold at the Supply Desk,
+  and **Splashdown** won in Build-a-Rocket. Half the set is outside the room, so the
+  Moon exhibit cannot be finished from inside the Moon exhibit. **Ten cards do not fit a six-slot bag**, so mission cards got
   their own pouch — a third tab beside Finds and Rocks.
 
   **The clue is the SIGNAL LAMP (Gidi, 2026-07-22).** A beacon on the right of the
@@ -199,7 +205,7 @@ The Supply Desk supplies the other half of each room (planet model, solar brush,
 mission card, rotate key, mirror segment), so exploring and trading are both
 required — neither alone finishes anything.
 
-Regression-tested end to end by `npm run verify` in the prototype (**253 checks**
+Regression-tested end to end by `npm run verify` in the prototype (**254 checks**
 across eight suites: `verify-wings`, `verify-economy`, `verify-spacewing`,
 `verify-solar`, `verify-mars`, `verify-moon`, `verify-station`, `verify-webb`).
 
