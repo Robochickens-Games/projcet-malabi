@@ -71,13 +71,20 @@ await page.evaluate(() => window.__closeDesk())
 await page.waitForTimeout(400)
 
 // ---- rooms that don't exist yet must say so, never fail silently ----
-// (pick one that is genuinely unbuilt — `solar` is a real room now)
-await page.evaluate(() => window.__tapWorld('spacehub', 'mars'))
-await page.waitForTimeout(500)
-check('an unbuilt diorama explains itself instead of doing nothing',
-  await page.evaluate(() => !document.getElementById('toast').classList.contains('hidden')
-    && /being installed/.test(document.getElementById('toast-text').textContent)))
-check('and does not leave the hall', (await page.evaluate(() => window.__cam().scene)) === 'spacehub')
+// Found dynamically rather than hardcoded: every room we build would otherwise
+// break this check, and the day all five exist it should skip, not fail.
+const unbuilt = await page.evaluate(() =>
+  window.__wingRooms('space').find((r) => !window.__sceneExists(r)) ?? null)
+if (unbuilt) {
+  await page.evaluate((r) => window.__tapWorld('spacehub', r), unbuilt)
+  await page.waitForTimeout(500)
+  check(`an unbuilt diorama (${unbuilt}) explains itself instead of doing nothing`,
+    await page.evaluate(() => !document.getElementById('toast').classList.contains('hidden')
+      && /being installed/.test(document.getElementById('toast-text').textContent)))
+  check('and does not leave the hall', (await page.evaluate(() => window.__cam().scene)) === 'spacehub')
+} else {
+  console.log('· every space room is built — nothing left to check for unbuilt niches')
+}
 
 // ---- back out, and the dino wing is still its own thing ----
 await page.evaluate(() => window.__goScene('lobby'))

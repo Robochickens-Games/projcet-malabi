@@ -111,12 +111,19 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
   missing planets come from **three different sources** — Mars found by exploring
   the room, Saturn bought at the Supply Desk, Venus won in Orbit Balance — so the
   wing's whole loop is taught inside one exhibit.
-- ⬜ **Next:** Mars, Moon, Space Station and James Webb rooms (declared in the
-  wing already, so the wing can't finish early), their mini-games, then locking
-  the cross-room dependency graph.
+- ✅ **Room 2 — Mars (Rover Repair)** + its mini-game, **Rover Route**. Two repairs
+  gate the drive: the rover's **wheel is hidden in the Solar System room** (the wing's
+  first real cross-room dependency — you cannot finish Mars from inside Mars) and its
+  solar panel is cleaned with the **Solar Brush** bought at the desk. Only then does
+  the drive console light up. In Rover Route you plan the whole path first and then
+  drive it — which is how real rovers work, because commands take minutes to arrive —
+  and the actual question is which of three rocks is the **iron-rich red** one.
+- ⬜ **Next:** Moon, Space Station and James Webb rooms (all declared in the wing
+  already, so it can't finish early), their mini-games, then finishing the
+  cross-room dependency graph.
 
-Regression-tested end to end by `npm run verify` in the prototype (91 checks across
-`verify-wings`, `verify-economy`, `verify-spacewing`, `verify-solar`).
+Regression-tested end to end by `npm run verify` in the prototype (119 checks across
+`verify-wings`, `verify-economy`, `verify-spacewing`, `verify-solar`, `verify-mars`).
 
 ### Design notes worth keeping
 - **Countability beat realism in the orrery.** The first version fanned the planets

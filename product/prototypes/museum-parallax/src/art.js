@@ -1126,3 +1126,47 @@ export function planetSVG(id, w = 100, h = 130) {
     <ellipse cx="${cx}" cy="106" rx="17" ry="5.5" fill="${GOLD_DEEP}"/>
   </svg>`
 }
+
+/* ====================== MARS ROOM ITEMS ====================== */
+
+// the rover's missing wheel — a cleated drive wheel, the kind that leaves the
+// tracks you see in real rover photos
+export function roverWheelSVG(w = 100, h = 130) {
+  const cleat = (i) => {
+    const a = (Math.PI / 6) * i
+    const x1 = 50 + Math.cos(a) * 26, y1 = 62 + Math.sin(a) * 26
+    const x2 = 50 + Math.cos(a) * 38, y2 = 62 + Math.sin(a) * 38
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${BONE_DIM}" stroke-width="5" stroke-linecap="round"/>`
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">
+    <circle cx="50" cy="62" r="38" fill="${TEAL_DEEP}" stroke="${BONE_DIM}" stroke-width="4"/>
+    ${[...Array(12).keys()].map(cleat).join('')}
+    <circle cx="50" cy="62" r="20" fill="${BONE_DIM}"/>
+    <circle cx="50" cy="62" r="9" fill="${TEAL_DEEP}"/>
+    ${[0, 1, 2, 3, 4].map((i) => {
+      const a = (Math.PI * 2 / 5) * i - Math.PI / 2
+      return `<circle cx="${50 + Math.cos(a) * 14}" cy="${62 + Math.sin(a) * 14}" r="2.6" fill="${TEAL_DEEP}"/>`
+    }).join('')}
+  </svg>`
+}
+
+// the rover's solar panel — `dust` 0..1 fades a rusty film over the blue cells
+export function solarPanelSVG(dust = 1, w = 180, h = 120) {
+  const cells = []
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 5; c++) {
+      cells.push(`<rect x="${8 + c * 33}" y="${8 + r * 34}" width="30" height="31" rx="3" fill="#2f6f9e" stroke="#17384f" stroke-width="2"/>`)
+    }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 175 115">
+    <rect x="0" y="0" width="175" height="115" rx="6" fill="#123048" stroke="${BONE_DIM}" stroke-width="3"/>
+    ${cells.join('')}
+    <g opacity="${dust}">
+      <rect x="0" y="0" width="175" height="115" rx="6" fill="#a4472b" opacity="0.72"/>
+      <g fill="#c2603c" opacity="0.55">
+        <ellipse cx="42" cy="30" rx="30" ry="16"/><ellipse cx="120" cy="52" rx="36" ry="19"/>
+        <ellipse cx="70" cy="88" rx="34" ry="15"/><ellipse cx="150" cy="92" rx="22" ry="12"/>
+      </g>
+    </g>
+  </svg>`
+}

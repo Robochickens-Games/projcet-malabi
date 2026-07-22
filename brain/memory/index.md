@@ -40,6 +40,7 @@ After writing a memory, add a one-line pointer below under the right section.
 - [visual-language-references](shared/visual-language-references.md) — inspiration games for the VISUAL language (illustrated adventure, premium tactile, hidden-object, kids-explorable) + what to steal from each
 - [aso-research-findings](shared/aso-research-findings.md) — ASO keyword research results: dinosaurs are the strongest launch theme; full report in brain/research/
 - [parallax-mobile-compositing-oom](shared/parallax-mobile-compositing-oom.md) — silent mobile-only crash in the parallax prototypes = compositing OOM; size content layers to their content, not the full world
+- [generated-puzzles-need-solvability-proof](shared/generated-puzzles-need-solvability-proof.md) — randomly generated puzzle boards must be PROVEN solvable before being shown (generate → verify → re-roll); found when Rover Route could wall off the correct answer
 - [midjourney-good-bg-not-scenes](shared/midjourney-good-bg-not-scenes.md) — Midjourney is great for backgrounds/atmosphere but unreliable for accurate scenes/subjects; keep it for bg, evaluate GPT (or another tool) for precise assets
 - [project-gazette](shared/project-gazette.md) — the newspaper-style wiki auto-published to GitHub Pages; visualizes the brain + what changed when
 - [gazette-publishing-paused](shared/gazette-publishing-paused.md) — ⏸ paused 2026-07-22 (Gidi): no new Daily editions on commit; build-wiki is manual-dispatch only (also pauses the Pages copy of the prototype)

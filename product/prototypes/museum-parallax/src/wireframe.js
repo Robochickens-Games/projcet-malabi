@@ -870,6 +870,7 @@ export const SOLAR_SPOTS = {
   rockB: { x: 3900, y: 900 },
   clueMars: { x: 3400, y: 902 },    // the Mars model, tucked behind a console
   orbitStation: { x: 2760 },        // the ORBIT BALANCE mini-game console
+  wheel: { x: 1950, y: 908 },       // the Mars rover's wheel, rolled under the orrery
   hint: { x: 4020, y: 1000 },
 }
 
@@ -992,5 +993,134 @@ export function solarForeSVG() {
   return `${svgOpen(W, 1080)}
     ${[200, 640, 3300, 3760, 4160].map(rail).join('')}
     ${speedTag('LAYER: RAIL · 1.35x')}
+  ${'</svg>'}`
+}
+
+/* ===================== MARS ROOM — the rover bay (world: 3900) =====================
+   A rust-coloured Martian landscape under a butterscotch sky (Mars' sky really is
+   pale orange-brown by day — the dust does that). The diorama's rover is missing
+   a WHEEL and its solar panel is buried in DUST. Fix both, then drive it out to
+   the right rock in the Rover Route mini-game. */
+
+export const MARS_W = 3900
+
+export const MARS_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 640 },
+  rover: { x: 1900, y: 300, w: 620, h: 520 },   // the rover diorama frame
+  wheelSocket: { x: 1760, y: 742 },             // the empty axle, front-left
+  panelSocket: { x: 1640, y: 512 },             // the dust-caked solar panel (a deployed wing)
+  console: { x: 2860 },                          // the ROVER ROUTE drive console
+  rockA: { x: 1080, y: 906 },
+  rockB: { x: 3560, y: 902 },
+  hint: { x: 3720, y: 1000 },
+}
+
+const M_SKY = '#7a4a33'
+const M_SKY_F = '#4a2a1d'
+const M_FAR = '#4a2a1c'
+const M_MID = '#5b3322'
+const M_MAIN = '#6f4029'
+const M_LINE = '#c98a63'
+const M_FORE = '#a3654a'
+// the hardware reads in a lighter, cooler tone than the landscape: on a small
+// screen a rust rover on a rust plain is one shape, not two
+const M_ROVER = '#f0cbad'
+const M_ROVER_F = '#40251a'
+
+export function marsSkySVG() {
+  const W = 2400
+  return `${svgOpen(W, 1080)}
+    <defs><linearGradient id="marsSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${M_SKY_F}"/><stop offset="100%" stop-color="${M_SKY}"/>
+    </linearGradient></defs>
+    <rect x="0" y="0" width="${W}" height="1080" fill="url(#marsSky)"/>
+    <circle cx="1750" cy="250" r="46" fill="#e8c9a0" opacity="0.75"/>
+    ${speedTag('LAYER: MARTIAN SKY · 0.1x')}
+  ${'</svg>'}`
+}
+
+export function marsFarSVG() {
+  const W = 2900
+  return `${svgOpen(W, 1080)}
+    <path d="M0,700 L360,520 L620,640 L980,430 L1340,620 L1700,500 L2100,650 L2500,540 L2900,690 L2900,880 L0,880 Z"
+      fill="${M_FAR}" stroke="${M_LINE}" stroke-width="3" stroke-opacity="0.4"/>
+    ${speedTag('LAYER: FAR RIDGE · 0.3x')}
+  ${'</svg>'}`
+}
+
+export function marsMidSVG() {
+  const W = 3200
+  // crater rims — the shallow, worn kind that actually cover the Martian plains
+  const crater = (x, y, rx) => `
+    <ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${rx * 0.28}" fill="none" stroke="${M_LINE}" stroke-width="4" opacity="0.55"/>
+    <ellipse cx="${x}" cy="${y - 8}" rx="${rx * 0.72}" ry="${rx * 0.2}" fill="${M_MID}" opacity="0.8"/>`
+  return `${svgOpen(W, 1080)}
+    <path d="M0,760 L500,690 L900,760 L1400,700 L1900,770 L2400,710 L2900,780 L3200,730 L3200,880 L0,880 Z"
+      fill="${M_MID}"/>
+    ${crater(520, 812, 170)}${crater(1560, 828, 210)}${crater(2650, 806, 150)}
+    ${speedTag('LAYER: CRATER PLAIN · 0.55x')}
+  ${'</svg>'}`
+}
+
+export function marsMainSVG() {
+  const S = MARS_SPOTS
+  return `${svgOpen(MARS_W, 1080)}
+    <rect x="0" y="880" width="${MARS_W}" height="200" fill="${M_MAIN}"/>
+    <line x1="0" y1="880" x2="${MARS_W}" y2="880" stroke="${M_LINE}" stroke-width="4"/>
+    ${roomFloorTicks(MARS_W, M_LINE)}
+    ${roomBackPost(S, '&#8592; SPACE HALL')}
+    ${roomPlacard(S, M_LINE)}
+
+    <!-- the rover diorama: a dashed exhibit frame around the whole vehicle -->
+    <g transform="translate(${S.rover.x},0)">
+      <rect x="-310" y="290" width="620" height="590" rx="14" fill="none" stroke="${M_LINE}"
+        stroke-width="2" stroke-dasharray="10 8" opacity="0.55"/>
+      <!-- the strut carrying the deployed solar wing (its panel is a sprite) -->
+      <path d="M-160,626 L-232,560" stroke="${M_ROVER}" stroke-width="7" stroke-linecap="round"/>
+      <!-- chassis -->
+      <rect x="-170" y="600" width="340" height="110" rx="16" fill="${M_ROVER_F}" stroke="${M_ROVER}" stroke-width="5"/>
+      <!-- rocker-bogie arms down to the wheels -->
+      <path d="M-150,700 L-140,780 M20,700 L60,780 M150,700 L180,780" stroke="${M_ROVER}" stroke-width="9" fill="none"/>
+      <!-- the two wheels that ARE there (front-left is missing) -->
+      <circle cx="60" cy="790" r="52" fill="${M_ROVER_F}" stroke="${M_ROVER}" stroke-width="5"/>
+      <circle cx="60" cy="790" r="22" fill="${M_ROVER}" opacity="0.55"/>
+      <circle cx="180" cy="790" r="52" fill="${M_ROVER_F}" stroke="${M_ROVER}" stroke-width="5"/>
+      <circle cx="180" cy="790" r="22" fill="${M_ROVER}" opacity="0.55"/>
+      <!-- the empty axle, waiting for its wheel -->
+      <circle cx="-140" cy="790" r="52" fill="${M_ROVER_F}" fill-opacity="0.5" stroke="${GOLD}" stroke-width="5" stroke-dasharray="9 7"/>
+      <circle cx="-140" cy="790" r="9" fill="${GOLD}"/>
+      <!-- mast + camera head -->
+      <rect x="-14" y="430" width="26" height="176" fill="${M_ROVER_F}" stroke="${M_ROVER}" stroke-width="4"/>
+      <rect x="-64" y="380" width="128" height="58" rx="9" fill="${M_ROVER_F}" stroke="${M_ROVER}" stroke-width="4"/>
+      <circle cx="-32" cy="409" r="12" fill="#9ed2e6"/><circle cx="32" cy="409" r="12" fill="#9ed2e6"/>
+      <!-- robot arm -->
+      <path d="M170,640 L280,566 L330,600" fill="none" stroke="${M_ROVER}" stroke-width="8" stroke-linecap="round"/>
+      ${tag(0, 340, 'MARS ROVER', M_ROVER, 22)}
+    </g>
+
+    <!-- the drive console for the route mini-game -->
+    <g transform="translate(${S.console.x},0)">
+      <rect x="-150" y="646" width="300" height="234" rx="12" fill="${M_ROVER_F}" stroke="${GOLD}" stroke-width="5"/>
+      <rect x="-116" y="676" width="232" height="112" rx="8" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="3"/>
+      <g fill="${GOLD}" opacity="0.55">
+        ${[0, 1, 2, 3].map((i) => `<rect x="${-104 + i * 58}" y="808" width="44" height="26" rx="5"/>`).join('')}
+      </g>
+      ${tag(0, 620, 'ROVER ROUTE', GOLD, 20)}
+    </g>
+    ${roomHint(S)}
+    ${speedTag('LAYER: ROVER BAY · 1.0x')}
+  ${'</svg>'}`
+}
+
+export function marsForeSVG() {
+  const W = 4200
+  const rock = (x, s) => `
+    <g transform="translate(${x},0) scale(${s})">
+      <path d="M0,1080 L40,930 L120,890 L200,950 L240,1080 Z" fill="${M_FORE}" stroke="${M_LINE}" stroke-width="4"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    ${rock(180, 1)}${rock(1240, 0.8)}${rock(3160, 1.1)}${rock(3860, 0.9)}
+    ${speedTag('LAYER: FOREGROUND ROCKS · 1.35x')}
   ${'</svg>'}`
 }

@@ -3,7 +3,7 @@ import { gsap } from 'gsap'
 import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
   eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
-  PLANETS, PLANET_BY_ID, planetSVG,
+  PLANETS, PLANET_BY_ID, planetSVG, roverWheelSVG, solarPanelSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -15,10 +15,12 @@ import {
   PTERO_W, PTERO_SPOTS, pteroSkySVG, pteroSeaSVG, pteroCliffSVG, pteroMainSVG, pteroRockSVG,
   SPACEHUB_W, SPACEHUB_SPOTS, SPACEHUB_ORDER, spacehubBackSVG, spacehubMainSVG, spacehubForeSVG,
   SOLAR_W, SOLAR_SPOTS, orbitPoint, solarSkySVG, solarNebulaSVG, solarDomeSVG, solarMainSVG, solarForeSVG,
+  MARS_W, MARS_SPOTS, marsSkySVG, marsFarSVG, marsMidSVG, marsMainSVG, marsForeSVG,
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
 import { openOrbitGame, closeOrbitGame, isOrbitGameOpen, __orbitForceWin } from './orbitGame.js'
+import { openRoverGame, closeRoverGame, isRoverGameOpen, __roverPlanTo, __roverDrive, __roverDriving, __roverReroll } from './roverGame.js'
 import {
   SPACE_ROCKS, SPACE_TOOLS, isRock, itemArt, rockInstance, rockType, rockOf,
   openSupplyDesk, closeSupplyDesk, isSupplyDeskOpen, refreshSupplyDesk,
@@ -41,6 +43,7 @@ const WORLDS = {
   ptero: { w: PTERO_W },
   spacehub: { w: SPACEHUB_W },
   solar: { w: SOLAR_W },
+  mars: { w: MARS_W },
 }
 
 const $ = (id) => document.getElementById(id)
@@ -180,10 +183,10 @@ function setupInput() {
     }
     drag = null
   }
-  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !uiHit(e)) dragStart(e.clientX) })
+  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !uiHit(e)) dragStart(e.clientX) })
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
   window.addEventListener('mouseup', () => dragEnd())
-  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
+  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !isRoverGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
@@ -388,11 +391,23 @@ function revealMark(node, { glow = false } = {}) {
 
 /* ---------- boot ---------- */
 // no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
-let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar
+let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar, mars
 let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow, placedTooth
 let featherSprite, featherSparkle
 const scenes = {}                                  // name → scene container
-const activeDrop = () => scenes[state.scene]?._drop // the placeable target in view, if any
+/* The placeable target in view, if any. Dino rooms have exactly one (`_drop`);
+   a room can instead declare several (`_drops`) when more than one thing needs
+   fixing — the Mars rover wants both a wheel and a clean panel. We prefer the
+   target that WANTS the item being dragged, so each repair lights up its own
+   spot, and fall back to any unfinished one so the "that's not what this needs"
+   nudge still has something to talk about. */
+function activeDrop() {
+  const sc = scenes[state.scene]
+  if (!sc?._drops) return sc?._drop ?? null
+  return sc._drops.find((d) => !d.done && d.item === dragItem)
+    ?? sc._drops.find((d) => !d.done)
+    ?? null
+}
 
 function layout() {
   const s = Math.max(window.innerWidth / DESIGN_W, window.innerHeight / DESIGN_H)
@@ -850,6 +865,11 @@ async function buildSolar() {
   const clueL = scrollLayer(1.12)
   const marsT = await svgTexture(planetSVG('mars', 78, 101))
   addHiddenClue(clueL, S.clueMars, 'planet:mars', marsT)
+  /* The Mars rover's missing WHEEL is hidden here, not in the Mars room — the
+     wing's first cross-room dependency. You cannot finish Mars without having
+     explored the planetarium, which is the whole point of the wing's structure. */
+  const wheelT = await svgTexture(roverWheelSVG(80, 104))
+  addHiddenClue(clueL, S.wheel, 'roverWheel', wheelT)
   // two space rocks, because every room in the wing pays for exploring it
   addHiddenClue(clueL, S.rockA, rockInstance('starShard', 'solar'), rockAT)
   addHiddenClue(clueL, S.rockB, rockInstance('marsRock', 'solar'), rockBT)
@@ -920,6 +940,147 @@ function placePlanet(socket, planetId) {
 }
 
 const ordinalSuffix = (n) => (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th')
+
+/* ---------- MARS ROOM — Rover Repair ----------
+   Two separate repairs, then a drive. The rover is missing a WHEEL (hidden in
+   the Solar System room, so finishing Mars means having explored next door) and
+   its solar panel is caked in DUST (cleaned with the Solar Brush from the Supply
+   Desk). Only once both are fixed does the drive console power up for Rover
+   Route, where the actual science question waits: which of three rocks is the
+   iron-rich red one.
+
+   Accuracy note: dust really does bury Martian solar panels — it ended
+   Opportunity's mission — but no real rover carries a brush. The catalog frames
+   the brush as museum-diorama maintenance and never claims otherwise. */
+async function buildMars() {
+  const [skyT, farT, midT, mainT, foreT, rockAT, rockBT, wheelT, dustyT, cleanT] = await Promise.all([
+    marsSkySVG(), marsFarSVG(), marsMidSVG(), marsMainSVG(), marsForeSVG(),
+    spaceRockSVG('meteorite', 62, 80), spaceRockSVG('lunarChip', 60, 78),
+    roverWheelSVG(104, 135), solarPanelSVG(1, 210, 138), solarPanelSVG(0, 210, 138),
+  ].map(svgTexture))
+
+  const skyL = bgLayer(0.1, skyT, 2400 / 2)
+  const farL = bgLayer(0.3, farT, 2900 / 2)
+  const midL = bgLayer(0.55, midT, 3200 / 2)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, MARS_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = MARS_SPOTS
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('spacehub'), 'mars:back'))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
+    sfx.tap()
+    toast('EXHIBIT 2 — THE MARS ROVER. A working model. It’s missing a wheel, and its solar panel is buried in red dust.', 6500)
+  }, 'mars:placard'))
+
+  // the dusty solar panel — swapped for the clean one when brushed
+  const dusty = new Sprite(dustyT)
+  dusty.anchor.set(0.5)
+  placeAt(dusty, S.panelSocket.x, S.panelSocket.y)
+  mainL.addChild(dusty)
+  const clean = new Sprite(cleanT)
+  clean.anchor.set(0.5)
+  placeAt(clean, S.panelSocket.x, S.panelSocket.y)
+  clean.alpha = 0
+  mainL.addChild(clean)
+
+  const wheelGlow = new Graphics()
+    .circle(0, 0, 68).fill({ color: 0xffd98a, alpha: 0.16 }).stroke({ color: 0xffd98a, width: 6, alpha: 0.8 })
+  placeAt(wheelGlow, S.wheelSocket.x, S.wheelSocket.y)
+  wheelGlow.alpha = 0
+  wheelGlow.blendMode = 'add'
+  mainL.addChild(wheelGlow)
+  const wheelPlaced = new Sprite(wheelT)
+  wheelPlaced.anchor.set(0.5)
+  placeAt(wheelPlaced, S.wheelSocket.x, S.wheelSocket.y)
+  wheelPlaced.alpha = 0
+  mainL.addChild(wheelPlaced)
+
+  const panelGlow = new Graphics()
+    .roundRect(0, 0, 220, 148, 10).fill({ color: 0xffd98a, alpha: 0.14 }).stroke({ color: 0xffd98a, width: 6, alpha: 0.8 })
+  placeAt(panelGlow, S.panelSocket.x - 110, S.panelSocket.y - 74)
+  panelGlow.alpha = 0
+  panelGlow.blendMode = 'add'
+  mainL.addChild(panelGlow)
+
+  /* Two drop targets in one room — see activeDrop(). Each has its own hit box,
+     so the wheel lights up the axle and the brush lights up the panel. */
+  mars._drops = [
+    {
+      item: 'roverWheel',
+      skeleton: { x: S.wheelSocket.x, y: S.wheelSocket.y - 80, w: 230, h: 200 },
+      socket: S.wheelSocket, glow: wheelGlow, placed: wheelPlaced, done: false,
+      success: {
+        html: 'The wheel is back on its axle. Real rovers roll on six of these, ' +
+          'with cleats that grip the loose Martian ground.',
+      },
+    },
+    {
+      item: 'solarBrush',
+      skeleton: { x: S.panelSocket.x, y: S.panelSocket.y - 78, w: 250, h: 170 },
+      socket: S.panelSocket, glow: panelGlow, placed: clean, done: false,
+      onPlace: () => { gsap.to(dusty, { alpha: 0, duration: 0.7 }) },
+      success: {
+        html: 'Dust brushed away — the cells can drink the sunlight again. Dust really ' +
+          'does bury solar panels on Mars: a dust storm is what finally ended the ' +
+          '<b>Opportunity</b> rover’s mission after 14 years.',
+      },
+    },
+  ]
+
+  // the drive console — dark until both repairs are done
+  const consoleGlow = new Graphics()
+    .roundRect(0, 0, 300, 234, 12).stroke({ color: 0xffd98a, width: 7, alpha: 0.9 })
+  placeAt(consoleGlow, S.console.x - 150, 646)
+  consoleGlow.alpha = 0
+  consoleGlow.blendMode = 'add'
+  mainL.addChild(consoleGlow)
+  mars._consoleGlow = consoleGlow
+  mars._gameBadge = solvedSeal(S.console.x + 126, 690, { r: 34, caption: '' })
+  mainL.addChild(mars._gameBadge)
+
+  mainL.addChild(hitRect(S.console.x - 150, 620, 300, 260, () => {
+    sfx.tap()
+    if (mars._gameDone) { toast('The rover already found its rock. Nice driving.', 3500); return }
+    if (!mars._drops.every((d) => d.done)) {
+      toast('The rover can’t drive yet — it still needs its <b>wheel</b> and a <b>clean solar panel</b>.', 5000)
+      return
+    }
+    openRoverGame({
+      onComplete: () => onMinigameSolved('mars'),
+      onClose: () => afterMinigameClose('mars'),
+    })
+  }, 'mars:console'))
+
+  const clueL = scrollLayer(1.12)
+  addHiddenClue(clueL, S.rockA, rockInstance('meteorite', 'mars'), rockAT)
+  addHiddenClue(clueL, S.rockB, rockInstance('lunarChip', 'mars'), rockBT)
+
+  const foreL = scrollLayer(1.35)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 4200 / 2, 540)
+  foreL.addChild(fore)
+
+  mars.addChild(skyL, farL, midL, mainL, clueL, foreL)
+  mars._layers = [skyL, farL, midL, mainL, clueL, foreL]
+  mars._main = mainL
+  // the console powers up the moment both repairs are done, so the next step is
+  // announced by the world rather than by a toast the child may have dismissed
+  mars._onRepair = () => {
+    if (!mars._drops.every((d) => d.done) || mars._consoleLit) return
+    mars._consoleLit = true
+    gsap.to(consoleGlow, { alpha: 0.85, duration: 0.8 })
+    gsap.to(consoleGlow, { alpha: 0.35, duration: 1.2, yoyo: true, repeat: -1, delay: 0.8 })
+    setTimeout(() => toast('The rover hums back to life — the <b>ROVER ROUTE</b> console is lit. Time to drive.', 5500), 1600)
+  }
+
+  mars._challenges = ['repairs', 'game']
+  makeDust(mars, 34, MARS_W, 0xd9a07a)
+}
 
 /* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
 async function buildRaptor() {
@@ -1372,7 +1533,8 @@ const CHALLENGE_DONE = {
   drop: (sc) => !!sc._drop?.done,   // drag a clue onto the skeleton
   foot: (sc) => !!sc._foot?.done,   // the T-rex foot-assembly puzzle
   game: (sc) => !!sc._gameDone,     // a mini-game hit its goal
-  orrery: (sc) => !!sc._orrery?.done, // every planet back on its ring
+  orrery: (sc) => !!sc._orrery?.done,           // every planet back on its ring
+  repairs: (sc) => !!sc._drops?.every((d) => d.done), // every repair in the room done
 }
 
 function roomComplete(name) {
@@ -1393,6 +1555,7 @@ function goScene(target) {
   if (puzzleOpen) closeFootPuzzle()
   if (isSupplyDeskOpen()) closeSupplyDesk()
   if (isOrbitGameOpen()) closeOrbitGame()
+  if (isRoverGameOpen()) closeRoverGame()
   const from = scenes[state.scene]
   const to = scenes[target]
   const dir = DEPTH[target] >= DEPTH[state.scene] ? -1 : 1
@@ -1421,6 +1584,7 @@ const ROOM_ENTER = {
 // the space rooms don't hang on one clue, so they get their own on-enter copy
 const SPACE_ROOM_ENTER = {
   solar: 'The planetarium! Three rings on the orrery are <b>empty</b>. Read the <b>STAR ATLAS</b> on the lectern to work out which planet goes where.',
+  mars: 'The Mars bay. The rover is missing a <b>wheel</b>, and its solar panel is buried in <b>red dust</b>. Fix both, then take it for a drive.',
 }
 
 function onSceneEnter(target) {
@@ -1486,6 +1650,7 @@ const ITEM_SVG = {
     [...Object.keys(SPACE_ROCKS), ...Object.keys(SPACE_TOOLS)].map((id) => [id, (w, h) => itemArt(id, w, h)]),
   ),
   ...Object.fromEntries(PLANETS.map((p) => [`planet:${p.id}`, (w, h) => planetSVG(p.id, w, h)])),
+  roverWheel: (w, h) => roverWheelSVG(w, h),
 }
 const CLUE_TOAST = {
   feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
@@ -1512,6 +1677,7 @@ const ITEM_INFO = {
     [id, { name: t.name, section: 'Supplies', found: 'Space Supply Desk' }])),
   ...Object.fromEntries(PLANETS.map((p) =>
     [`planet:${p.id}`, { name: `${p.name} model`, section: 'Star Atlas', found: 'Space Wing', note: p.trait }])),
+  roverWheel: { name: 'Rover Wheel', section: 'Supplies', found: 'The Orrery' },
 }
 
 /* A bag item id is usually the item itself, but a space rock is an INSTANCE
@@ -1836,6 +2002,8 @@ function endItemDrag(x, y) {
 // dropped on the right dino — fly into place, lock it in, celebrate
 function placeItem(d) {
   d.done = true
+  d.onPlace?.(d)
+  scenes[state.scene]?._onRepair?.()
   sfx.success()
   const slot = dragSlot
   slot.classList.remove('filled', 'cue')
@@ -2482,7 +2650,7 @@ async function boot() {
   window.addEventListener('resize', layout)
 
   // every scene is a Container of parallax layers; only the active one is visible
-  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar']) {
+  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar', 'mars']) {
     const c = new Container()
     c._layers = []
     c._dust = []
@@ -2490,7 +2658,7 @@ async function boot() {
     root.addChild(c)
     scenes[name] = c
   }
-  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar } = scenes)
+  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar, mars } = scenes)
 
   $('back-btn').addEventListener('pointerdown', () => goScene(SCENE_BACK[state.scene] || 'lobby'))
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
@@ -2531,7 +2699,7 @@ async function boot() {
   if (!econ.ok) {
     console.error('[economy] SOFT-LOCK RISK — placed rocks cannot fund the tools', econ)
   }
-  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar()])
+  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar(), buildMars()])
 
   let t = 0
   app.ticker.add((ticker) => {
@@ -2594,10 +2762,28 @@ async function boot() {
   // tap what a finger would tap, so tests exercise the real hotspot wiring
   window.__tapWorld = (scene, id) => { HOTSPOTS[`${scene}:${id}`]?.(); return !!HOTSPOTS[`${scene}:${id}`] }
   window.__clueExists = (id) => !!CLUES[id]
+  window.__sceneExists = (id) => !!scenes[id]
   window.__pan = (x) => { cam().x = Math.max(0, Math.min(camMax(), x)); cam().vel = 0 }
   window.__orbitOpen = () => isOrbitGameOpen()
   window.__openCatalogSection = (id) => openCatalogSection(id)
   window.__winOrbit = () => __orbitForceWin()
+  window.__roverOpen = () => isRoverGameOpen()
+  window.__roverPlan = (which) => __roverPlanTo(which)
+  window.__roverGo = () => __roverDrive()
+  window.__roverDriving = () => __roverDriving()
+  window.__roverReroll = () => __roverReroll()
+  window.__repairs = () => (mars?._drops ?? []).map((d) => ({ item: d.item, done: d.done }))
+  window.__consoleLit = () => !!mars?._consoleLit
+  // use an item on the repair that wants it, going through the real placement path
+  window.__useItem = (item) => {
+    const sc = scenes[state.scene]
+    const d = (sc?._drops ?? [sc?._drop]).find((x) => x && !x.done && x.item === item)
+    if (!d || !hasClue(item) || !invSlotFor(item)) return false
+    dragSlot = invSlotFor(item)
+    dragItem = item
+    placeItem(d)
+    return true
+  }
   window.__sockets = () => Object.fromEntries(
     Object.entries(solar?._sockets ?? {}).map(([k, v]) => [k, { order: v.order, done: v.done }]))
   window.__dropPlanet = (planetId, onSocket) => {
