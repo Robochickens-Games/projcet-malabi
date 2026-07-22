@@ -9,15 +9,18 @@ tags: [status, project, onboarding]
 
 # Project status — where we are
 
-_Living snapshot. **Last updated: 2026-06-16.** Refresh it any time with `/catchup`._
+_Living snapshot. **Last updated: 2026-07-22.** Refresh it any time with `/catchup`._
 
 > 🌟 **North star:** make us money · make it fun. ([[north-star]]) — everything below
 > should serve it.
 
 ## TL;DR
-Brain infra is complete. Product concept is taking shape: **Science Museum Mystery —
-a tap-and-explore adventure with three wings (Dinosaurs, Space, Inventions), no ads,
-ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
+**Science Museum Mystery** — a tap-and-explore adventure, ages 5–10, no ads. **Two of
+the three wings are now playable end to end** in the parallax prototype: the Dinosaur
+Wing and, as of 2026-07-22, the whole Space Wing (5 dioramas, 5 mini-games, an
+economy). Wireframe art throughout; painted layers drop in 1:1. Open: Dor's design
+pass on the built Space Wing, Ohad's review of ADR 0003, and the still-unsettled
+asset-generation pipeline.
 
 ## Done ✅
 - **Shared brain infra:** three-layer architecture (brain / adapters / git-sync),
@@ -52,21 +55,20 @@ ages 5–10.** Waiting on Ohad to review ADR 0003 and accept.
 - **Letters to the Editor (live):** anyone can attach notes/content to any piece
   of info in the Malabi Daily (✍️ Add a note); the brain ingests open letters at
   every sync and closes them by commit. See [[daily-notes]].
+- **🚀 SPACE WING — BUILT AND PLAYABLE (2026-07-22).** The museum's **second wing**,
+  from Gidi's 8-page comic spec. All five dioramas (Solar System · Mars · Moon
+  Missions · Space Station · James Webb) are playable end to end with their five
+  mini-games, plus the three systems the dino wing never had: the **Supply Desk
+  economy**, a closed **cross-room dependency chain** (each room hides the next
+  room's part), and new puzzle types. Finishing all five fires the wing finale and
+  seals the SPACE door. Wireframe art; painted layers drop in 1:1 later.
+  Regression-tested by `npm run verify` — 225 checks across eight suites.
+  See [[space-wing]], [[space-economy-design]], [[space-accuracy-rulings]].
+- **`astronomer` skill + space accuracy rulings** — the Space Wing's content has the
+  same guard the dino wing has. See [[space-accuracy-rulings]].
+- **⏸ The Malabi Daily is paused** (Gidi, 2026-07-22) — see [[gazette-publishing-paused]].
 
 ## In progress / open ⏳
-- **Space Wing — BUILT (2026-07-22).** All five dioramas are playable end to end
-  with their five mini-games, the Supply Desk economy, and a full cross-room
-  dependency chain; finishing them fires the wing finale. Wireframe art; painted
-  layers drop in 1:1 later. See [[space-wing]], [[space-economy-design]],
-  [[space-accuracy-rulings]]. Regression-tested by `npm run verify` (225 checks).
-  <!-- resolved-when: path-exists:product/prototypes/museum-parallax/src/telescopeGame.js -->
-- **Superseded — the original plan entry (2026-06-16, Gidi):** the
-  **second wing** is fully spec'd by Gidi (8-page comic) and has a detailed, ready-to-build
-  plan (`product/prototypes/museum-parallax/SPACE-WING-PLAN.md`). Same loop as the dino wing
-  (restore 5 dioramas) plus **three new systems** — an economy (Space Supply Desk: sell rocks
-  → buy tools), cross-room item dependencies, and new puzzle types + 5 mini-games. Wireframe
-  art now, painted later. **Gidi approves starting; Dor's design sign-off pending** before/while
-  building. See [[space-wing]]. <!-- resolved-when: path-exists:product/prototypes/museum-parallax/src/economy.js -->
 - **First playable prototype built (2026-06-11, Dor):** scenario 1 in the game's
   chosen format — **wide side-scrolling platformer parallax** (walk the lobby →
   tooth reveals from behind a planter → jungle trail → match the tooth in the
