@@ -151,6 +151,21 @@ check('the DINOSAUR wing is untouched by all this',
   (await page.evaluate(() => window.__wingComplete('dino'))) === false
   && (await page.evaluate(() => window.__wingSealShown('dino'))) === false)
 
+// ---- the Space Explorer Token (spec p.8) ----
+check('finishing the wing awards the Space Explorer Token',
+  await page.evaluate(() => window.__bag().includes('token:space')))
+check('the Space finale does NOT play the dinosaur fossil reel',
+  await page.evaluate(() => document.getElementById('success-video').classList.contains('hidden')))
+check('...and the finale card shows it',
+  /Space Explorer Token/.test(await page.evaluate(() => document.getElementById('success-text').textContent)))
+check('...and it is a keepsake, not something the Supply Desk will buy back',
+  await page.evaluate(() => {
+    window.__openDesk()
+    const sellable = [...document.querySelectorAll('#supply-desk [data-col="sell"] .sd-item')].map((b) => b.dataset.item)
+    window.__closeDesk()
+    return !sellable.includes('token:space')
+  }))
+
 // ---- the science ----
 const atlas = await page.evaluate(() => {
   window.__openCatalogSection('webb')

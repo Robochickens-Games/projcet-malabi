@@ -459,3 +459,14 @@ body { font-family: var(--serif); color: var(--cream); -webkit-user-select: none
   40% { transform: scale(1.22); background: rgba(232, 169, 72, 0.3); }
   100% { transform: scale(1); }
 }
+
+/* the wing-completion token on the finale card */
+.wing-token {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 12px; font-size: 14px; letter-spacing: .06em; color: var(--gold);
+}
+.wing-token svg { width: 56px; height: 73px; }
+.wing-token b { color: var(--cream); font-weight: 700; }
+
+/* the finale reel is optional — a wing with no clip of its own shows none */
+#success-video.hidden { display: none; }

@@ -4,7 +4,7 @@ import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
   eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
   PLANETS, PLANET_BY_ID, planetSVG, roverWheelSVG, solarPanelSVG,
-  MOON_STEPS, missionCardSVG, tetherSVG, spaceToolSVG, hexTileSVG, strutSVG,
+  MOON_STEPS, missionCardSVG, tetherSVG, spaceToolSVG, hexTileSVG, strutSVG, wingTokenSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -24,7 +24,8 @@ import {
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
-import { openOrbitGame, closeOrbitGame, isOrbitGameOpen, __orbitForceWin } from './orbitGame.js'
+import { initTilt, onTilt, requestTilt, tiltNeedsPermission } from './tilt.js'
+import { openOrbitGame, closeOrbitGame, isOrbitGameOpen, __orbitForceWin, __orbitState, __orbitSim, __orbitPlace } from './orbitGame.js'
 import { openRoverGame, closeRoverGame, isRoverGameOpen, __roverPlanTo, __roverDrive, __roverDriving, __roverReroll } from './roverGame.js'
 import { openMoonBoard, closeMoonBoard, isMoonBoardOpen, __moonSolve, __moonSolveWrong } from './moonBoard.js'
 import { openRocketGame, closeRocketGame, isRocketGameOpen, __rocketStack, __rocketLaunch, __rocketPhase } from './rocketGame.js'
@@ -215,38 +216,24 @@ function setupInput() {
     if (e.key === 'ArrowRight') keys.right = false
   })
 
-  // tilt to walk — read the axis that means "lean left/right" for how the
-  // phone is HELD: gamma in portrait, ±beta in landscape
+  /* Tilt to walk. The axis question and the iOS permission dance both live in
+     tilt.js now, so the Orbit Balance mini-game gets the same tilt this does —
+     it used to listen for raw `deviceorientation` and never ask permission,
+     which meant its tilt control did nothing at all on an iPhone. */
   let base = null
-  const tiltValue = (e) => {
-    const a = screen.orientation?.angle ?? window.orientation ?? 0
-    if (a === 90) return e.beta
-    if (a === 270 || a === -90) return e.beta == null ? null : -e.beta
-    return e.gamma
-  }
-  const onTilt = (e) => {
-    if (puzzleOpen) return
-    const v = tiltValue(e)
-    if (v == null) return
+  onTilt((v) => {
+    if (puzzleOpen || isOrbitGameOpen()) return   // the mini-game reads tilt itself
     base ??= v
     cam().vel += Math.max(-1, Math.min(1, (v - base) / 22)) * 30
-  }
+  })
   window.addEventListener('orientationchange', () => { base = null })
-  const needsPermission =
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function'
-  if (needsPermission) {
+  initTilt()
+  if (tiltNeedsPermission()) {
     const btn = $('tilt-btn')
     btn.classList.remove('hidden')
     btn.addEventListener('click', async () => {
-      try {
-        if ((await DeviceOrientationEvent.requestPermission()) === 'granted') {
-          window.addEventListener('deviceorientation', onTilt)
-        }
-      } finally { btn.classList.add('hidden') }
+      try { await requestTilt() } finally { btn.classList.add('hidden') }
     })
-  } else if ('ontouchstart' in window) {
-    window.addEventListener('deviceorientation', onTilt)
   }
 }
 
@@ -866,7 +853,7 @@ async function buildSolar() {
       return
     }
     openOrbitGame({
-      goal: 8,
+      goal: 7,
       onComplete: () => onMinigameSolved('solar'),
       onClose: () => {
         if (solar._gameDone && !hasClue('planet:venus') && !solar._sockets.venus.done) {
@@ -1949,6 +1936,7 @@ const WINGS = {
       name: 'DINOSAUR WING',
       text: 'Every fossil is back where it belongs — you’ve solved <b>all five exhibits</b> ' +
         'and completed the entire <b>Dinosaur Wing</b>! 🦕',
+      video: '/video/success.mp4',
     },
   },
   space: {
@@ -1964,6 +1952,10 @@ const WINGS = {
       name: 'SPACE WING',
       text: 'Every exhibit is running again — you’ve restored <b>all five</b> and finished ' +
         'the whole <b>Space Wing</b>! 🚀',
+      // spec p.8: finishing the wing awards a token. It goes into the bag as a
+      // keepsake and is listed in the catalog, so the collection layer has
+      // something permanent in it rather than just a card that scrolls away.
+      token: { id: 'token:space', name: 'Space Explorer Token', glyph: '🚀' },
     },
   },
 }
@@ -2141,6 +2133,8 @@ const ITEM_SVG = {
   ...Object.fromEntries(MOON_STEPS.map((s) => [`card:${s.id}`, (w, h) => missionCardSVG(s.id, w, h)])),
   safetyTether: (w, h) => tetherSVG(w, h),
   mirrorStrut: (w, h) => strutSVG(w, h),
+  ...Object.fromEntries(Object.values(WINGS).filter((w) => w.finale.token)
+    .map((w) => [w.finale.token.id, (a, b) => wingTokenSVG(a, b, w.finale.token.glyph)])),
 }
 const CLUE_TOAST = {
   feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
@@ -2172,6 +2166,8 @@ const ITEM_INFO = {
     [`card:${s.id}`, { name: `${s.name} card`, section: 'Moon Missions', found: 'Space Wing', note: s.blurb }])),
   safetyTether: { name: 'Safety Tether', section: 'Supplies', found: 'The Moon' },
   mirrorStrut: { name: 'Mirror Strut', section: 'Supplies', found: 'The Space Station' },
+  ...Object.fromEntries(Object.values(WINGS).filter((w) => w.finale.token)
+    .map((w) => [w.finale.token.id, { name: w.finale.token.name, section: 'Tokens', found: w.hubLabel }])),
 }
 
 /* A bag item id is usually the item itself, but a space rock is an INSTANCE
@@ -2531,7 +2527,8 @@ function showSuccess(d, meta = {}) {
     // grand finale — every room in that wing is solved (copy comes from the wing)
     const fin = WINGS[meta.wingComplete].finale
     card.querySelector('.big').textContent = '🏆 WING COMPLETE! 🏆'
-    $('success-text').innerHTML = fin.text
+    $('success-text').innerHTML = fin.text +
+      (fin.token ? `<span class="wing-token">${wingTokenSVG(74, 96, fin.token.glyph)}<b>${fin.token.name}</b> awarded</span>` : '')
     badge.innerHTML = `${fin.name}&nbsp;<b>· COMPLETE ·</b>`
     badge.classList.remove('hidden')
   } else {
@@ -2548,11 +2545,20 @@ function showSuccess(d, meta = {}) {
   }
 
   $('success').classList.remove('hidden')
+  /* Pick the reel, or show none. A wing finale used to fall through to
+     /video/success.mp4 — the dinosaur fossil-fit clip — so completing the SPACE
+     wing celebrated with a Triceratops. A wing now names its own reel, and a wing
+     without one shows no video rather than the wrong one. */
   const vid = $('success-video')
   if (vid) {
-    const src = (meta.wingComplete ? null : d.success.video) || '/video/success.mp4'
-    if (!vid.src.endsWith(src)) vid.src = src
-    vid.currentTime = 0; vid.play().catch(() => {})
+    const src = meta.wingComplete
+      ? WINGS[meta.wingComplete].finale.video
+      : (d.success.video || '/video/success.mp4')
+    vid.classList.toggle('hidden', !src)
+    if (src) {
+      if (!vid.src.endsWith(src)) vid.src = src
+      vid.currentTime = 0; vid.play().catch(() => {})
+    } else { vid.pause() }
   }
   if (meta.wingComplete) { sfx.success(); finaleConfetti() }
 }
@@ -2896,6 +2902,8 @@ function showWingFinale(wingId) {
   if (wingFinaleShown[wingId]) return
   wingFinaleShown[wingId] = true
   markWingComplete(wingId)
+  const token = WINGS[wingId].finale.token
+  if (token) grantItem(token.id)
   showSuccess(null, { wingComplete: wingId })
 }
 
@@ -3133,6 +3141,27 @@ const WEBB_SECTION = {
     </div>`,
 }
 
+/* SPACE ROCKS — the economy's index, straight off the Supply Desk's own price
+   list so the catalog and the counter can never disagree about what a rock is
+   worth. Plan §B asked for this; the values were previously only visible at the
+   desk itself and in an item's details. */
+const SPACE_ROCKS_SECTION = {
+  id: 'rocks', title: 'Space Rocks', blurb: 'What each find is worth at the desk.',
+  icon: spaceRockSVG('stardust', 34, 45), tag: `${Object.keys(SPACE_ROCKS).length} kinds`, ready: true,
+  render: () => `
+    <div class="cat-card">
+      <div class="cat-note">Space rocks are scattered all over the wing. Take them to the
+        <b>Space Supply Desk</b> and trade them for coins — the rarer the rock, the more it pays.</div>
+    </div>
+    ${Object.entries(SPACE_ROCKS).sort((a, b) => a[1].value - b[1].value).map(([id, r]) => `
+      <div class="cat-card">
+        <div class="art trait">${spaceRockSVG(r.art, 96, 120)}</div>
+        <h3>${r.name}</h3>
+        <div class="diet">${r.value} coins</div>
+        <div class="cat-note">${r.note}</div>
+      </div>`).join('')}`,
+}
+
 const CATALOG_SECTIONS = [
   SECTION('teeth', 'Teeth', 'A tooth tells you what a dinosaur ate.', toothSVG('leaf', 34, 42),
     (d) => toothSVG(d.tooth, 96, 120), (d) => d.toothNote),
@@ -3143,6 +3172,7 @@ const CATALOG_SECTIONS = [
   FOOT_GUIDE_SECTION,
   SECTION('eggs', 'Eggs', 'Round, long, or leathery — eggs tell tales too.', eggSVG('round', 34, 42),
     (d) => eggSVG(d.egg, 96, 120), (d) => d.eggNote),
+  SPACE_ROCKS_SECTION,
   STAR_ATLAS_SECTION,
   MOON_MISSIONS_SECTION,
   STATION_SECTION,
@@ -3347,6 +3377,7 @@ async function boot() {
   // economy hooks — the Supply Desk is reachable before the space hub exists, so
   // the whole sell/buy loop is testable now
   window.__economyAudit = () => auditEconomy(allPlacedRocks())
+  window.__spaceRocks = () => SPACE_ROCKS
   window.__coins = () => getCoins()
   window.__openDesk = () => { armCoinHud(); openDesk() }
   window.__deskOpen = () => isSupplyDeskOpen()
@@ -3364,6 +3395,9 @@ async function boot() {
   window.__orbitOpen = () => isOrbitGameOpen()
   window.__openCatalogSection = (id) => openCatalogSection(id)
   window.__winOrbit = () => __orbitForceWin()
+  window.__orbitState = () => __orbitState()
+  window.__orbitSim = (h, s) => __orbitSim(h, s)
+  window.__orbitPlace = (o) => __orbitPlace(o)
   window.__roverOpen = () => isRoverGameOpen()
   window.__roverPlan = (which) => __roverPlanTo(which)
   window.__roverGo = () => __roverDrive()

@@ -17,12 +17,14 @@
    tiny SFX, in the same shape as pteroGame.js / brachioGame.js.
    ===================================================================== */
 
+import { onTilt, requestTilt, tiltNeedsPermission, tiltReady } from './tilt.js'
+
 const SERIF = 'Iowan Old Style, Palatino, Georgia, serif'
 
 let open = false
 export const isOrbitGameOpen = () => open
 
-let overlay, canvas, ctx, closeBtn, hintEl
+let overlay, canvas, ctx, closeBtn, hintEl, tiltBtn
 let raf = 0, lastT = 0
 let W = 0, H = 0, dpr = 1
 let onCloseCb = null, onCompleteCb = null
@@ -32,7 +34,20 @@ let goalSeconds = 8, won = false
 // `off` is how far the satellite is from its ideal orbit, in band-widths:
 // 0 = dead centre, ±1 = the edge of the green band.
 let off = 0, vel = 0, held = 0, tilt = 0, inBand = 0, angle = 0
-const MAX_OFF = 2.2            // how far the satellite may drift, in band-widths
+
+/* Tuning, and why these numbers relate to each other.
+   Drift is unstable — it grows with distance — so at the tether's limit it is at
+   its strongest: MAX_OFF * DRIFT = 6.0. PUSH must comfortably EXCEED that, or a
+   player who drifts to the wall can never get back and the game is unwinnable
+   from there. The first version had PUSH 2.3 against a 3.41 wall drift: pinned
+   forever, and it read as "the controls don't work" (they did — they were just
+   losing). Keep PUSH > MAX_OFF * DRIFT with margin whenever these are touched.
+   DAMP is the per-second velocity retention; lower = heavier damping, which is
+   what keeps a 6.0 push from being twitchy. */
+const DRIFT = 3.0          // outward acceleration per unit of offset
+const PUSH = 9.0           // player's thruster authority
+const DAMP = 0.02          // velocity retained per second
+const MAX_OFF = 2.0        // the hard limit, in band-widths
 
 // ---- tiny audio (a garnish; never block on it) ----
 let actx = null
@@ -64,15 +79,14 @@ function layout() {
 function step(dt) {
   if (won) return
   // unstable drift: the further off you are, the harder it runs away
-  vel += off * 1.55 * dt
-  // player input pulls back toward the ring
-  const push = held + tilt
-  vel += push * 2.3 * dt
-  vel *= Math.pow(0.22, dt)         // drag, frame-rate independent
+  vel += off * DRIFT * dt
+  // player input pulls back toward the ring — always stronger than the drift,
+  // so the satellite is recoverable from anywhere including the hard limit
+  vel += Math.max(-1, Math.min(1, held + tilt)) * PUSH * dt
+  vel *= Math.pow(DAMP, dt)         // drag, frame-rate independent
   off += vel * dt
-  // a soft wall, so the satellite can never be lost off-screen. MAX_OFF and the
-  // R/band ratio in draw() are chosen together: at full drift the satellite still
-  // sits inside the viewport, above the progress bar.
+  // a soft wall, so the satellite can never be lost off-screen; MAX_OFF and the
+  // R/band ratio in draw() are chosen together so it stays inside the viewport
   if (off > MAX_OFF) { off = MAX_OFF; vel = Math.min(vel, 0) }
   if (off < -MAX_OFF) { off = -MAX_OFF; vel = Math.max(vel, 0) }
 
@@ -186,15 +200,16 @@ const onKey = (e, down) => {
   if (e.key === 'ArrowRight') held = down ? 1 : 0
   if (e.key === 'Escape' && down) closeOrbitGame()
 }
+/* Tilt comes from the shared module, which owns the axis maths AND the iOS
+   permission state. Previously this listened for raw `deviceorientation` and
+   never asked permission, so on an iPhone the hint said "or tilt your phone"
+   and tilting did nothing whatsoever. */
 let tiltBase = null
-function onTilt(e) {
+onTilt((v) => {
   if (!open) return
-  const a = screen.orientation?.angle ?? window.orientation ?? 0
-  const v = a === 90 ? e.beta : (a === 270 || a === -90) ? (e.beta == null ? null : -e.beta) : e.gamma
-  if (v == null) return
   tiltBase ??= v
   tilt = Math.max(-1, Math.min(1, (v - tiltBase) / 20))
-}
+})
 
 function ensureDom() {
   if (overlay) return
@@ -208,6 +223,10 @@ function ensureDom() {
       z-index: 2; background: rgba(20,52,74,0.8); color: #f4e6c8; border: 1.5px solid rgba(232,169,72,0.6);
       font: 600 14px ${SERIF}; padding: 9px 18px; border-radius: 999px; cursor: pointer;
       letter-spacing: .03em; min-height: 40px; }
+    #orbit-game .og-tilt { position: absolute; bottom: 54px; left: 50%; transform: translateX(-50%);
+      z-index: 2; background: #e8a948; color: #1b110a; border: none; font: 700 15px ${SERIF};
+      padding: 11px 22px; border-radius: 999px; cursor: pointer; min-height: 44px; }
+    #orbit-game .og-tilt.hidden { display: none; }
     #orbit-game .og-hint { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
       z-index: 2; color: rgba(244,230,200,0.65); font: 400 13px ${SERIF}; text-align: center;
       pointer-events: none; width: 92%; }
@@ -222,8 +241,19 @@ function ensureDom() {
   closeBtn.textContent = '‹ Back to the orrery'
   hintEl = document.createElement('div')
   hintEl.className = 'og-hint'
-  hintEl.textContent = 'Hold the LEFT side to pull it in · the RIGHT side to push it out · or tilt your phone'
-  overlay.append(canvas, closeBtn, hintEl)
+  hintEl.textContent = 'Hold the LEFT side to pull it in · the RIGHT side to push it out'
+  // iOS only hands over tilt after a real tap, so offer one right here rather
+  // than assuming the player already granted it back in the museum
+  tiltBtn = document.createElement('button')
+  tiltBtn.className = 'og-tilt hidden'
+  tiltBtn.textContent = '✦ Enable tilt'
+  tiltBtn.addEventListener('pointerdown', (e) => e.stopPropagation())
+  tiltBtn.addEventListener('click', async (e) => {
+    e.stopPropagation()
+    tiltBase = null
+    if (await requestTilt()) { tiltBtn.classList.add('hidden'); hintEl.textContent += ' · or tilt your phone' }
+  })
+  overlay.append(canvas, closeBtn, hintEl, tiltBtn)
   document.body.appendChild(overlay)
   ctx = canvas.getContext('2d')
 
@@ -238,18 +268,19 @@ function ensureDom() {
   closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeOrbitGame() })
   window.addEventListener('keydown', (e) => onKey(e, true))
   window.addEventListener('keyup', (e) => onKey(e, false))
-  window.addEventListener('deviceorientation', onTilt)
   window.addEventListener('resize', () => { if (open) layout() })
 }
 
 export function openOrbitGame(opts = {}) {
   if (open) return
   ensureDom()
-  goalSeconds = opts.goal ?? 8
+  goalSeconds = opts.goal ?? 7
   onCompleteCb = opts.onComplete || null
   onCloseCb = opts.onClose || null
   open = true
   tiltBase = null
+  tiltBtn.classList.toggle('hidden', !tiltNeedsPermission() || tiltReady())
+  if (tiltReady()) hintEl.textContent = 'Hold the LEFT side to pull it in · the RIGHT side to push it out · or tilt your phone'
   overlay.classList.add('on')
   reset(); layout(); lastT = 0
   cancelAnimationFrame(raf)
@@ -269,3 +300,20 @@ export function closeOrbitGame() {
 
 // test hook: jump straight to the win, so the reward path is verifiable headlessly
 export function __orbitForceWin() { if (open) inBand = goalSeconds - 0.001 }
+export function __orbitState() { return { off, vel, held, tilt, inBand, maxOff: MAX_OFF } }
+
+/* Run the REAL physics for a stretch of simulated time with a fixed input, and
+   report where it ends up. Tests drive this instead of holding a key and waiting:
+   requestAnimationFrame is throttled in a background page, so a wall-clock test
+   measures the harness rather than the game — and a frozen simulation looks
+   exactly like broken controls. Deterministic, instant, and it exercises the same
+   step() the game runs. */
+export function __orbitSim(heldValue, seconds, dt = 1 / 60) {
+  if (!open) return null
+  const saved = held
+  held = heldValue
+  for (let t = 0; t < seconds; t += dt) step(dt)
+  held = saved
+  return { off, vel, inBand, goal: goalSeconds }
+}
+export function __orbitPlace(o) { if (open) { off = o; vel = 0 } }

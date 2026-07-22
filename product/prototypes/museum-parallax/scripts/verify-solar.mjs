@@ -111,6 +111,40 @@ check('Saturn on the SIXTH ring is accepted',
 await page.evaluate(() => window.__tapWorld('solar', 'orbitgame'))
 await page.waitForTimeout(600)
 check('the ORBIT BALANCE console opens the mini-game', await page.evaluate(() => window.__orbitOpen()))
+
+/* Orbit Balance's CONTROLS, driven through the real step() at a fixed timestep.
+   Wall-clock tests are useless here — requestAnimationFrame is throttled in a
+   background page, so a frozen simulation is indistinguishable from broken
+   controls. It also caught the bug that made a player report "the arrow keys
+   don't work": the outward drift at the limit (MAX_OFF * DRIFT) exceeded the
+   player's PUSH, so anyone who drifted to the edge was pinned there forever with
+   no way back — the keys worked, they just always lost. */
+const orbit = await page.evaluate(() => {
+  const out = {}, M = window.__orbitState().maxOff
+  // does the satellite pass back THROUGH the band? (holding all the way across
+  // overshoots to the far side — releasing at the right moment is the skill, so
+  // the end point is the wrong thing to measure)
+  const sweep = (from, dir) => {
+    window.__orbitPlace(from)
+    let closest = Infinity
+    for (let i = 0; i < 30; i++) closest = Math.min(closest, Math.abs(window.__orbitSim(dir, 0.1).off))
+    return closest
+  }
+  out.fromWallIn = sweep(M, -1)
+  out.fromWallOut = sweep(-M, 1)
+  window.__orbitPlace(0.35); out.idle = window.__orbitSim(0, 3).off
+  window.__orbitPlace(0.9); out.nudge = window.__orbitSim(-1, 0.5).off
+  return out
+})
+check('a satellite pinned at the outer limit CAN be brought back',
+  orbit.fromWallIn < 1, `closest approach ${orbit.fromWallIn.toFixed(2)} while holding inward`)
+check('...and from the inner limit too',
+  orbit.fromWallOut < 1, `closest approach ${orbit.fromWallOut.toFixed(2)}`)
+check('doing nothing drifts you OUT of the band — it is a balancing act',
+  Math.abs(orbit.idle) > 1, `off ${orbit.idle.toFixed(2)} after 3s idle`)
+check('half a second of input visibly moves the satellite',
+  Math.abs(0.9 - orbit.nudge) > 0.2, `0.9 → ${orbit.nudge.toFixed(2)}`)
+
 await page.evaluate(() => window.__winOrbit())
 await page.waitForTimeout(2600)   // the game celebrates, then closes itself
 check('winning closes the game and hands back control',

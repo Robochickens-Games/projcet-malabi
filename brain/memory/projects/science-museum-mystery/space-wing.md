@@ -144,6 +144,22 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
 - ✅ **THE WING IS COMPLETE.** Finishing all five rooms fires the Space Wing finale,
   stamps the SPACE door in the lobby, and leaves the Dinosaur Wing untouched.
 
+## Spec items closed after the first pass (2026-07-22)
+- **Space Rocks catalog index** (plan §B) — the rock types and their coin values now
+  have a catalog section, generated from the Supply Desk's own price list so the two
+  can never disagree.
+- **Space Explorer Token** (spec p.8) — awarded on wing completion, shown on the
+  finale card, kept in the bag, and not sellable. The mechanism is per-wing
+  (`WINGS[id].finale.token`), so the Dinosaur Wing can be given one whenever we want.
+
+### Still open from the spec
+- **Lost Astronaut Kiosk** (spec p.1) — never designed past the name; the Supply Desk
+  currently does everything the economy needs. Needs a purpose before it needs code.
+- **Doorway to the next wing** (spec p.8) — waiting on the Inventions wing existing.
+- **The Moon room's colour-light cycle as the order clue** (spec p.5) — deliberately
+  replaced by the Star Atlas: colour-matching would teach colours, not the Apollo
+  sequence. Could return as an optional hint.
+
 ## The cross-room dependency graph (final)
 Every room feeds the next, so none is a place you visit once:
 **solar** hides Mars's rover wheel → **mars** hides a Moon mission card →

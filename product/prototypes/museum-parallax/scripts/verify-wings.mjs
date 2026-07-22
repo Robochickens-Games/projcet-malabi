@@ -68,6 +68,9 @@ for (const wing of WINGS) {
   }))
   check(`${wing}: finale card shown`, finale.visible)
   check(`${wing}: finale badge names the wing`, /· COMPLETE ·/.test(finale.badge), finale.badge)
+  // the dino wing has its own fossil-fit reel and should still play it
+  check(`${wing}: finale still plays its own celebration reel`,
+    await page.evaluate(() => !document.getElementById('success-video').classList.contains('hidden')))
 
   // solving the wing must not have completed any OTHER wing
   const others = await page.evaluate((w) => {

@@ -138,6 +138,16 @@ const full = await page.evaluate(() => ({
 check('the rock pouch fills up rather than growing forever', full.rockSlotsFree === 0)
 check('a FULL rock pouch still leaves room for quest items', full.findsFree > 0, `${full.findsFree} find slots free`)
 
+// ---- 9. the Space Rocks catalog index (plan section B) ----
+const rocksIndex = await page.evaluate(() => {
+  window.__openCatalogSection('rocks')
+  return document.getElementById('catalog-list').textContent
+})
+check('the catalog has a Space Rocks index', /Space Supply Desk/.test(rocksIndex))
+const listedValues = await page.evaluate(() => Object.values(window.__spaceRocks()).map((r) => r.value))
+check('every rock type is listed with its coin value',
+  listedValues.every((v) => new RegExp(`${v} coins`).test(rocksIndex)), listedValues.join(', '))
+
 check('no uncaught page errors', errors.length === 0, errors.join(' | '))
 
 await browser.close()

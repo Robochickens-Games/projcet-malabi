@@ -1317,3 +1317,17 @@ export function strutSVG(w = 100, h = 130) {
     <circle cx="76" cy="26" r="9" fill="${CREAM}" stroke="${TEAL_DEEP}" stroke-width="3"/>
   </svg>`
 }
+
+// a wing-completion token: a struck medal on a ribbon
+export function wingTokenSVG(w = 120, h = 156, glyph = '🚀') {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">
+    <path d="M34,4 L50,52 L66,4 L80,8 L58,62 L42,62 L20,8 Z" fill="${TEAL}" stroke="${TEAL_DEEP}" stroke-width="2.5"/>
+    <circle cx="50" cy="88" r="34" fill="${GOLD}" stroke="${GOLD_DEEP}" stroke-width="4"/>
+    <circle cx="50" cy="88" r="26" fill="none" stroke="${CREAM}" stroke-width="2" opacity="0.6"/>
+    ${[...Array(12).keys()].map((i) => {
+      const a = (Math.PI / 6) * i
+      return `<line x1="${50 + Math.cos(a) * 34}" y1="${88 + Math.sin(a) * 34}" x2="${50 + Math.cos(a) * 40}" y2="${88 + Math.sin(a) * 40}" stroke="${GOLD}" stroke-width="3.5" stroke-linecap="round"/>`
+    }).join('')}
+    <text x="50" y="99" text-anchor="middle" font-size="30">${glyph}</text>
+  </svg>`
+}
