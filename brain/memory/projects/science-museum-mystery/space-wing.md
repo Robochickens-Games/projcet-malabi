@@ -105,11 +105,30 @@ full sell+buy economy), **wireframe SVG art now**, painted layers drop in 1:1 la
   the Supply Desk counter, and a space rock on the floor, so the whole
   find → sell → buy loop is learnable within sight of the desk that pays for it.
   Unbuilt dioramas say they're being installed rather than failing silently.
-- ⬜ **Next:** the five diorama rooms, then the five mini-games, then locking the
-  cross-room dependency graph.
+- ✅ **Room 1 — Solar System (the Planet Path puzzle)** + its mini-game, **Orbit
+  Balance**. The orrery has eight numbered rings; three are empty (2, 4, 6) and the
+  Star Atlas describes exactly those three **by trait, never by name**. The three
+  missing planets come from **three different sources** — Mars found by exploring
+  the room, Saturn bought at the Supply Desk, Venus won in Orbit Balance — so the
+  wing's whole loop is taught inside one exhibit.
+- ⬜ **Next:** Mars, Moon, Space Station and James Webb rooms (declared in the
+  wing already, so the wing can't finish early), their mini-games, then locking
+  the cross-room dependency graph.
 
-Regression-tested end to end by `npm run verify` in the prototype (54 checks across
-`verify-wings`, `verify-economy`, `verify-spacewing`).
+Regression-tested end to end by `npm run verify` in the prototype (91 checks across
+`verify-wings`, `verify-economy`, `verify-spacewing`, `verify-solar`).
+
+### Design notes worth keeping
+- **Countability beat realism in the orrery.** The first version fanned the planets
+  around the ellipse the way a real orrery does — and it was unusable: you could not
+  tell which planet sat on which ring, so "fourth from the Sun" became a guess. Every
+  planet now mounts at the same point of its ring, in a straight row, with the ring
+  number on a plate directly below. A five-year-old can literally count to four.
+- **The difficulty lives in the reasoning, not the fingers.** Sockets are big and
+  obvious; what's hard is knowing *which* planet belongs in one. Precise dragging is
+  the thing young hands are worst at.
+- **A wrong ring costs nothing** — it says why, hands the planet back, and changes
+  nothing. No fail state, per [[gameplay-principles]] #4.
 
 If the team treats "two-wing structure + economy" as architectural, promote to an ADR via
 `/decide`. Related: [[prototype-parallax-first-slice]], [[game-concepts]],

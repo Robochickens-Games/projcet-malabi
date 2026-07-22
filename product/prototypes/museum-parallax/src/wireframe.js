@@ -829,3 +829,168 @@ export function spacehubForeSVG() {
     ${speedTag('LAYER: FOREGROUND · 1.35x')}
   ${'</svg>'}`
 }
+
+/* ===================== SOLAR SYSTEM ROOM — the orrery (world: 3800) =====================
+   A darkened planetarium bay. The centrepiece is a walk-up ORRERY: the Sun with
+   eight orbit rings around it, five planets already mounted and three EMPTY
+   sockets. The player reads the Star Atlas, works out which planet each clue
+   describes, and mounts it on the right ring.
+
+   Orbit spacing here is deliberately even and compressed — no orrery can show
+   real distances (Neptune is 30x further out than Earth). The Atlas says so
+   rather than letting the picture imply otherwise. */
+
+export const SOLAR_W = 4200
+
+// the orrery's centre, and how far apart the eight rings sit
+export const ORRERY = { cx: 1500, cy: 560, r0: 190, dr: 116, squash: 0.34 }
+
+/* Where a planet at `order` (1-8) sits. Every planet is mounted at the SAME
+   point of its ring — the right-hand edge — so the eight of them march outward
+   in a straight, countable line with their ring number printed directly below.
+   An earlier version fanned them around the ellipse, which looked more like a
+   real orrery and was unusable: you could not tell which planet was on which
+   ring, and "fourth from the Sun" became a guess. Countability beats realism
+   here; the Atlas already says the model is not to scale. */
+export function orbitPoint(order) {
+  const rx = ORRERY.r0 + (order - 1) * ORRERY.dr
+  return { x: ORRERY.cx + rx, y: ORRERY.cy - 34, rx }
+}
+// the numbered plate under each orbit, on the ring itself
+export const orbitLabelPoint = (order) => ({
+  x: ORRERY.cx + ORRERY.r0 + (order - 1) * ORRERY.dr, y: ORRERY.cy + 30,
+})
+
+export const SOLAR_SPOTS = {
+  backPost: { x: 130, y: 600, w: 220, h: 300 },
+  placard: { x: 620 },
+  atlas: { x: 1010, y: 700 },       // the Star Atlas lectern — opens the catalog
+  orrery: { x: ORRERY.cx, y: ORRERY.cy },
+  rockA: { x: 430, y: 906 },        // two space rocks hidden in this room
+  rockB: { x: 3900, y: 900 },
+  clueMars: { x: 3400, y: 902 },    // the Mars model, tucked behind a console
+  orbitStation: { x: 2760 },        // the ORBIT BALANCE mini-game console
+  hint: { x: 4020, y: 1000 },
+}
+
+const S_LINE = '#7fa6c0'
+const S_DEEP = '#0a1220'
+const S_FAR = '#101c2c'
+const S_MID = '#182a3c'
+const S_MAIN = '#22384e'
+const S_FORE = '#2f4a63'
+
+export function solarSkySVG() {
+  const W = 2400
+  let stars = ''
+  for (let i = 0; i < 130; i++) {
+    const x = (i * 193) % W
+    const y = (i * 271) % 1080
+    const r = 1 + ((i * 41) % 6) * 0.42
+    stars += `<circle cx="${x}" cy="${y}" r="${r}" fill="${S_LINE}" opacity="${0.25 + ((i * 23) % 6) * 0.1}"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    <rect x="0" y="0" width="${W}" height="1080" fill="${S_DEEP}"/>
+    ${stars}
+    ${speedTag('LAYER: STARFIELD · 0.1x')}
+  ${'</svg>'}`
+}
+
+export function solarNebulaSVG() {
+  const W = 2800
+  return `${svgOpen(W, 1080)}
+    <ellipse cx="900" cy="360" rx="620" ry="240" fill="${S_FAR}" opacity="0.85"/>
+    <ellipse cx="2000" cy="500" rx="520" ry="200" fill="${S_FAR}" opacity="0.6"/>
+    <g fill="none" stroke="${S_MID}" stroke-width="3" opacity="0.7">
+      <ellipse cx="900" cy="360" rx="500" ry="180"/>
+      <ellipse cx="2000" cy="500" rx="400" ry="150"/>
+    </g>
+    ${speedTag('LAYER: NEBULA · 0.35x')}
+  ${'</svg>'}`
+}
+
+export function solarDomeSVG() {
+  const W = 3200
+  // the planetarium's ribbed dome, seen from inside
+  let ribs = ''
+  for (let i = 0; i <= 10; i++) {
+    const x = 200 + i * 280
+    ribs += `<path d="M${x},860 Q${x + 60},420 ${W / 2},170" fill="none" stroke="${S_MID}" stroke-width="4" opacity="0.55"/>`
+  }
+  return `${svgOpen(W, 1080)}
+    ${ribs}
+    <path d="M0,200 Q${W / 2},60 ${W},200" fill="none" stroke="${S_MID}" stroke-width="5"/>
+    ${speedTag('LAYER: DOME · 0.6x')}
+  ${'</svg>'}`
+}
+
+export function solarMainSVG() {
+  const S = SOLAR_SPOTS
+  // the orrery: Sun, eight rings, and a numbered tick on each so "fourth from
+  // the Sun" is something a child can actually COUNT rather than guess
+  let rings = ''
+  for (let i = 1; i <= 8; i++) {
+    const rx = ORRERY.r0 + (i - 1) * ORRERY.dr
+    const lp = orbitLabelPoint(i)
+    rings += `<ellipse cx="${ORRERY.cx}" cy="${ORRERY.cy}" rx="${rx}" ry="${rx * ORRERY.squash}"
+      fill="none" stroke="${S_LINE}" stroke-width="2.5" opacity="0.45"/>`
+    // the ring's number, printed on a plate directly under where its planet sits
+    rings += `<rect x="${lp.x - 22}" y="${lp.y - 20}" width="44" height="40" rx="8" fill="${PANEL_F}" stroke="${GOLD}" stroke-width="2.5"/>`
+    rings += tag(lp.x, lp.y + 8, String(i), GOLD, 21)
+  }
+  // a baseline joining the plates, so the row reads as "count outward from the Sun"
+  rings += `<line x1="${ORRERY.cx + ORRERY.r0 - 40}" y1="${ORRERY.cy + 30}" x2="${orbitLabelPoint(8).x + 40}" y2="${ORRERY.cy + 30}"
+    stroke="${GOLD}" stroke-width="2" opacity="0.35"/>`
+  return `${svgOpen(SOLAR_W, 1080)}
+    <rect x="0" y="880" width="${SOLAR_W}" height="200" fill="${S_MAIN}"/>
+    <line x1="0" y1="880" x2="${SOLAR_W}" y2="880" stroke="${S_LINE}" stroke-width="4"/>
+    ${roomFloorTicks(SOLAR_W, S_LINE)}
+    ${roomBackPost(S, '&#8592; SPACE HALL')}
+    ${roomPlacard(S, S_LINE)}
+
+    <!-- the Star Atlas lectern -->
+    <g transform="translate(${S.atlas.x},0)">
+      <path d="M-90,880 L-60,700 L60,700 L90,880 Z" fill="${S_MID}" stroke="${GOLD}" stroke-width="4"/>
+      <path d="M-96,700 L0,668 L96,700 L0,714 Z" fill="${PAPER_F}" stroke="${GOLD}" stroke-width="4"/>
+      ${tag(0, 640, 'STAR ATLAS', GOLD, 18)}
+      ${tag(0, 800, '[ READ ]', GOLD, 16)}
+    </g>
+
+    <!-- the orrery on its plinth -->
+    <g>
+      <rect x="${ORRERY.cx - 120}" y="820" width="240" height="60" rx="8" fill="${S_FORE}" stroke="${S_LINE}" stroke-width="4"/>
+      <rect x="${ORRERY.cx - 26}" y="${ORRERY.cy}" width="52" height="330" fill="${S_MID}" stroke="${S_LINE}" stroke-width="3"/>
+      ${rings}
+      <circle cx="${ORRERY.cx}" cy="${ORRERY.cy}" r="54" fill="${GOLD_F}" stroke="${GOLD}" stroke-width="5"/>
+      <circle cx="${ORRERY.cx}" cy="${ORRERY.cy}" r="72" fill="none" stroke="${GOLD}" stroke-width="2" opacity="0.45"/>
+      ${tag(ORRERY.cx, ORRERY.cy + 6, 'SUN', GOLD, 16)}
+      ${tag(ORRERY.cx, 200, 'THE ORRERY', S_LINE, 24)}
+    </g>
+
+    <!-- a control console the Mars model has rolled behind -->
+    <g transform="translate(${S.clueMars.x + 120},0)">
+      <rect x="-140" y="700" width="280" height="180" fill="${S_MID}" stroke="${S_LINE}" stroke-width="4"/>
+      <g fill="${GOLD_F}" stroke="${GOLD}" stroke-width="2">
+          ${[0, 1, 2].map((i) => `<rect x="${-108 + i * 76}" y="736" width="56" height="34" rx="5"/>`).join('')}
+      </g>
+      <g fill="none" stroke="${S_LINE}" stroke-width="3" opacity="0.7">
+        <line x1="-108" y1="812" x2="108" y2="812"/><line x1="-108" y1="844" x2="60" y2="844"/>
+      </g>
+    </g>
+    ${roomHint(S)}
+    ${speedTag('LAYER: PLANETARIUM FLOOR · 1.0x')}
+  ${'</svg>'}`
+}
+
+export function solarForeSVG() {
+  const W = 4500
+  const rail = (x) => `
+    <g transform="translate(${x},0)" stroke="${S_FORE}" stroke-width="6" fill="none">
+      <line x1="0" y1="1080" x2="0" y2="836"/>
+      <line x1="-90" y1="836" x2="90" y2="836"/>
+    </g>`
+  return `${svgOpen(W, 1080)}
+    ${[200, 640, 3300, 3760, 4160].map(rail).join('')}
+    ${speedTag('LAYER: RAIL · 1.35x')}
+  ${'</svg>'}`
+}

@@ -71,7 +71,8 @@ await page.evaluate(() => window.__closeDesk())
 await page.waitForTimeout(400)
 
 // ---- rooms that don't exist yet must say so, never fail silently ----
-await page.evaluate(() => window.__tapWorld('spacehub', 'solar'))
+// (pick one that is genuinely unbuilt — `solar` is a real room now)
+await page.evaluate(() => window.__tapWorld('spacehub', 'mars'))
 await page.waitForTimeout(500)
 check('an unbuilt diorama explains itself instead of doing nothing',
   await page.evaluate(() => !document.getElementById('toast').classList.contains('hidden')

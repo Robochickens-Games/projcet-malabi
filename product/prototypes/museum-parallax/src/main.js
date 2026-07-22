@@ -3,6 +3,7 @@ import { gsap } from 'gsap'
 import {
   toothSVG, catalogCardArt, featherSVG, catalogCrest, DINOS,
   eggSVG, pycnofiberSVG, footprintSVG, coveringSVG, spaceRockSVG,
+  PLANETS, PLANET_BY_ID, planetSVG,
 } from './art.js'
 import {
   INK, LOBBY_W, LOBBY_SPOTS, lobbyBackSVG, lobbyMainSVG, lobbyForeSVG,
@@ -13,9 +14,11 @@ import {
   BRACHIO_W, BRACHIO_SPOTS, brachioSkySVG, brachioHillsSVG, brachioTreesSVG, brachioMainSVG, brachioGrassSVG,
   PTERO_W, PTERO_SPOTS, pteroSkySVG, pteroSeaSVG, pteroCliffSVG, pteroMainSVG, pteroRockSVG,
   SPACEHUB_W, SPACEHUB_SPOTS, SPACEHUB_ORDER, spacehubBackSVG, spacehubMainSVG, spacehubForeSVG,
+  SOLAR_W, SOLAR_SPOTS, orbitPoint, solarSkySVG, solarNebulaSVG, solarDomeSVG, solarMainSVG, solarForeSVG,
 } from './wireframe.js'
 import { openPteroGame, isPteroGameOpen } from './pteroGame.js'
 import { openBrachioGame, isBrachioGameOpen } from './brachioGame.js'
+import { openOrbitGame, closeOrbitGame, isOrbitGameOpen, __orbitForceWin } from './orbitGame.js'
 import {
   SPACE_ROCKS, SPACE_TOOLS, isRock, itemArt, rockInstance, rockType, rockOf,
   openSupplyDesk, closeSupplyDesk, isSupplyDeskOpen, refreshSupplyDesk,
@@ -37,6 +40,7 @@ const WORLDS = {
   brachio: { w: BRACHIO_W },
   ptero: { w: PTERO_W },
   spacehub: { w: SPACEHUB_W },
+  solar: { w: SOLAR_W },
 }
 
 const $ = (id) => document.getElementById(id)
@@ -176,10 +180,10 @@ function setupInput() {
     }
     drag = null
   }
-  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !uiHit(e)) dragStart(e.clientX) })
+  window.addEventListener('mousedown', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !uiHit(e)) dragStart(e.clientX) })
   window.addEventListener('mousemove', (e) => dragMove(e.clientX))
   window.addEventListener('mouseup', () => dragEnd())
-  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
+  window.addEventListener('touchstart', (e) => { if (!draggingItem && !footDrag && !puzzleOpen && !isPteroGameOpen() && !isBrachioGameOpen() && !isSupplyDeskOpen() && !isOrbitGameOpen() && !uiHit(e)) dragStart(e.touches[0].clientX) }, { passive: true })
   window.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX), { passive: true })
   window.addEventListener('touchend', () => dragEnd(), { passive: true })
 
@@ -384,7 +388,7 @@ function revealMark(node, { glow = false } = {}) {
 
 /* ---------- boot ---------- */
 // no top-level await: it deadlocks pixi's dynamic renderer chunks in the Rollup build
-let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub
+let app, root, lobby, grove, dinohub, raptor, trex, brachio, ptero, spacehub, solar
 let toothSprite, sparkle, doorGlow, skeletonGlow, trayGlow, placedTooth
 let featherSprite, featherSparkle
 const scenes = {}                                  // name → scene container
@@ -721,6 +725,201 @@ async function buildSpaceHub() {
 
   for (const room of WINGS.space.rooms) if (roomComplete(room)) markRoomComplete(room)
 }
+
+/* ---------- SOLAR SYSTEM ROOM — the Planet Path puzzle ----------
+   The orrery has eight numbered orbit rings. Five planets are already mounted;
+   THREE sockets are empty, and the Star Atlas describes exactly those three by
+   TRAIT, never by name: the rusty-red one is fourth, the ringed giant is sixth,
+   and the hottest one is second — which is the room's real aha, because the
+   hottest planet is not the one closest to the Sun.
+
+   The deduction is trait → which planet. The ring number is given, and each ring
+   carries a counting marker, so a five-year-old can literally count to four. That
+   keeps the difficulty in the reasoning rather than in the fingers — precise
+   dragging is the thing young hands are worst at. Dropping a planet on the wrong
+   ring costs nothing: it says why and comes back. */
+const PLANET_SLOTS = ['venus', 'mars', 'saturn']   // the three left empty
+const PLANET_PREMOUNTED = ['mercury', 'earth', 'jupiter', 'uranus', 'neptune']
+
+async function buildSolar() {
+  const [skyT, nebulaT, domeT, mainT, foreT, rockAT, rockBT] = await Promise.all([
+    solarSkySVG(), solarNebulaSVG(), solarDomeSVG(), solarMainSVG(), solarForeSVG(),
+    spaceRockSVG('starShard', 62, 80), spaceRockSVG('marsRock', 64, 84),
+  ].map(svgTexture))
+
+  const skyL = bgLayer(0.1, skyT, 2400 / 2)
+  const nebulaL = bgLayer(0.35, nebulaT, 2800 / 2)
+  const domeL = bgLayer(0.6, domeT, 3200 / 2)
+
+  const mainL = scrollLayer(1)
+  const main = new Sprite(mainT)
+  main.anchor.set(0.5)
+  placeAt(main, SOLAR_W / 2, 540)
+  mainL.addChild(main)
+
+  const S = SOLAR_SPOTS
+  mainL.addChild(hitRect(S.backPost.x, S.backPost.y, S.backPost.w, S.backPost.h, () => goScene('spacehub'), 'solar:back'))
+  mainL.addChild(hitRect(S.placard.x - 100, 620, 200, 240, () => {
+    sfx.tap()
+    toast('EXHIBIT 1 — THE ORRERY. A working model of our Solar System. Three planets are missing from their rings.', 6500)
+  }, 'solar:placard'))
+  // the Star Atlas lectern opens the catalog at the planets section — the only
+  // place the clues live, so reading is a deliberate act, not a passive toast
+  mainL.addChild(hitRect(S.atlas.x - 110, 640, 220, 250, () => {
+    sfx.tap()
+    openCatalogSection('planets')
+    if (isCompact()) setRail('catalog-rail', false)
+  }, 'solar:atlas'))
+
+  // the five planets that are already in place
+  const planetTex = {}
+  await Promise.all(PLANETS.map(async (p) => { planetTex[p.id] = await svgTexture(planetSVG(p.id, 120, 156)) }))
+  for (const id of PLANET_PREMOUNTED) {
+    const p = PLANET_BY_ID[id]
+    const pt = orbitPoint(p.order)
+    const s = new Sprite(planetTex[id])
+    s.anchor.set(0.5, 0.82)
+    s.scale.set(0.5 + p.r / 90)
+    placeAt(s, pt.x, pt.y)
+    mainL.addChild(s)
+  }
+
+  // the three empty sockets: a dashed ring on the orbit, waiting
+  const sockets = {}
+  for (const id of PLANET_SLOTS) {
+    const p = PLANET_BY_ID[id]
+    const pt = orbitPoint(p.order)
+    const marker = new Graphics()
+      .circle(0, 0, 34).stroke({ color: 0xffd98a, width: 4, alpha: 0.85 })
+      .circle(0, 0, 6).fill({ color: 0xffd98a, alpha: 0.6 })
+    placeAt(marker, pt.x, pt.y)
+    mainL.addChild(marker)
+    gsap.to(marker, { alpha: 0.42, duration: 1.3, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+    const placed = new Sprite(planetTex[id])
+    placed.anchor.set(0.5, 0.82)
+    placed.scale.set(0.5 + p.r / 90)
+    placeAt(placed, pt.x, pt.y)
+    placed.alpha = 0
+    mainL.addChild(placed)
+
+    sockets[id] = { planet: id, order: p.order, x: pt.x, y: pt.y, marker, placed, done: false }
+  }
+  solar._sockets = sockets
+  solar._orrery = { done: false, left: PLANET_SLOTS.length }
+
+  /* The ORBIT BALANCE console — the room's mini-game, and the only source of the
+     third planet. So the three missing planets come from three different places:
+     one found by exploring this room, one bought at the Supply Desk, one won in
+     a game. That's the wing's whole loop taught inside a single exhibit. */
+  const orbitStation = new Graphics()
+    .roundRect(0, 0, 300, 190, 14)
+    .fill({ color: 0x1a2f42 })
+    .stroke({ color: 0xffd98a, width: 5, alpha: 0.9 })
+  placeAt(orbitStation, S.orbitStation.x - 150, 664)
+  mainL.addChild(orbitStation)
+  const orbitLabel = new Text({
+    text: 'ORBIT\nBALANCE', style: {
+      fill: 0xe8a948, fontFamily: SERIF, fontSize: 30, align: 'center', lineHeight: 34, letterSpacing: 2,
+    },
+  })
+  orbitLabel.anchor.set(0.5)
+  placeAt(orbitLabel, S.orbitStation.x, 738)
+  mainL.addChild(orbitLabel)
+  solar._gameBadge = solvedSeal(S.orbitStation.x + 128, 690, { r: 34, caption: '' })
+  mainL.addChild(solar._gameBadge)
+  mainL.addChild(hitRect(S.orbitStation.x - 150, 640, 300, 240, () => {
+    sfx.tap()
+    if (hasClue('planet:venus') || solar._sockets.venus.done) {
+      toast('You’ve already won this one — the model is yours.', 3500)
+      return
+    }
+    openOrbitGame({
+      goal: 8,
+      onComplete: () => onMinigameSolved('solar'),
+      onClose: () => {
+        if (solar._gameDone && !hasClue('planet:venus') && !solar._sockets.venus.done) {
+          grantItem('planet:venus')
+          toast('🪐 You won the <b>Venus</b> model! The Star Atlas says it’s the <b>hottest</b> planet — even though it isn’t the closest to the Sun.', 7000)
+        } else { afterMinigameClose('solar') }
+      },
+    })
+  }, 'solar:orbitgame'))
+
+  // the Mars model, rolled behind the console — the room's own findable planet
+  const clueL = scrollLayer(1.12)
+  const marsT = await svgTexture(planetSVG('mars', 78, 101))
+  addHiddenClue(clueL, S.clueMars, 'planet:mars', marsT)
+  // two space rocks, because every room in the wing pays for exploring it
+  addHiddenClue(clueL, S.rockA, rockInstance('starShard', 'solar'), rockAT)
+  addHiddenClue(clueL, S.rockB, rockInstance('marsRock', 'solar'), rockBT)
+
+  const foreL = scrollLayer(1.35)
+  const fore = new Sprite(foreT)
+  fore.anchor.set(0.5)
+  placeAt(fore, 4500 / 2, 540)
+  foreL.addChild(fore)
+
+  solar.addChild(skyL, nebulaL, domeL, mainL, clueL, foreL)
+  solar._layers = [skyL, nebulaL, domeL, mainL, clueL, foreL]
+  solar._main = mainL
+  solar._challenges = ['orrery']   // winning Orbit Balance is how you GET the third
+                                   // planet, so the orrery already implies it
+  makeDust(solar, 30, SOLAR_W, 0x9fc2e6)
+}
+
+// which empty socket is the pointer over? (generous radius — kid-sized target)
+function socketUnder(x, y) {
+  const sockets = scenes[state.scene]?._sockets
+  if (!sockets) return null
+  for (const s of Object.values(sockets)) {
+    if (s.done) continue
+    const c = worldToScreen(s.x, s.y)
+    const r = 52 * root.scale.x
+    if (Math.hypot(x - c.x, y - c.y) <= r) return s
+  }
+  return null
+}
+
+// a planet was dropped on a socket — right ring or wrong one
+function placePlanet(socket, planetId) {
+  const p = PLANET_BY_ID[planetId]
+  const sc = scenes[state.scene]
+  if (socket.planet !== planetId) {
+    // wrong ring: say WHY, hand it back, change nothing. Never a fail state.
+    sfx.wrong()
+    toast(`That’s the <b>${socket.order}${ordinalSuffix(socket.order)}</b> ring — but ${p.name} doesn’t belong there. Check the Star Atlas again.`, 5000)
+    return false
+  }
+  socket.done = true
+  sfx.success()
+  removeItem(`planet:${planetId}`)
+  gsap.to(socket.marker, { alpha: 0, duration: 0.3, overwrite: true })
+  gsap.to(socket.placed, { alpha: 1, duration: 0.35 })
+  gsap.fromTo(socket.placed.scale,
+    { x: socket.placed.scale.x * 1.5, y: socket.placed.scale.y * 1.5 },
+    { x: socket.placed.scale.x, y: socket.placed.scale.y, duration: 0.5, ease: 'back.out(3)' })
+  confetti(socket.placed)
+
+  sc._orrery.left -= 1
+  const left = sc._orrery.left
+  if (left > 0) {
+    setTimeout(() => toast(
+      `⭐ ${p.name} is home — ${p.why} ${left} more ${left === 1 ? 'planet' : 'planets'} to find.`, 6000), 900)
+  } else {
+    sc._orrery.done = true
+    setTimeout(() => finishSolve({
+      success: {
+        title: '🪐 The orrery turns! 🪐',
+        html: 'Every planet is back on its ring — <b>Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune</b>. ' +
+          'And the hottest of them all is <b>Venus</b>, not Mercury: its thick clouds trap the heat like a blanket.',
+      },
+    }, 'solar'), 1000)
+  }
+  return true
+}
+
+const ordinalSuffix = (n) => (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th')
 
 /* ---------- VELOCIRAPTOR ROOM (arid badlands) ---------- */
 async function buildRaptor() {
@@ -1133,8 +1332,11 @@ const WINGS = {
     hub: 'spacehub',
     hubLabel: 'Space Hall',
     door: 'doorSpace',
-    // the five dioramas exist as scenes from here on; their rooms land next
-    rooms: [],
+    // All five are declared even though only `solar` is built. An unbuilt room
+    // has no `_challenges`, so roomComplete() reads false for it and the wing
+    // cannot finish early — declaring only the built ones would have fired the
+    // WING finale the moment the first room was solved.
+    rooms: ['solar', 'mars', 'moon', 'station', 'webb'],
     finale: {
       name: 'SPACE WING',
       text: 'Every exhibit is running again — you’ve restored <b>all five</b> and finished ' +
@@ -1170,6 +1372,7 @@ const CHALLENGE_DONE = {
   drop: (sc) => !!sc._drop?.done,   // drag a clue onto the skeleton
   foot: (sc) => !!sc._foot?.done,   // the T-rex foot-assembly puzzle
   game: (sc) => !!sc._gameDone,     // a mini-game hit its goal
+  orrery: (sc) => !!sc._orrery?.done, // every planet back on its ring
 }
 
 function roomComplete(name) {
@@ -1189,6 +1392,7 @@ function goScene(target) {
   if (!scenes[target] || target === state.scene) return
   if (puzzleOpen) closeFootPuzzle()
   if (isSupplyDeskOpen()) closeSupplyDesk()
+  if (isOrbitGameOpen()) closeOrbitGame()
   const from = scenes[state.scene]
   const to = scenes[target]
   const dir = DEPTH[target] >= DEPTH[state.scene] ? -1 : 1
@@ -1214,6 +1418,11 @@ const ROOM_ENTER = {
   ptero: { item: 'pycnofibers', ready: 'Sea cliffs! Drag the fuzzy pycnofibers onto the flying pterosaur.', explore: 'Windy sea cliffs. The pterosaur looks oddly bare…' },
 }
 
+// the space rooms don't hang on one clue, so they get their own on-enter copy
+const SPACE_ROOM_ENTER = {
+  solar: 'The planetarium! Three rings on the orrery are <b>empty</b>. Read the <b>STAR ATLAS</b> on the lectern to work out which planet goes where.',
+}
+
 function onSceneEnter(target) {
   if (target === 'dinohub') {
     setTimeout(() => toast('The Hall of Dinosaurs! Tap a diorama to step inside its world.', 6000), 700)
@@ -1229,6 +1438,10 @@ function onSceneEnter(target) {
       : 'The Hall of Space. Tap the SUPPLY DESK to trade, or a diorama to step inside.'
     firstSpaceVisit = false
     setTimeout(() => toast(msg, 7000), 700)
+    return
+  }
+  if (SPACE_ROOM_ENTER[target]) {
+    setTimeout(() => toast(SPACE_ROOM_ENTER[target], 7000), 700)
     return
   }
   const cfg = ROOM_ENTER[target]
@@ -1272,6 +1485,7 @@ const ITEM_SVG = {
   ...Object.fromEntries(
     [...Object.keys(SPACE_ROCKS), ...Object.keys(SPACE_TOOLS)].map((id) => [id, (w, h) => itemArt(id, w, h)]),
   ),
+  ...Object.fromEntries(PLANETS.map((p) => [`planet:${p.id}`, (w, h) => planetSVG(p.id, w, h)])),
 }
 const CLUE_TOAST = {
   feather: 'A feather! But Triceratops had scales, not feathers… whose is it? It’s in your INVENTORY.',
@@ -1296,6 +1510,8 @@ const ITEM_INFO = {
     [id, { name: r.name, section: 'Space Rocks', found: 'Space Wing', worth: r.value }])),
   ...Object.fromEntries(Object.entries(SPACE_TOOLS).map(([id, t]) =>
     [id, { name: t.name, section: 'Supplies', found: 'Space Supply Desk' }])),
+  ...Object.fromEntries(PLANETS.map((p) =>
+    [`planet:${p.id}`, { name: `${p.name} model`, section: 'Star Atlas', found: 'Space Wing', note: p.trait }])),
 }
 
 /* A bag item id is usually the item itself, but a space rock is an INSTANCE
@@ -1454,6 +1670,18 @@ function grantItem(itemId) {
   return true
 }
 
+// send the drag ghost home to its slot — a rejected drop must never lose the item
+function returnDragGhost() {
+  const ghost = $('drag-ghost')
+  const r = dragSlot?.getBoundingClientRect()
+  if (!r) { ghost.classList.add('hidden'); return }
+  gsap.to(ghost, {
+    x: r.left + r.width / 2 - 32, y: r.top + r.height / 2 - 41,
+    duration: 0.3, ease: 'power2.out',
+    onComplete: () => ghost.classList.add('hidden'),
+  })
+}
+
 function removeItem(itemId) {
   if (!hasClue(itemId)) return false
   delete state.has[itemId]
@@ -1564,6 +1792,28 @@ function endItemDrag(x, y) {
   if (!draggingItem) return
   draggingItem = false
   dragSlot?.classList.remove('dragging')
+
+  // orrery rooms: a planet dropped on an orbit socket takes a different path to
+  // the one-skeleton-per-room drop targets
+  if (dragItem?.startsWith('planet:')) {
+    const socket = socketUnder(x, y)
+    const planetId = dragItem.slice('planet:'.length)
+    const ghost = $('drag-ghost')
+    if (socket && placePlanet(socket, planetId)) {
+      const to = worldToScreen(socket.x, socket.y)
+      gsap.to(ghost, {
+        x: to.x - 32, y: to.y - 41, duration: 0.35, ease: 'power2.out',
+        onComplete: () => ghost.classList.add('hidden'),
+      })
+    } else {
+      returnDragGhost()
+      if (!socket) toast('Drop the planet right onto an empty ring — the glowing circles.', 3500)
+    }
+    dragSlot = null
+    dragItem = null
+    return
+  }
+
   const d = activeDrop()
   const over = pointerOverDino(x, y)
   if (d && !d.done && over && d.item === dragItem) {
@@ -1912,6 +2162,13 @@ const allPlacedRocks = () =>
   Object.entries(SPACE_ROCK_PLACEMENT).flatMap(([scene, types]) =>
     types.map((t) => rockInstance(t, scene)))
 
+/* A few desk purchases hand over something more specific than the shelf label.
+   The "Planet Model" on the shelf is the orrery's missing ringed giant — the
+   desk stays vague on purpose (naming it would hand over the Star Atlas answer,
+   which is the rule in [[clue-design-deduction-not-naming]]), but what lands in
+   the bag is a labelled Saturn the child can then place. */
+const TOOL_GRANTS = { planetModel: 'planet:saturn' }
+
 /* ---------- Space Supply Desk ----------
    The desk is a PLACE you walk to (a tappable counter in the space hub), not a
    menu you can pull up anywhere — trading stays part of exploring. main.js owns
@@ -1923,9 +2180,11 @@ function openDesk() {
   sfx.tap()
   openSupplyDesk({
     ownedRocks: () => Object.keys(state.has).filter(isRock),
-    owns: (id) => hasClue(id),
+    // some tools ARE the thing they unlock (the Planet Model is a planet), so
+    // "do you own it?" and "what lands in the bag?" both go through TOOL_GRANTS
+    owns: (id) => hasClue(TOOL_GRANTS[id] ?? id),
     onSell: (id) => { removeItem(id); sfx.pickup() },
-    onBuy: (id) => grantItem(id),
+    onBuy: (id) => grantItem(TOOL_GRANTS[id] ?? id),
     onClose: () => { sfx.whoosh(); updateCoinHud() },
   })
 }
@@ -2081,6 +2340,37 @@ const FOOT_GUIDE_SECTION = {
         back. Match this on the pedestal: bones joined at the base, claws down.</div>
     </div>`,
 }
+/* The STAR ATLAS — the Space Wing's half of the catalog, and the only place the
+   orrery's clues live. Unlike the dino sections it leads with the three CLUES,
+   because in this room reading is the puzzle: each clue names a TRAIT and a ring
+   number, never the planet ([[clue-design-deduction-not-naming]]). Every planet
+   then gets a card, so a child who doesn't already know them can match trait to
+   picture. The scale disclaimer is stated out loud rather than left to imply. */
+const STAR_ATLAS_SECTION = {
+  id: 'planets', title: 'Star Atlas', blurb: 'The eight planets, and where each one belongs.',
+  icon: planetSVG('saturn', 34, 42), tag: 'orrery clues', ready: true,
+  render: () => `
+    <div class="cat-card">
+      <div class="cat-note"><b>Three rings are empty.</b> The Atlas says which:
+        <br>· the <b>rusty red</b> world is <b>fourth</b> from the Sun
+        <br>· the giant wearing <b>bright rings</b> is <b>sixth</b>
+        <br>· the <b>hottest</b> world of all is <b>second</b> — and it is <i>not</i> the one
+        closest to the Sun</div>
+    </div>
+    ${PLANETS.map((p) => `
+      <div class="cat-card">
+        <div class="art trait">${planetSVG(p.id, 96, 120)}</div>
+        <h3>${p.name}</h3>
+        <div class="diet">${p.order}${(p.order === 1 ? 'st' : p.order === 2 ? 'nd' : p.order === 3 ? 'rd' : 'th')} from the Sun</div>
+        <div class="cat-note">${p.atlas}</div>
+      </div>`).join('')}
+    <div class="cat-card">
+      <div class="cat-note">⚠️ <b>Not to scale.</b> No model can show the real distances — Neptune
+        is about <b>30 times</b> further from the Sun than Earth is. The orrery squashes the
+        gaps and grows the planets so you can see them all at once.</div>
+    </div>`,
+}
+
 const CATALOG_SECTIONS = [
   SECTION('teeth', 'Teeth', 'A tooth tells you what a dinosaur ate.', toothSVG('leaf', 34, 42),
     (d) => toothSVG(d.tooth, 96, 120), (d) => d.toothNote),
@@ -2091,6 +2381,7 @@ const CATALOG_SECTIONS = [
   FOOT_GUIDE_SECTION,
   SECTION('eggs', 'Eggs', 'Round, long, or leathery — eggs tell tales too.', eggSVG('round', 34, 42),
     (d) => eggSVG(d.egg, 96, 120), (d) => d.eggNote),
+  STAR_ATLAS_SECTION,
 ]
 
 function renderCatalogCover() {
@@ -2191,7 +2482,7 @@ async function boot() {
   window.addEventListener('resize', layout)
 
   // every scene is a Container of parallax layers; only the active one is visible
-  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub']) {
+  for (const name of ['lobby', 'dinohub', 'grove', 'raptor', 'trex', 'brachio', 'ptero', 'spacehub', 'solar']) {
     const c = new Container()
     c._layers = []
     c._dust = []
@@ -2199,7 +2490,7 @@ async function boot() {
     root.addChild(c)
     scenes[name] = c
   }
-  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub } = scenes)
+  ;({ lobby, dinohub, grove, raptor, trex, brachio, ptero, spacehub, solar } = scenes)
 
   $('back-btn').addEventListener('pointerdown', () => goScene(SCENE_BACK[state.scene] || 'lobby'))
   $('replay-btn').addEventListener('pointerdown', () => location.reload())
@@ -2240,7 +2531,7 @@ async function boot() {
   if (!econ.ok) {
     console.error('[economy] SOFT-LOCK RISK — placed rocks cannot fund the tools', econ)
   }
-  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub()])
+  await Promise.all([buildLobby(), buildDinoHub(), buildGrove(), buildRaptor(), buildTrex(), buildBrachio(), buildPtero(), buildSpaceHub(), buildSolar()])
 
   let t = 0
   app.ticker.add((ticker) => {
@@ -2299,10 +2590,20 @@ async function boot() {
   window.__bag = () => Object.keys(state.has)
   window.__rockValue = (id) => rockOf(id)?.value ?? 0
   window.__toolPrice = (id) => SPACE_TOOLS[id]?.price ?? 0
+  window.__toolGrant = (id) => TOOL_GRANTS[id] ?? id
   // tap what a finger would tap, so tests exercise the real hotspot wiring
   window.__tapWorld = (scene, id) => { HOTSPOTS[`${scene}:${id}`]?.(); return !!HOTSPOTS[`${scene}:${id}`] }
   window.__clueExists = (id) => !!CLUES[id]
   window.__pan = (x) => { cam().x = Math.max(0, Math.min(camMax(), x)); cam().vel = 0 }
+  window.__orbitOpen = () => isOrbitGameOpen()
+  window.__openCatalogSection = (id) => openCatalogSection(id)
+  window.__winOrbit = () => __orbitForceWin()
+  window.__sockets = () => Object.fromEntries(
+    Object.entries(solar?._sockets ?? {}).map(([k, v]) => [k, { order: v.order, done: v.done }]))
+  window.__dropPlanet = (planetId, onSocket) => {
+    const sc = solar?._sockets?.[onSocket]
+    return sc ? placePlanet(sc, planetId) : false
+  }
   window.__tapClue = (id) => { CLUES[id]?.sprite.emit('pointertap'); return !!CLUES[id] }
   window.__wingSealShown = (w) => (lobby?._wingMarks?.[w]?.alpha ?? 0) > 0
   window.__setCoins = (n) => { setCoins(n); refreshSupplyDesk() }

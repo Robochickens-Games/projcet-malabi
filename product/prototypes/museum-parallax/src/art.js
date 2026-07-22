@@ -1043,3 +1043,86 @@ export const SPACE_SILHOUETTES = {
   solar: solarSilhouette, mars: roverSilhouette, moon: landerSilhouette,
   station: stationSilhouette, webb: webbSilhouette,
 }
+
+/* ============================== PLANETS ==============================
+   The eight planets, for the Solar System orrery and the Star Atlas.
+   `order` is the real distance rank from the Sun — it IS the puzzle's answer,
+   so it comes from one place only. `r` is DRAW size: relative, not to scale
+   (every orrery compresses distance and inflates planets — the Atlas says so
+   out loud rather than implying the spacing is real; see space-accuracy-rulings).
+   Only Saturn is drawn with visible rings: Jupiter, Uranus and Neptune have
+   rings too, but drawing them would break the "giant with rings is sixth" clue. */
+export const PLANETS = [
+  {
+    id: 'mercury', why: 'the closest world to the Sun.', name: 'Mercury', order: 1, r: 15, color: '#8c8681', ringed: false,
+    trait: 'Small, grey and cratered — the closest world to the Sun.',
+    atlas: 'The smallest planet, and the nearest to the Sun. It is scorched by day and freezing by night, because it has almost no air to hold the heat in.',
+  },
+  {
+    id: 'venus', why: 'hottest of all — its clouds trap the heat.', name: 'Venus', order: 2, r: 22, color: '#d9b877', ringed: false,
+    trait: 'Wrapped in thick, pale cloud.',
+    atlas: 'The <b>hottest</b> planet of them all — about 465°C. Not because it is closest to the Sun (it isn’t), but because its thick clouds trap the heat like a blanket.',
+  },
+  {
+    id: 'earth', why: 'our own blue world.', name: 'Earth', order: 3, r: 23, color: '#3f7fb5', ringed: false,
+    trait: 'Blue oceans, white cloud, green land.',
+    atlas: 'Our own world — the only place we know of with liquid water on the surface, and the only one with life.',
+  },
+  {
+    id: 'mars', why: 'red because its dust is rusty.', name: 'Mars', order: 4, r: 18, color: '#a4472b', ringed: false,
+    trait: 'Rusty red, dusty and dry.',
+    atlas: 'The <b>red</b> planet. Its dust is full of iron oxide — rust! — which is exactly what makes it red. Robot rovers are driving across it right now.',
+  },
+  {
+    id: 'jupiter', why: 'the biggest planet of them all.', name: 'Jupiter', order: 5, r: 42, color: '#c69a6d', ringed: false,
+    trait: 'Enormous, with swirling cream and brown bands.',
+    atlas: 'The biggest planet — all of the others would fit inside it. Its Great Red Spot is a storm wider than the Earth.',
+  },
+  {
+    id: 'saturn', why: 'the giant with the bright rings.', name: 'Saturn', order: 6, r: 36, color: '#d8c188', ringed: true,
+    trait: 'A giant wearing bright, wide rings.',
+    atlas: 'The <b>ringed</b> giant. Its rings are billions of pieces of ice and rock, most no bigger than a snowball. Other giants have rings too — Saturn’s are just the ones you can’t miss.',
+  },
+  {
+    id: 'uranus', why: 'the one that rolls along on its side.', name: 'Uranus', order: 7, r: 28, color: '#8fd0d8', ringed: false,
+    trait: 'Pale blue-green, and tipped right over.',
+    atlas: 'This one rolls around the Sun on its side, as though it has been knocked over. Its pale colour comes from methane gas in its air.',
+  },
+  {
+    id: 'neptune', why: 'the farthest and the windiest.', name: 'Neptune', order: 8, r: 27, color: '#3f63b5', ringed: false,
+    trait: 'Deep blue, and the furthest out.',
+    atlas: 'The farthest planet from the Sun, and the windiest — its storms blow faster than any other planet’s.',
+  },
+]
+
+export const PLANET_BY_ID = Object.fromEntries(PLANETS.map((p) => [p.id, p]))
+
+// one planet, drawn as an orrery model. `sc` scales the body inside the box.
+export function planetSVG(id, w = 100, h = 130) {
+  const p = PLANET_BY_ID[id]
+  if (!p) return ''
+  const cx = 50, cy = 58
+  const R = Math.max(16, Math.min(34, p.r * 0.8))
+  const shade = `<circle cx="${cx - R * 0.28}" cy="${cy - R * 0.28}" r="${R * 0.42}" fill="#fff" opacity="0.22"/>`
+  // Saturn's rings sit BEHIND and in front of the body so it reads as a ring, not a belt
+  const ringBack = p.ringed
+    ? `<path d="M${cx - R * 2},${cy} a${R * 2},${R * 0.62} 0 0 1 ${R * 4},0" fill="none" stroke="${CREAM}" stroke-width="5"/>` : ''
+  const ringFront = p.ringed
+    ? `<path d="M${cx + R * 2},${cy} a${R * 2},${R * 0.62} 0 0 1 ${-R * 4},0" fill="none" stroke="${CREAM}" stroke-width="5"/>` : ''
+  // Jupiter and Saturn get bands; Earth gets a hint of land
+  const bands = (id === 'jupiter' || id === 'saturn')
+    ? [0.42, 0.06, -0.34].map((f) =>
+      `<ellipse cx="${cx}" cy="${cy + R * f}" rx="${R * Math.sqrt(Math.max(0.06, 1 - f * f)) * 0.96}" ry="${R * 0.11}" fill="${GOLD_DEEP}" opacity="0.45"/>`).join('')
+    : ''
+  const land = id === 'earth'
+    ? `<path d="M${cx - R * 0.6},${cy - R * 0.2} q${R * 0.4},${-R * 0.5} ${R * 0.8},${-R * 0.1} q${R * 0.3},${R * 0.4} ${-R * 0.2},${R * 0.5} q${-R * 0.5},${R * 0.2} ${-R * 0.6},${-R * 0.4} Z" fill="#5c9a5c" opacity="0.9"/>
+       <ellipse cx="${cx + R * 0.35}" cy="${cy + R * 0.45}" rx="${R * 0.34}" ry="${R * 0.24}" fill="#5c9a5c" opacity="0.8"/>` : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 100 130">
+    ${ringBack}
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="${p.color}" stroke="${TEAL_DEEP}" stroke-width="2.5"/>
+    ${bands}${land}${shade}
+    ${ringFront}
+    <rect x="${cx - 3}" y="${cy + R}" width="6" height="${104 - cy - R}" fill="${GOLD_DEEP}"/>
+    <ellipse cx="${cx}" cy="106" rx="17" ry="5.5" fill="${GOLD_DEEP}"/>
+  </svg>`
+}

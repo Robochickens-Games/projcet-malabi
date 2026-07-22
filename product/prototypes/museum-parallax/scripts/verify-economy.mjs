@@ -102,7 +102,11 @@ await firstBuy.click()
 await page.waitForTimeout(250)
 check('buying deducts exactly the price',
   (await page.evaluate(() => window.__coins())) === 100 - price, `${await page.evaluate(() => window.__coins())} = 100 − ${price}`)
-check('the bought tool is in the bag', await page.evaluate((id) => window.__bag().includes(id), buyId))
+// some shelf items hand over something more specific than their label (the
+// "Planet Model" is the orrery's ringed giant), so check what actually landed
+const granted = await page.evaluate((id) => window.__toolGrant(id), buyId)
+check('the bought tool is in the bag', await page.evaluate((id) => window.__bag().includes(id), granted),
+  granted === buyId ? granted : `${buyId} → ${granted}`)
 check('an owned tool cannot be bought twice', await page.evaluate((id) =>
   document.querySelector(`#supply-desk [data-col="buy"] [data-item="${id}"]`).disabled, buyId))
 
@@ -112,7 +116,7 @@ await page.waitForTimeout(200)
 const sellable = await page.evaluate(() =>
   [...document.querySelectorAll('#supply-desk [data-col="sell"] .sd-item')].map((b) => b.dataset.item))
 check('quest items are not sellable', !sellable.some((id) => !id.includes('@')), sellable.join(', '))
-check('the bought tool is not sellable either', !sellable.includes(buyId))
+check('the bought tool is not sellable either', !sellable.includes(buyId) && !sellable.includes(granted))
 
 // ---- 7. leaving the desk is always safe ----
 await page.evaluate(() => window.__closeDesk())
